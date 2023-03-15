@@ -1,3 +1,5 @@
-# emacs config
+# Emacs config
+because why not
 
-Moved to separate repo because
+## TODO
+- [ ] Auto-save is broken
