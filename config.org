@@ -110,7 +110,7 @@ Some org-mode tweaks
 #+END_SRC
 
 ** Completion
-Set up vertico and savehist and tweak some emacs completion defaults
+Set up vertico, orderless and savehist and tweak some emacs completion defaults
 
 #+BEGIN_SRC emacs-lisp
   (use-package vertico
@@ -121,7 +121,7 @@ Set up vertico and savehist and tweak some emacs completion defaults
     ;; Configure a custom style dispatcher (see the Consult wiki)
     ;; (setq orderless-style-dispatchers '(+orderless-consult-dispatch orderless-affix-dispatch)
     ;;       orderless-component-separator #'orderless-escapable-split-on-space)
-    (setq completion-styles '(orderless basic)
+    (setq completion-styles '(substring orderless basic)
 	  completion-category-defaults nil
 	  completion-category-overrides '((file (styles partial-completion)))))
 
@@ -153,6 +153,14 @@ Set up vertico and savehist and tweak some emacs completion defaults
 
   (use-package savehist
     :init (savehist-mode))
+#+END_SRC
+
+** Marginalia
+Marginalia shows some additional information inside the minibuffer
+
+#+BEGIN_SRC emacs-lisp
+  (use-package marginalia
+    :init (marginalia-mode))
 #+END_SRC
 
 ** Colorscheme
