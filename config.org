@@ -1,6 +1,6 @@
 #+TITLE: Emacs configuration
 #+AUTHOR: Darius Schefer
-#+PROPERTY: header-args:emacs-lisp :tangle ./init.el :mkdirp yes
+#+PROPERTY: header-args:emacs-lisp :tangle init.el :mkdirp yes
 
 * Basic window stuff
 ** Default clutter
@@ -54,13 +54,6 @@ Iosevka is the best font fight me.
   (set-face-attribute 'default nil :font "Iosevka Nerd Font Mono" :height 180)
   (set-face-attribute 'variable-pitch nil :font "Iosevka Aile" :weight 'regular)
   (set-face-attribute 'fixed-pitch nil :font "Iosevka Nerd Font Mono")
-#+END_SRC
-
-** Color scheme
-
-#+BEGIN_SRC emacs-lisp
-  ; (mapc #'disable-theme custom-enabled-themes)
-  (load-theme 'base16-tomorrow-night t)
 #+END_SRC
 
 * Packages
@@ -167,5 +160,7 @@ Marginalia shows some additional information inside the minibuffer
 The most important thing tbh
 
 #+BEGIN_SRC emacs-lisp
-  (use-package base16-theme)
+	  (use-package base16-theme
+	    :config
+	      (load-theme 'base16-tomorrow-night t))
 #+END_SRC

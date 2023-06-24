@@ -1,5 +1,5 @@
 # Emacs config
-because why not
 
-## TODO
-- [ ] Auto-save is broken
+## NOTE
+Do not touch the `init.el` file.
+Run `org-babel-tangle` in the `config.org` file to generate it.
