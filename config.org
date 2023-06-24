@@ -1,6 +1,6 @@
 #+TITLE: Emacs configuration
 #+AUTHOR: Darius Schefer
-#+OPTIONS: num:nil
+#+PROPERTY: header-args:emacs-lisp :tangle ./init.el :mkdirp yes
 
 * Basic window stuff
 ** Default clutter
@@ -51,8 +51,8 @@ Line numbers, parentheses, line highlighting, ...
 Iosevka is the best font fight me.
 
 #+BEGIN_SRC emacs-lisp
-  (set-face-attribute 'default nil :font "Iosevka Nerd Font Mono" :height 150)
-  (set-face-attribute 'variable-pitch nil :font "Iosevka Aile")
+  (set-face-attribute 'default nil :font "Iosevka Nerd Font Mono" :height 180)
+  (set-face-attribute 'variable-pitch nil :font "Iosevka Aile" :weight 'regular)
   (set-face-attribute 'fixed-pitch nil :font "Iosevka Nerd Font Mono")
 #+END_SRC
 
@@ -68,6 +68,7 @@ Install and setup some useful packages
 
 ** Setup
 Basic ~package~ config
+
 #+BEGIN_SRC emacs-lisp
   (require 'package)
   (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
@@ -98,6 +99,14 @@ Some packages that don't fit the other categories
   (use-package which-key
     :init (which-key-mode)
     :diminish which-key-mode)
+#+END_SRC
+
+** Org
+Some org-mode tweaks
+
+#+BEGIN_SRC emacs-lisp
+  (use-package org-bullets
+    :hook (org-mode . org-bullets-mode))
 #+END_SRC
 
 ** Completion
