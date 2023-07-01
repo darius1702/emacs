@@ -6,7 +6,7 @@
 ** Default clutter
 Adjust some default settings
 
-#+BEGIN_SRC emacs-lisp
+#+begin_src emacs-lisp
   (setq inhibit-startup-message t)
   (tool-bar-mode 0)
   (menu-bar-mode 0)
@@ -15,12 +15,12 @@ Adjust some default settings
   (blink-cursor-mode 0)
   (setq frame-resize-pixelwise t)
   (setq use-dialog-box nil)
-#+END_SRC
+#+end_src
 
 ** Annoying files
 Disble all annoying auto-generated files and make ~custom-set-variables~ go to its own file
 
-#+BEGIN_SRC emacs-lisp
+#+begin_src emacs-lisp
   (make-directory (expand-file-name "tmp/auto-saves/" user-emacs-directory) t)
   (setq auto-save-list-file-prefix (expand-file-name "tmp/auto-saves/sessions/" user-emacs-directory)
 	auto-save-file-name-transforms `((".*" ,(expand-file-name "tmp/auto-saves/" user-emacs-directory) t)))
@@ -34,28 +34,28 @@ Disble all annoying auto-generated files and make ~custom-set-variables~ go to i
   (setq custom-file (concat user-emacs-directory "custom.el"))
   (when (file-exists-p custom-file)
     (load custom-file))
-#+END_SRC
+#+end_src
 
 ** Better editing experience
 Line numbers, parentheses, line highlighting, ...
 
-#+BEGIN_SRC emacs-lisp
+#+begin_src emacs-lisp
   (setq display-line-numbers-type 'relative)
   (global-display-line-numbers-mode t)
   (column-number-mode t)
   (show-paren-mode t)
-  (hl-line-mode t)
+  (global-hl-line-mode t)
   (add-to-list 'write-file-functions 'delete-trailing-whitespace)
-#+END_SRC
+#+end_src
 
 ** Font setup
 Iosevka is the best font fight me.
 
-#+BEGIN_SRC emacs-lisp
+#+begin_src emacs-lisp
   (set-face-attribute 'default nil :font "Iosevka Nerd Font Mono" :height 180)
   (set-face-attribute 'variable-pitch nil :font "Iosevka Aile" :weight 'regular)
   (set-face-attribute 'fixed-pitch nil :font "Iosevka Nerd Font Mono")
-#+END_SRC
+#+end_src
 
 * Packages
 Install and setup some useful packages
@@ -63,7 +63,7 @@ Install and setup some useful packages
 ** Setup
 Basic ~package.el~ config
 
-#+BEGIN_SRC emacs-lisp
+#+begin_src emacs-lisp
   (require 'package)
   (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
   (package-initialize)
@@ -73,12 +73,12 @@ Basic ~package.el~ config
     (package-install 'use-package))
   (require 'use-package)
   (setq use-package-always-ensure t)
-#+END_SRC
+#+end_src
 
 ** Useful random stuff
 Some packages that don't fit the other categories
 
-#+BEGIN_SRC emacs-lisp
+#+begin_src emacs-lisp
   (use-package diminish)
 
   (use-package undo-tree
@@ -93,28 +93,28 @@ Some packages that don't fit the other categories
   (use-package which-key
     :init (which-key-mode)
     :diminish which-key-mode)
-#+END_SRC
+#+end_src
 
 ** Magit
 Very nice git interface
 
-#+BEGIN_SRC emacs-lisp
+#+begin_src emacs-lisp
   (use-package magit
     :ensure t)
-#+END_SRC
+#+end_src
 
 ** Org
 Some org-mode tweaks
 
-#+BEGIN_SRC emacs-lisp
+#+begin_src emacs-lisp
   (use-package org-bullets
     :hook (org-mode . org-bullets-mode))
-#+END_SRC
+#+end_src
 
 ** Completion
 Set up vertico, orderless and savehist and tweak some emacs completion defaults
 
-#+BEGIN_SRC emacs-lisp
+#+begin_src emacs-lisp
   (use-package vertico
     :init (vertico-mode))
 
@@ -155,21 +155,21 @@ Set up vertico, orderless and savehist and tweak some emacs completion defaults
 
   (use-package savehist
     :init (savehist-mode))
-#+END_SRC
+#+end_src
 
 ** Marginalia
 Marginalia shows some additional information inside the minibuffer
 
-#+BEGIN_SRC emacs-lisp
+#+begin_src emacs-lisp
   (use-package marginalia
     :init (marginalia-mode))
-#+END_SRC
+#+end_src
 
 ** Colorscheme
 The most important thing tbh
 
-#+BEGIN_SRC emacs-lisp
+#+begin_src emacs-lisp
   (use-package base16-theme
     :config
     (load-theme 'base16-tomorrow-night t))
-#+END_SRC
+#+end_src
