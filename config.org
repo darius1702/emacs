@@ -49,6 +49,15 @@ Line numbers, parentheses, line highlighting, ...
   (add-to-list 'write-file-functions 'delete-trailing-whitespace)
 #+end_src
 
+** Man pages
+Make manpages look a little better
+
+#+begin_src emacs-lisp
+  (require 'man)
+  (set-face-attribute 'Man-overstrike nil :inherit font-lock-type-face :bold t)
+  (set-face-attribute 'Man-underline nil :inherit font-lock-keyword-face :underline t)
+#+end_src
+
 ** Dired
 Directory editing
 
@@ -119,8 +128,7 @@ Not really a fan but text editing is even worse without it
     :init (evil-mode 1)
     :config
     (setq evil-undo-system 'undo-tree)
-    (setq evil-mode-line-format nil)	; no <N> indicator in modeline
-    (evil-set-initial-state 'dired-mode 'emacs))
+    (setq evil-mode-line-format nil))	; no <N> indicator in modeline
 #+end_src
 
 ** Magit
