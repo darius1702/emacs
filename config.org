@@ -46,6 +46,7 @@ Line numbers, parentheses, line highlighting, ...
   (show-paren-mode t)
   (global-hl-line-mode t)
   (add-to-list 'write-file-functions 'delete-trailing-whitespace)
+  (setq dired-dwim-target 1)
 #+end_src
 
 ** Font setup
