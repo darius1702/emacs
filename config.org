@@ -1,6 +1,7 @@
 #+TITLE: Emacs configuration
 #+AUTHOR: Darius Schefer
 #+PROPERTY: header-args:emacs-lisp :tangle init.el :mkdirp yes
+#+STARTUP: overview
 
 * Basic window stuff
 ** Default clutter
@@ -60,16 +61,19 @@ Directory editing
 
 ** Font setup
 Iosevka is the best font fight me.
+Need to set it in an extra hook to make it work in emacsclient frames.
 
 #+begin_src emacs-lisp
-  (set-face-attribute 'default nil :font "Iosevka Nerd Font Mono" :height 180)
-  (set-face-attribute 'variable-pitch nil :font "Iosevka Aile" :weight 'regular)
-  (set-face-attribute 'fixed-pitch nil :font "Iosevka Nerd Font Mono")
+  (defun darius/set-up-fonts ()
+    (set-face-attribute 'default nil :font "Iosevka Nerd Font Mono" :height 180)
+    (set-face-attribute 'variable-pitch nil :font  "Iosevka Aile" :weight 'regular)
+    (set-face-attribute 'fixed-pitch nil :font "Iosevka Nerd Font Mono"))
+
+  (add-hook 'after-init-hook 'darius/set-up-fonts)
+  (add-hook 'server-after-make-frame-hook 'darius/set-up-fonts)
 #+end_src
 
 * Packages
-Install and setup some useful packages
-
 ** Setup
 Basic ~package.el~ config
 
@@ -105,6 +109,18 @@ Some packages that don't fit the other categories
   (use-package which-key
     :init (which-key-mode)
     :diminish which-key-mode)
+#+end_src
+
+** Evil
+Not really a fan but text editing is even worse without it
+
+#+begin_src emacs-lisp
+  (use-package evil
+    :init (evil-mode 1)
+    :config
+    (setq evil-undo-system 'undo-tree)
+    (setq evil-mode-line-format nil)	; no <N> indicator in modeline
+    (evil-set-initial-state 'dired-mode 'emacs))
 #+end_src
 
 ** Magit
