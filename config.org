@@ -46,7 +46,16 @@ Line numbers, parentheses, line highlighting, ...
   (show-paren-mode t)
   (global-hl-line-mode t)
   (add-to-list 'write-file-functions 'delete-trailing-whitespace)
+#+end_src
+
+** Dired
+Directory editing
+
+#+begin_src emacs-lisp
   (setq dired-dwim-target 1)
+
+  ;; Use system trash
+  (setq delete-by-moving-to-trash 1)
 #+end_src
 
 ** Font setup
@@ -81,6 +90,8 @@ Some packages that don't fit the other categories
 
 #+begin_src emacs-lisp
   (use-package diminish)
+
+  (use-package trashed)
 
   (use-package undo-tree
     :diminish
