@@ -42,6 +42,7 @@ Line numbers, parentheses, line highlighting, ...
 
 #+begin_src emacs-lisp
   (setq display-line-numbers-type 'relative)
+  (setq-default indent-tabs-mode nil)
   (global-display-line-numbers-mode t)
   (column-number-mode t)
   (show-paren-mode t)
@@ -131,6 +132,10 @@ Some packages that don't fit the other categories
   (use-package which-key
     :init (which-key-mode)
     :diminish which-key-mode)
+
+  (use-package expand-region
+    :bind (("M-[" . er/expand-region)
+           ("C-(" . er/mark-outside-pairs)))
 #+end_src
 
 ** Evil
@@ -152,6 +157,8 @@ Very nice git interface
 
 #+begin_src emacs-lisp
   (use-package magit)
+  (use-package magit-todos
+    :after magit)
 #+end_src
 
 ** Org
