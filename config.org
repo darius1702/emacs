@@ -160,12 +160,7 @@ Some org-mode tweaks
     (setq org-default-notes-file "~/Documents/Org/index.org")
     (setq org-agenda-files '("~/Documents/Org"))
     (setq org-todo-keywords '((sequence "TODO" "IN-PROGRESS" "WAITING" "DONE")))
-    (setq org-return-follows-link t)
-
-    ;; Bullets for list items
-    (font-lock-add-keywords 'org-mode
-                            '(("^ *\\([-]\\) "
-                               (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•")))))))
+    (setq org-return-follows-link t))
 
   (defun darius/org-font-setup ()
     (custom-set-faces '(org-document-title ((t (:height 1.3)))))
@@ -184,7 +179,11 @@ Some org-mode tweaks
     :hook  (org-mode . darius/org-setup)
     :config
     (darius/org-font-setup)
-    (setq org-ellipsis "▾"))
+    (setq org-ellipsis "▾")
+    ;; Bullets for list items
+    (font-lock-add-keywords 'org-mode
+                            '(("^ *\\([-*]\\) "
+                               (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•")))))))
 
   (add-hook 'org-mode-hook 'org-indent-mode)
 
