@@ -46,6 +46,7 @@ Line numbers, parentheses, line highlighting, ...
   (column-number-mode t)
   (show-paren-mode t)
   (global-hl-line-mode t)
+  (global-visual-line-mode t)
   (add-to-list 'write-file-functions 'delete-trailing-whitespace)
 #+end_src
 
@@ -121,11 +122,14 @@ Some packages that don't fit the other categories
 #+end_src
 
 ** Evil
-Not really a fan but text editing is even worse without it
+Not really a fan but text editing is even worse without it.
+I have no idea what needs to go in ~:init~ and what in ~:config~
 
 #+begin_src emacs-lisp
   (use-package evil
-    :init (evil-mode 1)
+    :init
+    (setq evil-want-C-u-scroll t)
+    (evil-mode 1)
     :config
     (setq evil-undo-system 'undo-tree)
     (setq evil-mode-line-format nil))	; no <N> indicator in modeline
