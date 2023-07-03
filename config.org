@@ -47,6 +47,7 @@ Line numbers, parentheses, line highlighting, ...
   (show-paren-mode t)
   (global-hl-line-mode t)
   (global-visual-line-mode t)
+  (diminish global-visual-line-mode)
   (add-to-list 'write-file-functions 'delete-trailing-whitespace)
 #+end_src
 
