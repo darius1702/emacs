@@ -74,13 +74,23 @@ Iosevka is the best font fight me.
 Need to set it in an extra hook to make it work in emacsclient frames.
 
 #+begin_src emacs-lisp
+  (setq darius/fixed-pitch-font "Iosevka Nerd Font Mono")
+  (setq darius/variable-pitch-font "Iosevka Aile")
+
   (defun darius/set-up-fonts ()
-    (set-face-attribute 'default nil :font "Iosevka Nerd Font Mono" :height 180)
-    (set-face-attribute 'variable-pitch nil :font  "Iosevka Aile" :weight 'regular)
-    (set-face-attribute 'fixed-pitch nil :font "Iosevka Nerd Font Mono"))
+    (set-face-attribute 'default nil :font darius/fixed-pitch-font :height 180)
+    (set-face-attribute 'variable-pitch nil :font  darius/variable-pitch-font :weight 'regular)
+    (set-face-attribute 'fixed-pitch nil :font darius/fixed-pitch-font))
 
   (add-hook 'after-init-hook 'darius/set-up-fonts)
   (add-hook 'server-after-make-frame-hook 'darius/set-up-fonts)
+#+end_src
+
+** Colorscheme
+The most important thing tbh
+
+#+begin_src emacs-lisp
+  (load-theme 'modus-vivendi)
 #+end_src
 
 * Packages
@@ -131,7 +141,7 @@ I have no idea what needs to go in ~:init~ and what in ~:config~
     (setq evil-want-C-u-scroll t)
     (evil-mode 1)
     :config
-    (setq evil-undo-system 'undo-tree)
+    (evil-set-undo-system 'undo-tree)
     (setq evil-mode-line-format nil))	; no <N> indicator in modeline
 #+end_src
 
@@ -139,15 +149,47 @@ I have no idea what needs to go in ~:init~ and what in ~:config~
 Very nice git interface
 
 #+begin_src emacs-lisp
-  (use-package magit
-    :ensure t)
+  (use-package magit)
 #+end_src
 
 ** Org
 Some org-mode tweaks
 
 #+begin_src emacs-lisp
+  (defun darius/org-setup ()
+    (setq org-default-notes-file "~/Documents/Org/index.org")
+    (setq org-agenda-files '("~/Documents/Org"))
+    (setq org-todo-keywords '((sequence "TODO" "IN-PROGRESS" "WAITING" "DONE")))
+    (setq org-return-follows-link t)
+
+    ;; Bullets for list items
+    (font-lock-add-keywords 'org-mode
+                            '(("^ *\\([-]\\) "
+                               (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•")))))))
+
+  (defun darius/org-font-setup ()
+    (custom-set-faces '(org-document-title ((t (:height 1.3)))))
+    ;; Larger font size for some headings
+    (dolist (face '((org-level-1 . 1.15)
+                    (org-level-2 . 1.1)
+                    (org-level-3 . 1.05)
+                    (org-level-4 . 1.0)
+                    (org-level-5 . 1.0)
+                    (org-level-6 . 1.0)
+                    (org-level-7 . 1.0)
+                    (org-level-8 . 1.0)))
+      (set-face-attribute (car face) nil :font darius/fixed-pitch-font :weight 'regular :height (cdr face))))
+
+  (use-package org
+    :hook  (org-mode . darius/org-setup)
+    :config
+    (darius/org-font-setup)
+    (setq org-ellipsis "▾"))
+
+  (add-hook 'org-mode-hook 'org-indent-mode)
+
   (use-package org-bullets
+    :after org
     :hook (org-mode . org-bullets-mode))
 #+end_src
 
@@ -203,13 +245,4 @@ Marginalia shows some additional information inside the minibuffer
 #+begin_src emacs-lisp
   (use-package marginalia
     :init (marginalia-mode))
-#+end_src
-
-** Colorscheme
-The most important thing tbh
-
-#+begin_src emacs-lisp
-  (use-package base16-theme
-    :config
-    (load-theme 'base16-tomorrow-night t))
 #+end_src
