@@ -146,10 +146,15 @@ I have no idea what needs to go in ~:init~ and what in ~:config~
   (use-package evil
     :init
     (setq evil-want-C-u-scroll t)
+    (setq evil-want-keybinding nil)
     (evil-mode 1)
     :config
     (evil-set-undo-system 'undo-tree)
     (setq evil-mode-line-format nil))	; no <N> indicator in modeline
+
+  (use-package evil-collection
+    :after evil
+    :config (evil-collection-init))
 #+end_src
 
 ** Magit
@@ -195,6 +200,9 @@ Some org-mode tweaks
                                (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•")))))))
 
   (add-hook 'org-mode-hook 'org-indent-mode)
+
+  ;; Fix weird internal link behavior
+  (with-eval-after-load 'org-ctags (setq org-open-link-functions nil))
 
   (use-package org-bullets
     :after org
