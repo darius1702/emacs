@@ -91,7 +91,7 @@ Need to set it in an extra hook to make it work in emacsclient frames.
 The most important thing tbh
 
 #+begin_src emacs-lisp
-  (load-theme 'modus-vivendi)
+  (load-theme 'modus-operandi)
 #+end_src
 
 * Packages
@@ -161,7 +161,8 @@ I have no idea what needs to go in ~:init~ and what in ~:config~
 Very nice git interface
 
 #+begin_src emacs-lisp
-  (use-package magit)
+  (use-package magit
+    :config (magit-todos-mode t))
   (use-package magit-todos
     :after magit)
 #+end_src
@@ -196,7 +197,7 @@ Some org-mode tweaks
     (setq org-ellipsis "▾")
     ;; Bullets for list items
     (font-lock-add-keywords 'org-mode
-                            '(("^ *\\([-*]\\) "
+                            '(("^ *\\([-]\\) "
                                (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•")))))))
 
   (add-hook 'org-mode-hook 'org-indent-mode)
