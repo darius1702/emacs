@@ -70,6 +70,14 @@ Directory editing
 (setq delete-by-moving-to-trash 1)
 #+end_src
 
+** Default Applications
+Default programs for opening filetypes
+This is probably he wrong way to do it?
+
+#+begin_src emacs-lisp
+(setq org-file-apps '((auto-mode . emacs) (directory . emacs) ("\\.mm\\'" . default) ("\\.x?html?\\'" . default) ("\\.pdf\\'" . "zathura %s")))
+#+end_src
+
 ** Font setup
 Iosevka is the best font fight me.
 Need to set it in an extra hook to make it work in emacsclient frames.
@@ -79,7 +87,7 @@ Need to set it in an extra hook to make it work in emacsclient frames.
 (setq darius/variable-pitch-font "Iosevka Aile")
 
 (defun darius/set-up-fonts ()
-  (set-face-attribute 'default nil :font darius/fixed-pitch-font :height 180)
+  (set-face-attribute 'default nil :font darius/fixed-pitch-font :height 150)
   (set-face-attribute 'variable-pitch nil :font  darius/variable-pitch-font :weight 'regular)
   (set-face-attribute 'fixed-pitch nil :font darius/fixed-pitch-font))
 
@@ -144,12 +152,18 @@ Some packages that don't fit the other categories
 
 (use-package undo-tree
   :diminish
-  :config
-  (global-undo-tree-mode))
+  :config (global-undo-tree-mode))
 
 (use-package git-gutter
   :diminish
-  :config (global-git-gutter-mode t))
+  :init
+  (setq
+   git-gutter:modified-sign "│"
+   git-gutter:added-sign "│"
+   git-gutter:deleted-sign "│")
+  :config
+  (set-face-foreground 'git-gutter:modified "LightSteelBlue")
+  (global-git-gutter-mode t))
 
 (use-package which-key
   :init (which-key-mode)
@@ -236,6 +250,15 @@ Some org-mode tweaks
   (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
 #+end_src
 
+** Citar
+Work with citations
+
+#+begin_src emacs-lisp
+(use-package citar
+  :custom
+  (citar-bibliography '("~/Documents/library.bib")))
+#+end_src
+
 ** Completion
 Set up vertico, orderless and savehist and tweak some emacs completion defaults
 
@@ -295,10 +318,6 @@ The most important thing tbh
 
 #+begin_src emacs-lisp
 ;; (load-theme 'modus-operandi)
-(use-package srcery-theme
-  :init (setq
-         srcery-white        "#e1e1e1"
-         srcery-bright-white "#e1e1e1"
-         srcery-black        "#141414")
-  :config (load-theme 'srcery t))
+(use-package ef-themes
+  :config (load-theme 'ef-bio t))
 #+end_src
