@@ -4,6 +4,13 @@
 #+STARTUP: overview
 
 * Basic window stuff
+** Garbage collection
+Make emacs run garbage collection less often
+
+#+begin_src emacs-lisp
+(setq gc-cons-threshold (eval-when-compile (* 1024 1024 1024)))
+#+end_src
+
 ** Default clutter
 Adjust some default settings
 
@@ -32,7 +39,7 @@ Disble all annoying auto-generated files and make ~custom-set-variables~ go to i
 ;; Enable when lockfiles become annoying
 ;; (setq create-lockfiles nil)
 
-(setq custom-file (concat user-emacs-directory "custom.el"))
+(setq custom-file "/dev/null")
 (when (file-exists-p custom-file)
   (load custom-file))
 #+end_src
@@ -144,10 +151,6 @@ Basic ~package.el~ config
 Some packages that don't fit the other categories
 
 #+begin_src emacs-lisp
-(use-package diminish
-  :diminish visual-line-mode
-  :diminish auto-revert-mode)
-
 (use-package trashed)
 
 (use-package undo-tree
@@ -242,12 +245,6 @@ Some org-mode tweaks
 
 ;; Fix weird internal link behavior
 (with-eval-after-load 'org-ctags (setq org-open-link-functions nil))
-
-(use-package org-bullets
-  :after org
-  :hook (org-mode . org-bullets-mode)
-  :custom
-  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
 #+end_src
 
 ** Citar
@@ -259,7 +256,47 @@ Work with citations
   (citar-bibliography '("~/Documents/library.bib")))
 #+end_src
 
-** Completion
+** LSP Mode
+Set up LSP and some enhancements
+
+#+begin_src emacs-lisp
+(defun darius/lsp-mode-setup ()
+  (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
+  (lsp-headerline-breadcrumb-mode))
+
+
+(use-package lsp-mode
+  :commands (lsp lsp-deferred)
+  :init
+  (setq lsp-keymap-prefix "C-c l")
+  :hook (lsp-mode . darius/lsp-mode-setup)
+  :config
+  (lsp-enable-which-key-integration t))
+
+(use-package lsp-ui
+  :hook (lsp-mode . lsp-ui-mode))
+#+end_src
+
+** Company
+Code completion
+
+#+begin_src emacs-lisp
+(use-package company
+  :after lsp-mode
+  :hook (prog-mode . company-mode)
+  :bind (:map company-active-map
+         ("<tab>" . company-complete-selection))
+        (:map lsp-mode-map
+         ("<tab>" . company-indent-or-complete-common))
+  :custom
+  (company-minimum-prefix-length 1)
+  (company-idle-delay 0.0))
+
+(use-package company-box
+  :hook (company-mode . company-box-mode))
+#+end_src
+
+** Minibuffer completion
 Set up vertico, orderless and savehist and tweak some emacs completion defaults
 
 #+begin_src emacs-lisp
@@ -319,5 +356,15 @@ The most important thing tbh
 #+begin_src emacs-lisp
 ;; (load-theme 'modus-operandi)
 (use-package ef-themes
-  :config (load-theme 'ef-bio t))
+  :config (load-theme 'ef-light t))
+#+end_src
+
+** Diminish
+Get rid of some clutter in the modeline
+
+#+begin_src emacs-lisp
+(use-package diminish
+  :diminish visual-line-mode
+  :diminish auto-revert-mode
+  :diminish evil-collection-unimpaired-mode)
 #+end_src
