@@ -101,35 +101,6 @@ Need to set it in an extra hook to make it work in emacsclient frames.
 (add-hook 'server-after-make-frame-hook 'darius/set-up-fonts)
 #+end_src
 
-* Custom functions
-** dmenu-run launcher
-Requires dmenu
-Use ~dmenu-path~ to get executables and hand them to a completing read.
-
-#+begin_src emacs-lisp
-(defun darius/get_executables_in_path ()
-  (split-string (shell-command-to-string "dmenu_path") "\n"))
-
-(defun darius/run ()
-  (interactive)
-  (let* ((option (completing-read "Run: " (darius/get_executables_in_path))))
-    (start-process option nil option))) ; re-use option for process name as well
-
-(defun darius/launcher ()
-  (interactive)
-  (with-selected-frame
-      (make-frame '((name . "run-command")
-                    (minibuffer . only)
-                    (fullscreen . 0)
-                    (undecorated . t)
-                    (internal-border-width . 10)
-                    (width . 80)
-                    (height . 11)))
-    (unwind-protect
-        (darius/run)
-      (delete-frame))))
-#+end_src
-
 * Packages
 ** Setup
 Basic ~package.el~ config
