@@ -3,7 +3,7 @@
 #+PROPERTY: header-args:emacs-lisp :tangle init.el :mkdirp yes
 #+STARTUP: overview
 
-* Basic window stuff
+* Basic stuff
 ** Garbage collection
 Make emacs run garbage collection less often
 
@@ -16,6 +16,7 @@ Adjust some default settings
 
 #+begin_src emacs-lisp
 (setq inhibit-startup-message t)
+(setq initial-scratch-message "")
 (tool-bar-mode 0)
 (menu-bar-mode 0)
 (scroll-bar-mode 0)
@@ -26,7 +27,7 @@ Adjust some default settings
 #+end_src
 
 ** Annoying files
-Disble all annoying auto-generated files and make ~custom-set-variables~ go to its own file
+Disble all annoying auto-generated files and make ~custom.el~ disappear
 
 #+begin_src emacs-lisp
 (make-directory (expand-file-name "tmp/auto-saves/" user-emacs-directory) t)
@@ -40,8 +41,6 @@ Disble all annoying auto-generated files and make ~custom-set-variables~ go to i
 ;; (setq create-lockfiles nil)
 
 (setq custom-file "/dev/null")
-(when (file-exists-p custom-file)
-  (load custom-file))
 #+end_src
 
 ** Better editing experience
@@ -200,10 +199,10 @@ I have no idea what needs to go in ~:init~ and what in ~:config~
 Very nice git interface
 
 #+begin_src emacs-lisp
+(use-package magit-todos)
 (use-package magit
+  :after magit-todos
   :config (magit-todos-mode t))
-(use-package magit-todos
-  :after magit)
 #+end_src
 
 ** Org
@@ -211,8 +210,9 @@ Some org-mode tweaks
 
 #+begin_src emacs-lisp
 (defun darius/org-setup ()
-  (setq org-default-notes-file "~/Notes/refile.org")
-  (setq org-agenda-files '("~/Notes/*.org"))
+  (setq org-directory "~/Notes")
+  (setq org-default-notes-file (concat org-directory "/scratch.org"))
+  (setq org-agenda-files '("~/Notes"))
   (setq org-todo-keywords '((sequence "TODO" "IN-PROGRESS" "WAITING" "DONE")))
   (setq org-return-follows-link t))
 
@@ -230,8 +230,8 @@ Some org-mode tweaks
     (set-face-attribute (car face) nil :font darius/fixed-pitch-font :weight 'regular :height (cdr face))))
 
 (use-package org
-  :hook  (org-mode . darius/org-setup)
   :config
+  (darius/org-setup)
   (darius/org-font-setup)
   (setq org-src-preserve-indentation nil
         org-edit-src-content-indentation 0)
@@ -275,25 +275,6 @@ Set up LSP and some enhancements
 
 (use-package lsp-ui
   :hook (lsp-mode . lsp-ui-mode))
-#+end_src
-
-** Company
-Code completion
-
-#+begin_src emacs-lisp
-(use-package company
-  :after lsp-mode
-  :hook (prog-mode . company-mode)
-  :bind (:map company-active-map
-         ("<tab>" . company-complete-selection))
-        (:map lsp-mode-map
-         ("<tab>" . company-indent-or-complete-common))
-  :custom
-  (company-minimum-prefix-length 1)
-  (company-idle-delay 0.0))
-
-(use-package company-box
-  :hook (company-mode . company-box-mode))
 #+end_src
 
 ** Minibuffer completion
@@ -356,7 +337,7 @@ The most important thing tbh
 #+begin_src emacs-lisp
 ;; (load-theme 'modus-operandi)
 (use-package ef-themes
-  :config (load-theme 'ef-light t))
+:config (ef-themes-select 'ef-dark))
 #+end_src
 
 ** Diminish
