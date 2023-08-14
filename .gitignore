@@ -1,5 +1,6 @@
 custom.el
 init.el
+early-init.el
 eshell
 auto-save-list
 elpa

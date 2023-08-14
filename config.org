@@ -9,12 +9,12 @@ Prevent some flickering on startup
 
 #+begin_src emacs-lisp :tangle early-init.el
 (setq-default inhibit-redisplay t
-                inhibit-message t)
-  (add-hook 'window-setup-hook
-            (lambda ()
-              (setq-default inhibit-redisplay nil
-                            inhibit-message nil)
-              (redisplay)))
+              inhibit-message t)
+(add-hook 'window-setup-hook
+          (lambda ()
+            (setq-default inhibit-redisplay nil
+                          inhibit-message nil)
+            (redisplay)))
 
 #+end_src
 
@@ -69,7 +69,9 @@ Disble all annoying auto-generated files and make ~custom.el~ disappear
 ;; Enable when lockfiles become annoying
 ;; (setq create-lockfiles nil)
 
-(setq custom-file "/dev/null")
+(setq custom-file (concat user-emacs-directory "custom.el"))
+(when (file-exists-p custom-file)
+  (load custom-file))
 #+end_src
 
 ** Better editing experience
@@ -93,6 +95,27 @@ Make manpages look a little better
 (require 'man)
 (set-face-attribute 'Man-overstrike nil :inherit font-lock-type-face :bold t)
 (set-face-attribute 'Man-underline nil :inherit font-lock-keyword-face :underline t)
+#+end_src
+
+** Ibuffer
+Buffer switching and management
+
+#+begin_src emacs-lisp
+(global-set-key (kbd "C-x C-b") 'ibuffer)
+
+(setq ibuffer-display-summary nil)
+(setq ibuffer-saved-filter-groups
+      (quote (("default"
+               ("dired" (mode . dired-mode))
+               ("org" (mode . org-mode))
+               ("emacs" (or
+                         (name . "^\\*scratch\\*$")
+                         (name . "^\\*Messages\\*$")
+                         (name . "^\\*Async-native-compile-log\\*$")))))))
+
+(add-hook 'ibuffer-mode-hook
+          (lambda ()
+            (ibuffer-switch-to-saved-filter-groups "default")))
 #+end_src
 
 ** Dired
@@ -155,17 +178,6 @@ Some packages that don't fit the other categories
   :diminish
   :config (global-undo-tree-mode))
 
-(use-package git-gutter
-  :diminish
-  :init
-  (setq
-   git-gutter:modified-sign "│"
-   git-gutter:added-sign "│"
-   git-gutter:deleted-sign "│")
-  :config
-  (set-face-foreground 'git-gutter:modified "DeepSkyBlue")
-  (global-git-gutter-mode t))
-
 (use-package which-key
   :init (which-key-mode)
   :diminish which-key-mode)
@@ -173,6 +185,23 @@ Some packages that don't fit the other categories
 (use-package expand-region
   :bind (("M-[" . er/expand-region)
          ("C-(" . er/mark-outside-pairs)))
+#+end_src
+
+** Git-gutter
+Some highlights in the gutter to show git status
+
+#+begin_src emacs-lisp
+(use-package git-gutter
+  :diminish
+  :init
+  (setq
+   git-gutter:update-interval 0
+   git-gutter:modified-sign "│"
+   git-gutter:added-sign "│"
+   git-gutter:deleted-sign "│")
+  :config
+  (set-face-foreground 'git-gutter:modified "DeepSkyBlue")
+  (global-git-gutter-mode t))
 #+end_src
 
 ** Evil
