@@ -56,7 +56,7 @@ Adjust some default settings
 
 * Basic stuff
 ** Annoying files
-Disble all annoying auto-generated files and make ~custom.el~ disappear
+Disble all annoying auto-generated files and make ~custom-set-variables~ go to their own file
 
 #+begin_src emacs-lisp
 (make-directory (expand-file-name "tmp/auto-saves/" user-emacs-directory) t)
@@ -227,7 +227,6 @@ I have no idea what needs to go in ~:init~ and what in ~:config~
 Very nice git interface
 
 #+begin_src emacs-lisp
-(use-package magit-todos)
 (use-package magit
   :after magit-todos
   :config (magit-todos-mode t))
@@ -366,4 +365,14 @@ The most important thing tbh
 ;; (load-theme 'modus-operandi)
 (use-package ef-themes
 :config (ef-themes-select 'ef-dark))
+#+end_src
+
+** Diminish
+Get rid of some clutter in the modeline
+
+#+begin_src emacs-lisp
+(use-package diminish
+  :diminish visual-line-mode
+  :diminish auto-revert-mode
+  :diminish evil-collection-unimpaired-mode)
 #+end_src
