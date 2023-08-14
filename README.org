@@ -1,7 +1,7 @@
 * Emacs config
 ** NOTE
-Do not touch the ~init.el~ file.
-Run ~org-babel-tangle~ in the ~config.org~ file to generate it.
+Do not touch the ~init.el~ and ~early-init.el~ files.
+Run ~org-babel-tangle~ (C-c C-v C-t) in the ~config.org~ file to generate them.
 
 ** TODO More stuff
 - lsp-mode
