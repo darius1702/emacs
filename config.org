@@ -80,7 +80,7 @@ Line numbers, parentheses, line highlighting, ...
 #+begin_src emacs-lisp
 (setq display-line-numbers-type 'relative)
 (setq-default indent-tabs-mode nil)
-(global-display-line-numbers-mode t)
+(add-hook 'prog-mode-hook 'display-line-numbers-mode)
 (column-number-mode t)
 (show-paren-mode t)
 (global-hl-line-mode t)
