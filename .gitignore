@@ -1,7 +1,8 @@
 custom.el
 init.el
 early-init.el
-eshell
+eshell/history
+eshell/lastdir
 auto-save-list
 elpa
 ido.last
@@ -17,3 +18,5 @@ bookmarks
 eln-cache
 tree-sitter
 .cache
+multisession/
+.lsp-session-v1

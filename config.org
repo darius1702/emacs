@@ -78,6 +78,7 @@ Disble all annoying auto-generated files and make ~custom-set-variables~ go to t
 Line numbers, parentheses, line highlighting, ...
 
 #+begin_src emacs-lisp
+(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 (setq display-line-numbers-type 'relative)
 (setq-default indent-tabs-mode nil)
 (add-hook 'prog-mode-hook 'display-line-numbers-mode)
@@ -102,20 +103,37 @@ Buffer switching and management
 
 #+begin_src emacs-lisp
 (global-set-key (kbd "C-x C-b") 'ibuffer)
-
+(setq ibuffer-expert t)
 (setq ibuffer-display-summary nil)
 (setq ibuffer-saved-filter-groups
       (quote (("default"
-               ("dired" (mode . dired-mode))
-               ("org" (mode . org-mode))
-               ("emacs" (or
+               ("Code" (or (derived-mode . prog-mode) (mode . ess-mode)
+                           (mode . compilation-mode)))
+               ("Dired" (mode . dired-mode))
+               ("Org" (mode . org-mode))
+               ("Emacs" (or
                          (name . "^\\*scratch\\*$")
                          (name . "^\\*Messages\\*$")
                          (name . "^\\*Async-native-compile-log\\*$")))))))
 
+(setq ibuffer-formats
+      '((mark modified read-only vc-status-mini " "
+              (name 18 18 :left :elide)
+              " "
+              (size 9 -1 :right)
+              " "
+              (mode 16 16 :left :elide)
+              " "
+              (vc-status 16 16 :left)
+              " "
+              vc-relative-file)))
+
 (add-hook 'ibuffer-mode-hook
           (lambda ()
-            (ibuffer-switch-to-saved-filter-groups "default")))
+            (ibuffer-switch-to-saved-filter-groups "default")
+            (ibuffer-auto-mode t)))
+
+(use-package ibuffer-vc)
 #+end_src
 
 ** Dired
@@ -272,6 +290,7 @@ Some org-mode tweaks
 
 ;; Fix weird internal link behavior
 (with-eval-after-load 'org-ctags (setq org-open-link-functions nil))
+(global-set-key (kbd "C-x C-a") 'org-agenda)
 #+end_src
 
 ** Citar
@@ -287,21 +306,56 @@ Work with citations
 Set up LSP and some enhancements
 
 #+begin_src emacs-lisp
-(defun darius/lsp-mode-setup ()
-  (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
-  (lsp-headerline-breadcrumb-mode))
-
-
 (use-package lsp-mode
   :commands (lsp lsp-deferred)
   :init
   (setq lsp-keymap-prefix "C-c l")
-  :hook (lsp-mode . darius/lsp-mode-setup)
-  :config
-  (lsp-enable-which-key-integration t))
+  :config (lsp-enable-which-key-integration t))
 
 (use-package lsp-ui
   :hook (lsp-mode . lsp-ui-mode))
+#+end_src
+
+** Completion
+Corfu for in-buffer completion
+
+#+begin_src emacs-lisp
+(use-package corfu
+  :custom
+  (corfu-cycle t)
+  (corfu-auto nil)
+  (corfu-auto-prefix 0)
+  (corfu-auto-delay 0)
+  (corfu-separator ?\s)          ;; Orderless field separator
+  ;; (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
+  ;; (corfu-quit-no-match nil)      ;; Never quit, even if there is no match
+  ;; (corfu-preview-current nil)    ;; Disable current candidate preview
+  ;; (corfu-preselect 'prompt)      ;; Preselect the prompt
+  ;; (corfu-on-exact-match nil)     ;; Configure handling of exact matches
+  ;; (corfu-scroll-margin 5)        ;; Use scroll margin
+
+  :bind
+  (:map corfu-map
+        ("C-n" . corfu-next)
+        ("C-p" . corfu-previous)
+        ("RET" . nil))
+
+  :init (global-corfu-mode))
+
+;; A few more useful configurations...
+(use-package emacs
+  :init
+  ;; TAB cycle if there are only few candidates
+  (setq completion-cycle-threshold 3)
+
+  ;; Emacs 28: Hide commands in M-x which do not apply to the current mode.
+  ;; Corfu commands are hidden, since they are not supposed to be used via M-x.
+  ;; (setq read-extended-command-predicate
+  ;;       #'command-completion-default-include-p)
+
+  ;; Enable indentation+completion using the TAB key.
+  ;; `completion-at-point' is often bound to M-TAB.
+  (setq tab-always-indent 'complete))
 #+end_src
 
 ** Minibuffer completion
@@ -375,4 +429,160 @@ Get rid of some clutter in the modeline
   :diminish visual-line-mode
   :diminish auto-revert-mode
   :diminish evil-collection-unimpaired-mode)
+#+end_src
+
+* Window Management
+Emacs as an X window manager!
+
+** Custom functions
+Some functions to make stuff easier
+
+#+begin_src emacs-lisp
+(defun darius/get_executables_in_path ()
+  (split-string (shell-command-to-string "dmenu_path") "\n"))
+
+(defun darius/run ()
+  (interactive)
+  (let* ((option (completing-read "Run: " (darius/get_executables_in_path))))
+    (start-process option nil option))) ;; re-use option for process name as well
+
+(defun darius/exwm-update-class ()
+  (exwm-workspace-rename-buffer exwm-class-name))
+
+(defun darius/exwm-update-title ()
+  (pcase exwm-class-name
+    ("firefox" (exwm-workspace-rename-buffer (format "Firefox: %s" exwm-title)))))
+
+(defun darius/run-in-background (command)
+  (let ((command-parts (split-string command "[ ]+")))
+    (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
+
+(defun darius/volume-up ()
+  (start-process-shell-command "pactl  -- set-sink-volume @DEFAULT_SINK@ +5%" nil "pactl  -- set-sink-volume @DEFAULT_SINK@ +5%"))
+
+(defun darius/volume-down ()
+  (start-process-shell-command "pactl  -- set-sink-volume @DEFAULT_SINK@ +5%" nil "pactl  -- set-sink-volume @DEFAULT_SINK@ -5%"))
+
+(defun darius/volume-mute ()
+  (start-process-shell-command "pactl  -- set-sink-volume @DEFAULT_SINK@ +5%" nil "pactl  -- set-sink-volume @DEFAULT_SINK@ toggle"))
+
+(defun darius/mic-mute ()
+  (start-process-shell-command "pactl  -- set-source-mute 0 toggle" nil "pactl  -- set-source-mute 0 toggle"))
+
+(defun darius/brightness-up ()
+  (start-process-shell-command "brightnessctl s 30+" nil "brightnessctl s 30+"))
+
+(defun darius/brightness-down ()
+  (start-process-shell-command "brightnessctl s 30-" nil "brightnessctl s 30-"))
+
+(defun darius/lock-screen ()
+  (start-process-shell-command "~/.config/i3/lock.sh" nil "~/.config/i3/lock.sh"))
+
+(defun darius/trackpad-toggle ()
+  (start-process-shell-command "~/Dotfiles/scripts/toggle_trackpad.sh" nil "~/Dotfiles/scripts/toggle_trackpad.sh"))
+#+end_src
+
+** Startup hook
+Hook that runs on EXWM startup, setting up keybindings and some other things
+
+#+begin_src emacs-lisp
+(defun darius/exwm-init-hook ()
+  ;; Make workspace 1 be the one where we land at startup
+  (exwm-workspace-switch-create 1)
+
+  ;; Show battery status in the mode line
+  (display-battery-mode 1)
+
+  ;; Launch apps that will run in the background
+  (darius/run-in-background "nm-applet"))
+
+  ;; Screen lock
+  (exwm-input-set-key (kbd "C-s-l") (lambda () (interactive) (darius/lock-screen)))
+
+  ;; Media Keys
+  (exwm-input-set-key (kbd "<XF86AudioRaiseVolume>") (lambda () (interactive) (darius/volume-up)))
+  (exwm-input-set-key (kbd "<XF86AudioLowerVolume>") (lambda () (interactive) (darius/volume-down)))
+  (exwm-input-set-key (kbd "<XF86AudioMute>") (lambda () (interactive) (darius/volume-mute)))
+  (exwm-input-set-key (kbd "<XF86AudioMicMute>") (lambda () (interactive) (darius/mic-mute)))
+  (exwm-input-set-key (kbd "<XF86MonBrightnessUp>") (lambda () (interactive) (darius/brightness-up)))
+  (exwm-input-set-key (kbd "<XF86MonBrightnessDown>") (lambda () (interactive) (darius/brightness-down)))
+  (exwm-input-set-key (kbd "<XF86Favorites>") (lambda () (interactive) (darius/trackpad-toggle)))
+#+end_src
+
+** EXWM setup
+EXWM config stuff
+
+#+begin_src emacs-lisp
+(use-package exwm
+  :config
+  ;; Set the default number of workspaces
+  (setq exwm-workspace-number 10)
+
+  ;; When EXWM starts up, do some extra configuration
+  (add-hook 'exwm-init-hook #'darius/exwm-init-hook)
+
+  ;; When window "class" updates, use it to set the buffer name
+  ;; Also update firefox buffer name based on window title
+  (add-hook 'exwm-update-class-hook #'darius/exwm-update-class)
+  (add-hook 'exwm-update-title-hook #'darius/exwm-update-title)
+
+  ;; Rebind CapsLock to Ctrl
+  ;; (start-process-shell-command "xmodmap" nil "xmodmap ~/.emacs.d/exwm/Xmodmap")
+
+  ;; Set the screen resolution (update this to be the correct resolution for your screen!)
+  (require 'exwm-randr)
+  (exwm-randr-enable)
+  ;; (start-process-shell-command "xrandr" nil "xrandr --output Virtual-1 --primary --mode 2048x1152 --pos 0x0 --rotate normal")
+
+  ;; Load the system tray before exwm-init
+  (require 'exwm-systemtray)
+  (exwm-systemtray-enable)
+
+  ;; These keys should always pass through to Emacs
+  (setq exwm-input-prefix-keys
+        '(?\C-x
+          ?\C-u
+          ?\C-h
+          ?\C-w ;; Evil window management
+          ?\M-x
+          ?\M-`
+          ?\M-&
+          ?\M-:
+          ?\C-\ ))  ;; Ctrl+Space
+
+  ;; Ctrl+Q will enable the next key to be sent directly
+  (define-key exwm-mode-map [?\C-q] 'exwm-input-send-next-key)
+
+  ;; Set up global key bindings.  These always work, no matter the input state!
+  ;; Keep in mind that changing this list after EXWM initializes has no effect.
+  (setq exwm-input-global-keys
+        `(
+          ;; Reset to line-mode (C-c C-k switches to char-mode via exwm-input-release-keyboard)
+          ([?\s-r] . exwm-reset)
+
+          ;; Move between windows
+          ([?\s-h] . windmove-left)
+          ([?\s-j] . windmove-down)
+          ([?\s-k] . windmove-up)
+          ([?\s-l] . windmove-right)
+
+          ;; Launch applications via shell command
+          ([?\s-d] . (lambda ()
+                       (interactive)
+                       (darius/run)))
+
+          ([?\s-&] . (lambda (command)
+                       (interactive (list (read-shell-command "$: ")))
+                       (start-process-shell-command command nil command)))
+
+          ;; Switch workspace
+          ([?\s-w] . exwm-workspace-switch)
+
+          ;; 's-N': Switch to certain workspace with Super (Win) plus a number key (0 - 9)
+          ,@(mapcar (lambda (i)
+                      `(,(kbd (format "s-%d" i)) .
+                        (lambda ()
+                          (interactive)
+                          (exwm-workspace-switch-create ,i))))
+                    (number-sequence 0 9)))))
 #+end_src
