@@ -457,28 +457,48 @@ Some functions to make stuff easier
   (let ((command-parts (split-string command "[ ]+")))
     (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
 
-(defun darius/volume-up ()
-  (start-process-shell-command "pactl  -- set-sink-volume @DEFAULT_SINK@ +5%" nil "pactl  -- set-sink-volume @DEFAULT_SINK@ +5%"))
+(defun darius/set-volume (amount)
+  "Set the system volume to the AMOUNT string using pactl"
+  (let ((command (format "pactl -- set-sink-volume @DEFAULT_SINK@ %s" amount)))
+    (start-process-shell-command command nil command)))
 
-(defun darius/volume-down ()
-  (start-process-shell-command "pactl  -- set-sink-volume @DEFAULT_SINK@ +5%" nil "pactl  -- set-sink-volume @DEFAULT_SINK@ -5%"))
+(defun darius/volume-up-percent (amount)
+  "Increase system volume by AMOUNT percent"
+  (darius/set-volume (format "+%d%%" amount)))
+
+(defun darius/volume-down-percent (amount)
+  "Decrease system volume by AMOUNT percent"
+  (darius/set-volume (format "-%d%%" amount)))
 
 (defun darius/volume-mute ()
-  (start-process-shell-command "pactl  -- set-sink-volume @DEFAULT_SINK@ +5%" nil "pactl  -- set-sink-volume @DEFAULT_SINK@ toggle"))
+  "Mute system volume using pactl"
+  (let ((command "pactl -- set-sink-mute @DEFAULT_SINK@ toggle"))
+    (start-process-shell-command command nil command)))
 
 (defun darius/mic-mute ()
-  (start-process-shell-command "pactl  -- set-source-mute 0 toggle" nil "pactl  -- set-source-mute 0 toggle"))
+  "Mute the microphone using pactl"
+  (let ((command "pactl -- set-source-mute 0 toggle"))
+    (start-process-shell-command command nil command)))
 
-(defun darius/brightness-up ()
-  (start-process-shell-command "brightnessctl s 30+" nil "brightnessctl s 30+"))
+(defun darius/set-brightness (amount)
+  "Pass AMOUNT string to brightnessctl"
+  (let ((command (format "brightnessctl s %s" amount)))
+    (start-process-shell-command command nil command)))
 
-(defun darius/brightness-down ()
-  (start-process-shell-command "brightnessctl s 30-" nil "brightnessctl s 30-"))
+(defun darius/brightness-up (amount)
+  "Increase screen brightness by AMOUNT"
+  (darius/set-brightness (format "%d+" amount)))
+
+(defun darius/brightness-down (amount)
+  "Decrease screen brightness by AMOUNT"
+  (darius/set-brightness (format "%d-" amount)))
 
 (defun darius/lock-screen ()
+  "Lock the screen using i3lock"
   (start-process-shell-command "~/.config/i3/lock.sh" nil "~/.config/i3/lock.sh"))
 
 (defun darius/trackpad-toggle ()
+  "Disable the trackpad using xinput"
   (start-process-shell-command "~/Dotfiles/scripts/toggle_trackpad.sh" nil "~/Dotfiles/scripts/toggle_trackpad.sh"))
 #+end_src
 
@@ -500,12 +520,12 @@ Hook that runs on EXWM startup, setting up keybindings and some other things
   (exwm-input-set-key (kbd "C-s-l") (lambda () (interactive) (darius/lock-screen)))
 
   ;; Media Keys
-  (exwm-input-set-key (kbd "<XF86AudioRaiseVolume>") (lambda () (interactive) (darius/volume-up)))
-  (exwm-input-set-key (kbd "<XF86AudioLowerVolume>") (lambda () (interactive) (darius/volume-down)))
+  (exwm-input-set-key (kbd "<XF86AudioRaiseVolume>") (lambda () (interactive) (darius/volume-up-percent 5)))
+  (exwm-input-set-key (kbd "<XF86AudioLowerVolume>") (lambda () (interactive) (darius/volume-down-percent 5)))
   (exwm-input-set-key (kbd "<XF86AudioMute>") (lambda () (interactive) (darius/volume-mute)))
   (exwm-input-set-key (kbd "<XF86AudioMicMute>") (lambda () (interactive) (darius/mic-mute)))
-  (exwm-input-set-key (kbd "<XF86MonBrightnessUp>") (lambda () (interactive) (darius/brightness-up)))
-  (exwm-input-set-key (kbd "<XF86MonBrightnessDown>") (lambda () (interactive) (darius/brightness-down)))
+  (exwm-input-set-key (kbd "<XF86MonBrightnessUp>") (lambda () (interactive) (darius/brightness-up 20)))
+  (exwm-input-set-key (kbd "<XF86MonBrightnessDown>") (lambda () (interactive) (darius/brightness-down 20)))
   (exwm-input-set-key (kbd "<XF86Favorites>") (lambda () (interactive) (darius/trackpad-toggle)))
 #+end_src
 
