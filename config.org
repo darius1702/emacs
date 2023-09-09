@@ -15,7 +15,6 @@ Prevent some flickering on startup
             (setq-default inhibit-redisplay nil
                           inhibit-message nil)
             (redisplay)))
-
 #+end_src
 
 ** Faster startup
@@ -82,9 +81,9 @@ Line numbers, parentheses, line highlighting, ...
 (setq display-line-numbers-type 'relative)
 (setq-default indent-tabs-mode nil)
 (add-hook 'prog-mode-hook 'display-line-numbers-mode)
+(add-hook 'prog-mode-hook 'hl-line-mode)
 (column-number-mode t)
 (show-paren-mode t)
-(global-hl-line-mode t)
 (global-visual-line-mode t)
 (add-to-list 'write-file-functions 'delete-trailing-whitespace)
 #+end_src
@@ -219,7 +218,7 @@ Some highlights in the gutter to show git status
    git-gutter:deleted-sign "│")
   :config
   (set-face-foreground 'git-gutter:modified "DeepSkyBlue")
-  (global-git-gutter-mode t))
+  :hook (prog-mode . git-gutter-mode))
 #+end_src
 
 ** Evil
@@ -287,6 +286,10 @@ Some org-mode tweaks
                              (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•")))))))
 
 (add-hook 'org-mode-hook 'org-indent-mode)
+
+;; Make RET still follow links
+(with-eval-after-load 'evil-maps
+  (define-key evil-motion-state-map (kbd "RET") nil))
 
 ;; Fix weird internal link behavior
 (with-eval-after-load 'org-ctags (setq org-open-link-functions nil))
@@ -416,9 +419,10 @@ Marginalia shows some additional information inside the minibuffer
 The most important thing tbh
 
 #+begin_src emacs-lisp
-;; (load-theme 'modus-operandi)
-(use-package ef-themes
-:config (ef-themes-select 'ef-dark))
+;; (use-package ef-themes
+;;   :config (ef-themes-select 'ef-dark))
+(use-package doom-themes
+  :init (load-theme 'doom-tomorrow-night t)))
 #+end_src
 
 ** Diminish

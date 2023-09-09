@@ -20,3 +20,4 @@ tree-sitter
 .cache
 multisession/
 .lsp-session-v1
+themes

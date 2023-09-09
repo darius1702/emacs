@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=EXWM
+Comment=Emacs X Window Manager
+Exec=sh /home/darius/.emacs.d/exwm/start_exwm.sh
+TryExec=sh
+Type=Application
+X-LightDM-DesktopName=exwm
+DesktopNames=exwm
