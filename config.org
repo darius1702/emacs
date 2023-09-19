@@ -8,6 +8,7 @@
 Prevent some flickering on startup
 
 #+begin_src emacs-lisp :tangle early-init.el
+;; -*- lexical-binding: t -*-
 (setq-default inhibit-redisplay t
               inhibit-message t)
 (add-hook 'window-setup-hook
@@ -58,6 +59,7 @@ Adjust some default settings
 Disble all annoying auto-generated files and make ~custom-set-variables~ go to their own file
 
 #+begin_src emacs-lisp
+;; -*- lexical-binding: t -*-
 (make-directory (expand-file-name "tmp/auto-saves/" user-emacs-directory) t)
 (setq auto-save-list-file-prefix (expand-file-name "tmp/auto-saves/sessions/" user-emacs-directory)
       auto-save-file-name-transforms `((".*" ,(expand-file-name "tmp/auto-saves/" user-emacs-directory) t)))
@@ -199,6 +201,10 @@ Some packages that don't fit the other categories
   :init (which-key-mode)
   :diminish which-key-mode)
 
+(use-package rainbow-mode
+  :init (rainbow-mode)
+  :diminish rainbow-mode)
+
 (use-package expand-region
   :bind (("M-[" . er/expand-region)
          ("C-(" . er/mark-outside-pairs)))
@@ -305,20 +311,6 @@ Work with citations
   (citar-bibliography '("~/Documents/library.bib")))
 #+end_src
 
-** LSP Mode
-Set up LSP and some enhancements
-
-#+begin_src emacs-lisp
-(use-package lsp-mode
-  :commands (lsp lsp-deferred)
-  :init
-  (setq lsp-keymap-prefix "C-c l")
-  :config (lsp-enable-which-key-integration t))
-
-(use-package lsp-ui
-  :hook (lsp-mode . lsp-ui-mode))
-#+end_src
-
 ** Completion
 Corfu for in-buffer completion
 
@@ -416,13 +408,27 @@ Marginalia shows some additional information inside the minibuffer
 #+end_src
 
 ** Colorscheme
-The most important thing tbh
+The most important thing tbh.
+doom-everforest theme depends on the ~doom-themes~ package
+- [ ] Get rid of ~doom-themes~ dependency
 
 #+begin_src emacs-lisp
-;; (use-package ef-themes
-;;   :config (ef-themes-select 'ef-dark))
-(use-package doom-themes
-  :init (load-theme 'doom-tomorrow-night t)))
+(add-to-list 'custom-theme-load-path "~/.emacs.d/doom-everforest-theme")
+(setq doom-everforest-background "hard")
+(use-package doom-themes)
+
+(defun toggle-mode-line-buffer-id-face (window)
+  "Color the filename in the currently selected buffer based on whether it's modified and dim it in inactive buffers"
+  (with-current-buffer (window-buffer window)
+    (if (not (eq (current-buffer) (window-buffer (selected-window))))
+        (face-remap-set-base 'mode-line-buffer-id '(:foreground "#414b50"))
+      (if (buffer-modified-p)
+        (face-remap-set-base 'mode-line-buffer-id '(:foreground "#e67e80"))
+        (face-remap-set-base 'mode-line-buffer-id '(:foreground "#a7c080"))))))
+
+(add-hook 'post-command-hook (lambda () (walk-windows #'toggle-mode-line-buffer-id-face nil t)))
+
+(load-theme 'doom-everforest t)
 #+end_src
 
 ** Diminish

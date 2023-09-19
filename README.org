@@ -3,6 +3,9 @@
 Do not touch the ~init.el~ and ~early-init.el~ files.
 Run ~org-babel-tangle~ (C-c C-v C-t) in the ~config.org~ file to generate them.
 
+** Colorscheme
+The colorscheme is a modified version of [[https://github.com/Cardoso1994/doom-everforest-theme][doom-everforest-theme]] by Cardoso1994 on GitHub.
+
 ** TODO More stuff
 - lsp-mode
   - lsp-ui
