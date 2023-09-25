@@ -22,8 +22,7 @@ Prevent some flickering on startup
 Change some variables until after startup to make emacs load faster
 
 #+begin_src emacs-lisp :tangle early-init.el
-(defvar darius/gc-cons-threshold gc-cons-threshold)
-(setq gc-cons-threshold most-positive-fixnum)
+(setq gc-cons-threshold (* 1000 1000 1000))
 
 (defvar darius/file-name-handler-alist file-name-handler-alist)
 (setq file-name-handler-alist nil)
@@ -33,8 +32,7 @@ Change some variables until after startup to make emacs load faster
 
 (add-hook 'emacs-startup-hook
           (lambda ()
-            (setq gc-cons-threshold darius/gc-cons-threshold
-                  file-name-handler-alist darius/file-name-handler-alist
+            (setq file-name-handler-alist darius/file-name-handler-alist
                   vc-handled-backends darius/vc-handled-backends)))
 #+end_src
 
@@ -43,6 +41,7 @@ Adjust some default settings
 
 #+begin_src emacs-lisp :tangle early-init.el
 (setq inhibit-startup-message t)
+(setq native-comp-async-report-warnings-errors nil)
 (setq initial-scratch-message "")
 (setq server-client-instructions nil)
 (tool-bar-mode 0)
@@ -76,18 +75,26 @@ Disble all annoying auto-generated files and make ~custom-set-variables~ go to t
 #+end_src
 
 ** Better editing experience
-Line numbers, parentheses, line highlighting, ...
+Some sensible defaults
 
 #+begin_src emacs-lisp
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+(global-unset-key (kbd "C-x C-c"))      ; stop accidentally quitting emacs
+
 (setq display-line-numbers-type 'relative)
 (setq-default indent-tabs-mode nil)
-(add-hook 'prog-mode-hook 'display-line-numbers-mode)
-(add-hook 'prog-mode-hook 'hl-line-mode)
 (column-number-mode t)
 (show-paren-mode t)
 (global-visual-line-mode t)
 (add-to-list 'write-file-functions 'delete-trailing-whitespace)
+#+end_src
+
+** Prog-mode setup
+Make programming-modes a little nicer with line numbers and current line highlighting
+
+#+begin_src emacs-lisp
+(add-hook 'prog-mode-hook 'display-line-numbers-mode)
+(add-hook 'prog-mode-hook 'hl-line-mode)
 #+end_src
 
 ** Man pages
@@ -138,10 +145,19 @@ Buffer switching and management
 #+end_src
 
 ** Dired
-Directory editing
+Make dired recognize other buffers as copy/move targets and also list human-readable filesizes
 
 #+begin_src emacs-lisp
 (setq dired-dwim-target 1)
+(setq dired-listing-switches "-alh"):config
+
+(use-package dired-open
+  :config
+  (setq dired-open-extensions '(("pdf" . "zathura")
+                                ("jpg" . "sxiv")
+                                ("png" . "sxiv")
+                                ("mkv" . "mpv")
+                                ("mp4" . "mpv"))))
 #+end_src
 
 ** Default Applications
@@ -197,6 +213,8 @@ Some packages that don't fit the other categories
   :diminish
   :config (global-undo-tree-mode))
 
+(use-package consult)
+
 (use-package which-key
   :init (which-key-mode)
   :diminish which-key-mode)
@@ -223,7 +241,7 @@ Some highlights in the gutter to show git status
    git-gutter:added-sign "│"
    git-gutter:deleted-sign "│")
   :config
-  (set-face-foreground 'git-gutter:modified "DeepSkyBlue")
+  (set-face-foreground 'git-gutter:modified "#7fbbb3")
   :hook (prog-mode . git-gutter-mode))
 #+end_src
 
@@ -253,6 +271,78 @@ Very nice git interface
 (use-package magit
   :after magit-todos
   :config (magit-todos-mode t))
+#+end_src
+
+** General
+Setup keybindings
+
+#+begin_src emacs-lisp
+(use-package general
+  :config (general-evil-setup)
+
+  (general-create-definer darius/leader-keys
+    :states '(normal visual)
+    :keymaps 'override
+    :prefix "SPC")
+
+  (darius/leader-keys
+   "SPC" '(switch-to-buffer            :wk "Switch to buffer")
+   "/"   '(consult-line                :wk "Consult line")
+   "d"   '(dired                       :wk "Dired")
+   "p"   '(consult-yank-from-kill-ring :wk "Paste from history")
+   "x"   '(execute-extended-command    :wk "M-x")	)
+
+  (darius/leader-keys
+   "b"   '(:ignore t                   :wk "Buffer")
+   "b b" '(ibuffer                     :wk "Ibuffer")
+   "b f" '(consult-buffer              :wk "Find")
+   "b k" '(kill-buffer                 :wk "Kill"))
+
+  (darius/leader-keys
+   "c"   '(:ignore t                   :wk "Compiler")
+   "c c" '(compile                     :wk "Compile")
+   "c e" '(consult-compile-error       :wk "Goto error")
+   "c r" '(recompile                   :wk "Recompile"))
+
+  (darius/leader-keys
+   "f"   '(:ignore t                   :wk "Find")
+   "f f" '(find-file                   :wk "File")
+   "f g" '(consult-ripgrep             :wk "Grep")
+   "f i" '(consult-imenu-multi         :wk "Imenu")
+   "f m" '(man                         :wk "Manpage"))
+
+  (darius/leader-keys
+   "g"   '(:ignore t                   :wk "Git")
+   "g n" '(git-gutter:next-hunk        :wk "Next hunk")
+   "g p" '(git-gutter:previous-hunk    :wk "Previous hunk")
+   "g s" '(magit-status                :wk "Status")
+   "g v" '(git-gutter:popup-hunk       :wk "View hunk"))
+
+  (darius/leader-keys
+   "h"   '(:ignore t                   :wk "Help")
+   "h f" '(describe-function           :wk "Function")
+   "h k" '(describe-key                :wk "Key")
+   "h v" '(describe-variable           :wk "Variable"))
+
+  (darius/leader-keys
+   "o"   '(:ignore t                   :wk "Org")
+   "o a" '(org-agenda                  :wk "Agenda")
+   "o c" '(org-ctrl-c-ctrl-c           :wk "C-c C-c")
+   "o f" '(consult-org-agenda          :wk "Find in Agenda")
+   "o h" '(consult-org-heading         :wk "Heading")
+   "o p" '(org-insert-link             :wk "Insert link")
+   "o t" '(org-todo                    :wk "Todo")
+   "o y" '(org-store-link              :wk "Copy link"))
+
+  (darius/leader-keys
+   "w"   '(:ignore t                   :wk "Window")
+   "w h" '(evil-window-left            :wk "Left")
+   "w j" '(evil-window-down            :wk "Down")
+   "w k" '(evil-window-up              :wk "Up")
+   "w l" '(evil-window-right           :wk "Right")
+   "w n" '(evil-window-new             :wk "New")
+   "w q" '(evil-quit                   :wk "Quit")
+   "w w" '(evil-window-next            :wk "Next")))
 #+end_src
 
 ** Org
@@ -299,7 +389,6 @@ Some org-mode tweaks
 
 ;; Fix weird internal link behavior
 (with-eval-after-load 'org-ctags (setq org-open-link-functions nil))
-(global-set-key (kbd "C-x C-a") 'org-agenda)
 #+end_src
 
 ** Citar
@@ -311,7 +400,7 @@ Work with citations
   (citar-bibliography '("~/Documents/library.bib")))
 #+end_src
 
-** Completion
+** Completion at point
 Corfu for in-buffer completion
 
 #+begin_src emacs-lisp
@@ -415,9 +504,12 @@ doom-everforest theme depends on the ~doom-themes~ package
 #+begin_src emacs-lisp
 (add-to-list 'custom-theme-load-path "~/.emacs.d/doom-everforest-theme")
 (setq doom-everforest-background "hard")
-(use-package doom-themes)
+(use-package doom-themes
+:config
+(doom-themes-org-config)
+(setq doom-themes-enable-italic nil))
 
-(defun toggle-mode-line-buffer-id-face (window)
+(defun darius/set-buffer-name-color (window)
   "Color the filename in the currently selected buffer based on whether it's modified and dim it in inactive buffers"
   (with-current-buffer (window-buffer window)
     (if (not (eq (current-buffer) (window-buffer (selected-window))))
@@ -426,7 +518,7 @@ doom-everforest theme depends on the ~doom-themes~ package
         (face-remap-set-base 'mode-line-buffer-id '(:foreground "#e67e80"))
         (face-remap-set-base 'mode-line-buffer-id '(:foreground "#a7c080"))))))
 
-(add-hook 'post-command-hook (lambda () (walk-windows #'toggle-mode-line-buffer-id-face nil t)))
+(add-hook 'post-command-hook (lambda () (walk-windows #'darius/set-buffer-name-color nil t)))
 
 (load-theme 'doom-everforest t)
 #+end_src
