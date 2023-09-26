@@ -81,6 +81,7 @@ Some sensible defaults
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 (global-unset-key (kbd "C-x C-c"))      ; stop accidentally quitting emacs
 
+(setq read-buffer-completion-ignore-case t)
 (setq display-line-numbers-type 'relative)
 (setq-default indent-tabs-mode nil)
 (column-number-mode t)
@@ -206,23 +207,59 @@ Basic ~package.el~ config
 #+end_src
 
 ** Useful random stuff
-Some packages that don't fit the other categories
+Some packages that don't require much configuration
+
+*** Magit
+Very nice git interface
+
+#+begin_src emacs-lisp
+(use-package magit)
+#+end_src
+
+*** Marginalia
+Usful info in the minibuffer
+
+#+begin_src emacs-lisp
+(use-package marginalia
+  :init (marginalia-mode))
+#+end_src
+
+*** Rainbow-mode
+Colorize strings like #a7c080
+
+#+begin_src emacs-lisp
+(use-package rainbow-mode
+  :init (rainbow-mode)
+  :diminish rainbow-mode)
+#+end_src
+
+*** Consult
+Some nice additional completing-read stuff
+
+#+begin_src emacs-lisp
+(use-package consult)
+#+end_src
+
+*** Undo-tree
+Tree-like undo functionality
 
 #+begin_src emacs-lisp
 (use-package undo-tree
   :diminish
   :config (global-undo-tree-mode))
+#+end_src
 
-(use-package consult)
+*** Which-key
 
+#+begin_src emacs-lisp
 (use-package which-key
   :init (which-key-mode)
   :diminish which-key-mode)
+#+end_src
 
-(use-package rainbow-mode
-  :init (rainbow-mode)
-  :diminish rainbow-mode)
+*** Expand-region
 
+#+begin_src emacs-lisp
 (use-package expand-region
   :bind (("M-[" . er/expand-region)
          ("C-(" . er/mark-outside-pairs)))
@@ -259,18 +296,13 @@ I have no idea what needs to go in ~:init~ and what in ~:config~
   (evil-set-undo-system 'undo-tree)
   (setq evil-mode-line-format nil))	; no <N> indicator in modeline
 
+;; Make RET still follow links in org mode
+(with-eval-after-load 'evil-maps
+  (define-key evil-motion-state-map (kbd "RET") nil))
+
 (use-package evil-collection
   :after evil
   :config (evil-collection-init))
-#+end_src
-
-** Magit
-Very nice git interface
-
-#+begin_src emacs-lisp
-(use-package magit
-  :after magit-todos
-  :config (magit-todos-mode t))
 #+end_src
 
 ** General
@@ -286,63 +318,82 @@ Setup keybindings
     :prefix "SPC")
 
   (darius/leader-keys
-   "SPC" '(switch-to-buffer            :wk "Switch to buffer")
-   "/"   '(consult-line                :wk "Consult line")
-   "d"   '(dired                       :wk "Dired")
-   "p"   '(consult-yank-from-kill-ring :wk "Paste from history")
-   "x"   '(execute-extended-command    :wk "M-x")	)
+   "SPC" '(switch-to-buffer             :wk "Switch to buffer")
+   "/"   '(consult-line                 :wk "Consult line")
+   "d"   '(dired                        :wk "Dired")
+   "p"   '(consult-yank-from-kill-ring  :wk "Paste from history")
+   "x"   '(execute-extended-command     :wk "M-x"))
 
   (darius/leader-keys
-   "b"   '(:ignore t                   :wk "Buffer")
-   "b b" '(ibuffer                     :wk "Ibuffer")
-   "b f" '(consult-buffer              :wk "Find")
-   "b k" '(kill-buffer                 :wk "Kill"))
+   "b"   '(:ignore t                    :wk "Buffer")
+   "b b" '(ibuffer                      :wk "Ibuffer")
+   "b f" '(consult-buffer               :wk "Find")
+   "b k" '(kill-buffer                  :wk "Kill")
+   "b w" '(widen                        :wk "Widen"))
 
   (darius/leader-keys
-   "c"   '(:ignore t                   :wk "Compiler")
-   "c c" '(compile                     :wk "Compile")
-   "c e" '(consult-compile-error       :wk "Goto error")
-   "c r" '(recompile                   :wk "Recompile"))
+   "c"   '(:ignore t                    :wk "Compiler")
+   "c c" '(compile                      :wk "Compile")
+   "c e" '(consult-compile-error        :wk "Goto error")
+   "c r" '(recompile                    :wk "Recompile"))
 
   (darius/leader-keys
-   "f"   '(:ignore t                   :wk "Find")
-   "f f" '(find-file                   :wk "File")
-   "f g" '(consult-ripgrep             :wk "Grep")
-   "f i" '(consult-imenu-multi         :wk "Imenu")
-   "f m" '(man                         :wk "Manpage"))
+   "f"   '(:ignore t                    :wk "Find")
+   "f f" '(find-file                    :wk "File")
+   "f g" '(consult-ripgrep              :wk "Grep")
+   "f i" '(consult-imenu-multi          :wk "Imenu")
+   "f m" '(man                          :wk "Manpage"))
 
   (darius/leader-keys
-   "g"   '(:ignore t                   :wk "Git")
-   "g n" '(git-gutter:next-hunk        :wk "Next hunk")
-   "g p" '(git-gutter:previous-hunk    :wk "Previous hunk")
-   "g s" '(magit-status                :wk "Status")
-   "g v" '(git-gutter:popup-hunk       :wk "View hunk"))
+   "g"   '(:ignore t                    :wk "Git")
+   "g n" '(git-gutter:next-hunk         :wk "Next hunk")
+   "g p" '(git-gutter:previous-hunk     :wk "Previous hunk")
+   "g s" '(magit-status                 :wk "Status")
+   "g v" '(git-gutter:popup-hunk        :wk "View hunk"))
 
   (darius/leader-keys
-   "h"   '(:ignore t                   :wk "Help")
-   "h f" '(describe-function           :wk "Function")
-   "h k" '(describe-key                :wk "Key")
-   "h v" '(describe-variable           :wk "Variable"))
+   "h"   '(:ignore t                    :wk "Help")
+   "h f" '(describe-function            :wk "Function")
+   "h k" '(describe-key                 :wk "Key")
+   "h v" '(describe-variable            :wk "Variable"))
 
   (darius/leader-keys
-   "o"   '(:ignore t                   :wk "Org")
-   "o a" '(org-agenda                  :wk "Agenda")
-   "o c" '(org-ctrl-c-ctrl-c           :wk "C-c C-c")
-   "o f" '(consult-org-agenda          :wk "Find in Agenda")
-   "o h" '(consult-org-heading         :wk "Heading")
-   "o p" '(org-insert-link             :wk "Insert link")
-   "o t" '(org-todo                    :wk "Todo")
-   "o y" '(org-store-link              :wk "Copy link"))
+   "l"   '(:ignore t                    :wk "LaTeX")
+   "l e" '(LaTeX-environment            :wk "Environment")
+   "l m" '(TeX-insert-macro             :wk "Macro")
+   "l s" '(LaTeX-section                :wk "Section"))
 
   (darius/leader-keys
-   "w"   '(:ignore t                   :wk "Window")
-   "w h" '(evil-window-left            :wk "Left")
-   "w j" '(evil-window-down            :wk "Down")
-   "w k" '(evil-window-up              :wk "Up")
-   "w l" '(evil-window-right           :wk "Right")
-   "w n" '(evil-window-new             :wk "New")
-   "w q" '(evil-quit                   :wk "Quit")
-   "w w" '(evil-window-next            :wk "Next")))
+   "o"   '(:ignore t                    :wk "Org")
+   "o a" '(org-agenda                   :wk "Agenda")
+   "o c" '(org-ctrl-c-ctrl-c            :wk "C-c C-c")
+   "o f" '(consult-org-agenda           :wk "Find in Agenda")
+   "o h" '(consult-org-heading          :wk "Heading")
+
+   "o n"   '(:ignore t                  :wk "Narrow")
+   "o n s" '(org-narrow-to-subtree      :wk "Subtree")
+
+   "o p" '(org-insert-link              :wk "Insert link")
+   "o t" '(org-todo                     :wk "Todo")
+   "o y" '(org-store-link               :wk "Copy link"))
+
+  (darius/leader-keys
+   "w"   '(:ignore t                    :wk "Window")
+   "w h" '(evil-window-left             :wk "Left")
+   "w j" '(evil-window-down             :wk "Down")
+   "w k" '(evil-window-up               :wk "Up")
+   "w l" '(evil-window-right            :wk "Right")
+   "w n" '(evil-window-new              :wk "New")
+   "w o" '(delete-other-windows         :wk "Delete others")
+   "w q" '(evil-quit                    :wk "Quit")
+   "w r" '(evil-window-rotate-downwards :wk "Quit")
+   "w w" '(evil-window-next             :wk "Next"))
+
+  (darius/leader-keys
+   "z"   '(:ignore t                    :wk "Citation")
+   "z d" '(citar-dwim                   :wk "Dwim")
+   "z i" '(citar-insert-citation        :wk "Insert")
+   "z o" '(citar-open                   :wk "Open")))
 #+end_src
 
 ** Org
@@ -383,18 +434,18 @@ Some org-mode tweaks
 
 (add-hook 'org-mode-hook 'org-indent-mode)
 
-;; Make RET still follow links
-(with-eval-after-load 'evil-maps
-  (define-key evil-motion-state-map (kbd "RET") nil))
-
 ;; Fix weird internal link behavior
 (with-eval-after-load 'org-ctags (setq org-open-link-functions nil))
 #+end_src
 
-** Citar
+** LaTeX and Citar
 Work with citations
+Also requires auctex
 
 #+begin_src emacs-lisp
+(use-package tex
+  :ensure auctex)
+
 (use-package citar
   :custom
   (citar-bibliography '("~/Documents/library.bib")))
@@ -488,14 +539,6 @@ Set up vertico, orderless and savehist and tweak some emacs completion defaults
   :init (savehist-mode))
 #+end_src
 
-** Marginalia
-Marginalia shows some additional information inside the minibuffer
-
-#+begin_src emacs-lisp
-(use-package marginalia
-  :init (marginalia-mode))
-#+end_src
-
 ** Colorscheme
 The most important thing tbh.
 doom-everforest theme depends on the ~doom-themes~ package
@@ -525,12 +568,27 @@ doom-everforest theme depends on the ~doom-themes~ package
 
 ** Diminish
 Get rid of some clutter in the modeline
+Doesn't work properly if it's not all the way at the end for some reason
 
 #+begin_src emacs-lisp
 (use-package diminish
   :diminish visual-line-mode
   :diminish auto-revert-mode
   :diminish evil-collection-unimpaired-mode)
+#+end_src
+
+* Languages
+Programming language specific stuff
+
+** Haskell
+The one and only
+
+#+begin_src emacs-lisp
+(use-package haskell-mode
+  :config
+  (let ((my-ghcup-path (expand-file-name "~/.ghcup/bin")))
+    (setenv "PATH" (concat my-ghcup-path ":" (getenv "PATH")))
+    (add-to-list 'exec-path my-ghcup-path)))
 #+end_src
 
 * Window Management
