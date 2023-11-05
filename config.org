@@ -40,6 +40,10 @@ Change some variables until after startup to make emacs load faster
 Adjust some default settings
 
 #+begin_src emacs-lisp :tangle early-init.el
+;; please work
+(setq evil-want-keybinding nil)
+(setq evil-want-C-u-scroll t)
+
 (setq inhibit-startup-message t)
 (setq native-comp-async-report-warnings-errors nil)
 (setq initial-scratch-message "")
@@ -82,12 +86,18 @@ Some sensible defaults
 (global-unset-key (kbd "C-x C-c"))      ; stop accidentally quitting emacs
 
 (setq read-buffer-completion-ignore-case t)
+(setq scroll-conservatively 101)
+(setq scroll-margin 3)
 (setq display-line-numbers-type 'relative)
 (setq-default indent-tabs-mode nil)
 (column-number-mode t)
 (show-paren-mode t)
 (global-visual-line-mode t)
 (add-to-list 'write-file-functions 'delete-trailing-whitespace)
+
+(let ((cargo-path (expand-file-name "~/.cargo/bin")))
+  (setenv "PATH" (concat cargo-path ":" (getenv "PATH")))
+  (add-to-list 'exec-path cargo-path))
 #+end_src
 
 ** Prog-mode setup
@@ -141,8 +151,6 @@ Buffer switching and management
           (lambda ()
             (ibuffer-switch-to-saved-filter-groups "default")
             (ibuffer-auto-mode t)))
-
-(use-package ibuffer-vc)
 #+end_src
 
 ** Dired
@@ -151,14 +159,6 @@ Make dired recognize other buffers as copy/move targets and also list human-read
 #+begin_src emacs-lisp
 (setq dired-dwim-target 1)
 (setq dired-listing-switches "-alh"):config
-
-(use-package dired-open
-  :config
-  (setq dired-open-extensions '(("pdf" . "zathura")
-                                ("jpg" . "sxiv")
-                                ("png" . "sxiv")
-                                ("mkv" . "mpv")
-                                ("mp4" . "mpv"))))
 #+end_src
 
 ** Default Applications
@@ -183,10 +183,7 @@ Need to set it in an extra hook to make it work in emacsclient frames.
   (set-face-attribute 'fixed-pitch nil :font darius/fixed-pitch-font))
 
 (add-hook 'after-init-hook 'darius/set-up-fonts)
-
-;; This doesn't set a variable-pitch font in deamon mode
-;; but `server-after-make-frame-hook' is really slow with multiple frames
-(add-to-list 'default-frame-alist '(font . "Iosevka Nerd Font Mono-15"))
+(add-hook 'server-after-make-frame-hook 'darius/set-up-fonts)
 #+end_src
 
 * Packages
@@ -216,6 +213,24 @@ Very nice git interface
 (use-package magit)
 #+end_src
 
+*** Ibuffer-vc
+Version control integration for Ibuffer
+
+#+begin_src emacs-lisp
+(use-package ibuffer-vc)
+#+end_src
+*** Dired open
+Open files in custom programs in dired
+
+#+begin_src emacs-lisp
+(use-package dired-open
+  :config
+  (setq dired-open-extensions '(("pdf" . "zathura")
+                                ("jpg" . "sxiv")
+                                ("png" . "sxiv")
+                                ("mkv" . "mpv")
+                                ("mp4" . "mpv"))))
+#+end_src
 *** Marginalia
 Usful info in the minibuffer
 
@@ -282,6 +297,19 @@ Some highlights in the gutter to show git status
   :hook (prog-mode . git-gutter-mode))
 #+end_src
 
+** Paredit
+Make editing parentheses easier
+
+#+begin_src emacs-lisp
+(use-package evil-paredit)
+(use-package paredit)
+
+(autoload 'enable-paredit-mode "paredit" "Turn on pseudo-structural editing of Lisp code." t)
+(add-hook 'emacs-lisp-mode-hook       #'enable-paredit-mode)
+(add-hook 'lisp-mode-hook             #'enable-paredit-mode)
+(add-hook 'scheme-mode-hook           #'enable-paredit-mode)
+#+end_src
+
 ** Evil
 Not really a fan but text editing is even worse without it.
 I have no idea what needs to go in ~:init~ and what in ~:config~
@@ -289,8 +317,6 @@ I have no idea what needs to go in ~:init~ and what in ~:config~
 #+begin_src emacs-lisp
 (use-package evil
   :init
-  (setq evil-want-C-u-scroll t)
-  (setq evil-want-keybinding nil)
   (evil-mode 1)
   :config
   (evil-set-undo-system 'undo-tree)
@@ -339,6 +365,7 @@ Setup keybindings
 
   (darius/leader-keys
    "f"   '(:ignore t                    :wk "Find")
+   "f d" '(consult-fd                   :wk "Consult fd")
    "f f" '(find-file                    :wk "File")
    "f g" '(consult-ripgrep              :wk "Grep")
    "f i" '(consult-imenu-multi          :wk "Imenu")
@@ -367,13 +394,19 @@ Setup keybindings
    "o"   '(:ignore t                    :wk "Org")
    "o a" '(org-agenda                   :wk "Agenda")
    "o c" '(org-ctrl-c-ctrl-c            :wk "C-c C-c")
+   "o d" '(org-deadline                 :wk "Deadline")
    "o f" '(consult-org-agenda           :wk "Find in Agenda")
    "o h" '(consult-org-heading          :wk "Heading")
+
+   "o l"   '(:ignore t                  :wk "Link")
+   "o l i" '(org-insert-link            :wk "Insert")
+   "o l y" '(org-store-link             :wk "Store")
 
    "o n"   '(:ignore t                  :wk "Narrow")
    "o n s" '(org-narrow-to-subtree      :wk "Subtree")
 
-   "o p" '(org-insert-link              :wk "Insert link")
+   "o p" '(org-priority                 :wk "Priority")
+   "o s" '(org-schedule                 :wk "Schedule")
    "o t" '(org-todo                     :wk "Todo")
    "o y" '(org-store-link               :wk "Copy link"))
 
@@ -400,6 +433,9 @@ Setup keybindings
 Some org-mode tweaks
 
 #+begin_src emacs-lisp
+(use-package org-modern
+:config (global-org-modern-mode))
+
 (defun darius/org-setup ()
   (setq org-directory "~/Notes")
   (setq org-default-notes-file (concat org-directory "/scratch.org"))
@@ -585,14 +621,26 @@ The one and only
 
 #+begin_src emacs-lisp
 (use-package haskell-mode
+:init
+(setq flymake-allowed-file-name-masks '())
   :config
   (let ((my-ghcup-path (expand-file-name "~/.ghcup/bin")))
     (setenv "PATH" (concat my-ghcup-path ":" (getenv "PATH")))
-    (add-to-list 'exec-path my-ghcup-path)))
+    (add-to-list 'exec-path my-ghcup-path))
+  (let ((my-cabal-path (expand-file-name "~/.cabal/bin")))
+    (setenv "PATH" (concat my-cabal-path ":" (getenv "PATH")))
+    (add-to-list 'exec-path my-cabal-path))
+  :bind (:map haskell-mode-map
+              ("M-n" . 'haskell-goto-next-error)
+              ("M-p" . 'haskell-goto-prev-error)))
 #+end_src
 
 * Window Management
 Emacs as an X window manager!
+
+#+begin_src emacs-lisp
+(use-package exwm)
+#+end_src
 
 ** Custom functions
 Some functions to make stuff easier
@@ -676,17 +724,17 @@ Hook that runs on EXWM startup, setting up keybindings and some other things
   ;; Launch apps that will run in the background
   (darius/run-in-background "nm-applet"))
 
-  ;; Screen lock
-  (exwm-input-set-key (kbd "C-s-l") (lambda () (interactive) (darius/lock-screen)))
+;; Screen lock
+(exwm-input-set-key (kbd "C-s-l") (lambda () (interactive) (darius/lock-screen)))
 
-  ;; Media Keys
-  (exwm-input-set-key (kbd "<XF86AudioRaiseVolume>") (lambda () (interactive) (darius/volume-up-percent 5)))
-  (exwm-input-set-key (kbd "<XF86AudioLowerVolume>") (lambda () (interactive) (darius/volume-down-percent 5)))
-  (exwm-input-set-key (kbd "<XF86AudioMute>") (lambda () (interactive) (darius/volume-mute)))
-  (exwm-input-set-key (kbd "<XF86AudioMicMute>") (lambda () (interactive) (darius/mic-mute)))
-  (exwm-input-set-key (kbd "<XF86MonBrightnessUp>") (lambda () (interactive) (darius/brightness-up 20)))
-  (exwm-input-set-key (kbd "<XF86MonBrightnessDown>") (lambda () (interactive) (darius/brightness-down 20)))
-  (exwm-input-set-key (kbd "<XF86Favorites>") (lambda () (interactive) (darius/trackpad-toggle)))
+;; Media Keys
+(exwm-input-set-key (kbd "<XF86AudioRaiseVolume>") (lambda () (interactive) (darius/volume-up-percent 5)))
+(exwm-input-set-key (kbd "<XF86AudioLowerVolume>") (lambda () (interactive) (darius/volume-down-percent 5)))
+(exwm-input-set-key (kbd "<XF86AudioMute>") (lambda () (interactive) (darius/volume-mute)))
+(exwm-input-set-key (kbd "<XF86AudioMicMute>") (lambda () (interactive) (darius/mic-mute)))
+(exwm-input-set-key (kbd "<XF86MonBrightnessUp>") (lambda () (interactive) (darius/brightness-up 20)))
+(exwm-input-set-key (kbd "<XF86MonBrightnessDown>") (lambda () (interactive) (darius/brightness-down 20)))
+(exwm-input-set-key (kbd "<XF86Favorites>") (lambda () (interactive) (darius/trackpad-toggle)))
 #+end_src
 
 ** EXWM setup
