@@ -21,3 +21,5 @@ tree-sitter
 multisession/
 .lsp-session-v1
 themes
+lisp
+tree-sitter

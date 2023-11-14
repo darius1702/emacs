@@ -93,6 +93,7 @@ Some sensible defaults
 (column-number-mode t)
 (show-paren-mode t)
 (global-visual-line-mode t)
+(electric-pair-mode t)
 (add-to-list 'write-file-functions 'delete-trailing-whitespace)
 
 (let ((cargo-path (expand-file-name "~/.cargo/bin")))
@@ -297,19 +298,6 @@ Some highlights in the gutter to show git status
   :hook (prog-mode . git-gutter-mode))
 #+end_src
 
-** Paredit
-Make editing parentheses easier
-
-#+begin_src emacs-lisp
-(use-package evil-paredit)
-(use-package paredit)
-
-(autoload 'enable-paredit-mode "paredit" "Turn on pseudo-structural editing of Lisp code." t)
-(add-hook 'emacs-lisp-mode-hook       #'enable-paredit-mode)
-(add-hook 'lisp-mode-hook             #'enable-paredit-mode)
-(add-hook 'scheme-mode-hook           #'enable-paredit-mode)
-#+end_src
-
 ** Evil
 Not really a fan but text editing is even worse without it.
 I have no idea what needs to go in ~:init~ and what in ~:config~
@@ -348,6 +336,7 @@ Setup keybindings
    "/"   '(consult-line                 :wk "Consult line")
    "d"   '(dired                        :wk "Dired")
    "p"   '(consult-yank-from-kill-ring  :wk "Paste from history")
+   "u"   '(universal-argument           :wk "Universal argument")
    "x"   '(execute-extended-command     :wk "M-x"))
 
   (darius/leader-keys
@@ -462,29 +451,12 @@ Some org-mode tweaks
   (darius/org-font-setup)
   (setq org-src-preserve-indentation nil
         org-edit-src-content-indentation 0)
-  (setq org-ellipsis "▾")
-  ;; Bullets for list items
-  (font-lock-add-keywords 'org-mode
-                          '(("^ *\\([-]\\) "
-                             (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•")))))))
+  (setq org-ellipsis "▾"))
 
 (add-hook 'org-mode-hook 'org-indent-mode)
 
 ;; Fix weird internal link behavior
 (with-eval-after-load 'org-ctags (setq org-open-link-functions nil))
-#+end_src
-
-** LaTeX and Citar
-Work with citations
-Also requires auctex
-
-#+begin_src emacs-lisp
-(use-package tex
-  :ensure auctex)
-
-(use-package citar
-  :custom
-  (citar-bibliography '("~/Documents/library.bib")))
 #+end_src
 
 ** Completion at point
@@ -633,6 +605,24 @@ The one and only
   :bind (:map haskell-mode-map
               ("M-n" . 'haskell-goto-next-error)
               ("M-p" . 'haskell-goto-prev-error)))
+#+end_src
+
+** LaTeX and Citar
+Work with citations
+Also requires auctex
+What the hecc is a reftex
+
+#+begin_src emacs-lisp
+(setq TeX-parse-self t)
+(setq-default TeX-master nil)
+(setq LaTeX-electric-left-right-brace t) ;Also works for stuff like \[
+
+(use-package tex
+  :ensure auctex)
+
+(use-package citar
+  :custom
+  (citar-bibliography '("~/Documents/library.bib")))
 #+end_src
 
 * Window Management
