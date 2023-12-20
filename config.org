@@ -68,7 +68,6 @@ Disble all annoying auto-generated files and make ~custom-set-variables~ go to t
       auto-save-file-name-transforms `((".*" ,(expand-file-name "tmp/auto-saves/" user-emacs-directory) t)))
 (setq backup-directory-alist `(("." . ,(expand-file-name "tmp/backups/" user-emacs-directory))))
 (setq backup-by-copying t)
-(setq undo-tree-history-directory-alist `(("." . ,(expand-file-name "tmp/undo" user-emacs-directory))))
 
 ;; Enable when lockfiles become annoying
 ;; (setq create-lockfiles nil)
@@ -129,12 +128,21 @@ Buffer switching and management
       (quote (("default"
                ("Code" (or (derived-mode . prog-mode) (mode . ess-mode)
                            (mode . compilation-mode)))
+               ("LaTeX" (mode . latex-mode))
                ("Dired" (mode . dired-mode))
                ("Org" (mode . org-mode))
-               ("Emacs" (or
-                         (name . "^\\*scratch\\*$")
-                         (name . "^\\*Messages\\*$")
-                         (name . "^\\*Async-native-compile-log\\*$")))))))
+               ("Help" (mode . help-mode))
+               ("Git" (name . "^magit:"))
+               ("Misc" (name . "^\\**.*\\*$"))))))
+
+;; Use human readable Size column instead of original one (emacswiki yoink)
+;;(define-ibuffer-column size-h
+;;  (:name "Size" :inline t)
+;;  (cond
+;;   ((> (buffer-size) 1000000) (format "%7.1fM" (/ (buffer-size) 1000000.0)))
+;;   ((> (buffer-size) 100000) (format "%7.0fk" (/ (buffer-size) 1000.0)))
+;;   ((> (buffer-size) 1000) (format "%7.1fk" (/ (buffer-size) 1000.0)))
+;;   (t (format "%8d" (buffer-size)))))
 
 (setq ibuffer-formats
       '((mark modified read-only vc-status-mini " "
@@ -144,9 +152,7 @@ Buffer switching and management
               " "
               (mode 16 16 :left :elide)
               " "
-              (vc-status 16 16 :left)
-              " "
-              vc-relative-file)))
+              (vc-status 16 16 :left))))
 
 (add-hook 'ibuffer-mode-hook
           (lambda ()
@@ -207,19 +213,13 @@ Basic ~package.el~ config
 ** Useful random stuff
 Some packages that don't require much configuration
 
-*** Magit
-Very nice git interface
-
-#+begin_src emacs-lisp
-(use-package magit)
-#+end_src
-
 *** Ibuffer-vc
 Version control integration for Ibuffer
 
 #+begin_src emacs-lisp
 (use-package ibuffer-vc)
 #+end_src
+
 *** Dired open
 Open files in custom programs in dired
 
@@ -232,6 +232,7 @@ Open files in custom programs in dired
                                 ("mkv" . "mpv")
                                 ("mp4" . "mpv"))))
 #+end_src
+
 *** Marginalia
 Usful info in the minibuffer
 
@@ -245,7 +246,7 @@ Colorize strings like #a7c080
 
 #+begin_src emacs-lisp
 (use-package rainbow-mode
-  :init (rainbow-mode)
+  :config (rainbow-mode)
   :diminish rainbow-mode)
 #+end_src
 
@@ -254,15 +255,6 @@ Some nice additional completing-read stuff
 
 #+begin_src emacs-lisp
 (use-package consult)
-#+end_src
-
-*** Undo-tree
-Tree-like undo functionality
-
-#+begin_src emacs-lisp
-(use-package undo-tree
-  :diminish
-  :config (global-undo-tree-mode))
 #+end_src
 
 *** Which-key
@@ -281,8 +273,18 @@ Tree-like undo functionality
          ("C-(" . er/mark-outside-pairs)))
 #+end_src
 
-** Git-gutter
-Some highlights in the gutter to show git status
+** Git
+Some git tools
+
+*** Magit
+Very nice git interface
+
+#+begin_src emacs-lisp
+(use-package magit)
+#+end_src
+
+*** Git-Gutter
+Git status in the gutter
 
 #+begin_src emacs-lisp
 (use-package git-gutter
@@ -298,6 +300,13 @@ Some highlights in the gutter to show git status
   :hook (prog-mode . git-gutter-mode))
 #+end_src
 
+*** Blamer.el
+Nice git blame UI
+
+#+begin_src emacs-lisp
+(use-package blamer)
+#+end_src
+
 ** Evil
 Not really a fan but text editing is even worse without it.
 I have no idea what needs to go in ~:init~ and what in ~:config~
@@ -307,7 +316,7 @@ I have no idea what needs to go in ~:init~ and what in ~:config~
   :init
   (evil-mode 1)
   :config
-  (evil-set-undo-system 'undo-tree)
+  (evil-set-undo-system 'undo-redo)
   (setq evil-mode-line-format nil))	; no <N> indicator in modeline
 
 ;; Make RET still follow links in org mode
@@ -362,6 +371,7 @@ Setup keybindings
 
   (darius/leader-keys
    "g"   '(:ignore t                    :wk "Git")
+   "g b" '(blamer-show-commit-info      :wk "Blame")
    "g n" '(git-gutter:next-hunk         :wk "Next hunk")
    "g p" '(git-gutter:previous-hunk     :wk "Previous hunk")
    "g s" '(magit-status                 :wk "Status")
@@ -466,10 +476,10 @@ Corfu for in-buffer completion
 (use-package corfu
   :custom
   (corfu-cycle t)
-  (corfu-auto nil)
+  (corfu-auto t)
   (corfu-auto-prefix 0)
   (corfu-auto-delay 0)
-  (corfu-separator ?\s)          ;; Orderless field separator
+  (corfu-separator ?\s)             ;; Orderless field separator
   ;; (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
   ;; (corfu-quit-no-match nil)      ;; Never quit, even if there is no match
   ;; (corfu-preview-current nil)    ;; Disable current candidate preview
@@ -585,16 +595,62 @@ Doesn't work properly if it's not all the way at the end for some reason
   :diminish evil-collection-unimpaired-mode)
 #+end_src
 
+** Ace Window
+Switching and moving windows
+
+#+begin_src emacs-lisp
+(use-package ace-window
+  :bind ("M-o" . ace-window)
+  :custom
+  (aw-scope 'frame))
+#+end_src
+
 * Languages
 Programming language specific stuff
+
+** Eglot Setup
+Language server stuff
+
+#+begin_src emacs-lisp
+(use-package eglot
+  :config
+  (customize-set-variable 'eglot-autoshutdown t)
+  (customize-set-variable 'eglot-extend-to-xref t)
+  (add-to-list 'eglot-server-programs
+               '((c-mode c++-mode)
+                 . ("clangd"
+                    "-j=8"
+                    "--log=error"
+                    "--malloc-trim"
+                    "--background-index"
+                    "--clang-tidy"
+                    "--cross-file-rename"
+                    "--completion-style=detailed"
+                    "--pch-storage=memory"
+                    "--header-insertion=never"
+                    "--header-insertion-decorators=0")))
+  (add-hook 'c-mode-hook #'eglot-ensure)
+  (add-hook 'c++-mode-hook #'eglot-ensure)
+  (add-hook 'latex-mode-hook #'eglot-ensure))
+#+end_src
+
+** Rust
+Funny orange crab
+
+#+begin_src emacs-lisp
+(use-package rustic
+  :config
+  (setq rustic-cargo-bin-remote "/usr/local/cargo/bin/cargo")
+  (setq rustic-lsp-client 'eglot))
+#+end_src
 
 ** Haskell
 The one and only
 
 #+begin_src emacs-lisp
 (use-package haskell-mode
-:init
-(setq flymake-allowed-file-name-masks '())
+  :init
+  (setq flymake-allowed-file-name-masks '())
   :config
   (let ((my-ghcup-path (expand-file-name "~/.ghcup/bin")))
     (setenv "PATH" (concat my-ghcup-path ":" (getenv "PATH")))
@@ -622,6 +678,7 @@ What the hecc is a reftex
 
 (use-package citar
   :custom
+  (setq citar-file-open-functions '(("html" . citar-file-open-external) ("pdf" . citar-file-open-external) (t . find-file)))
   (citar-bibliography '("~/Documents/library.bib")))
 #+end_src
 
