@@ -6,6 +6,7 @@
 * Early init
 ** No premature redisplay
 Prevent some flickering on startup
+(Doesn't really prevent any flickering)
 
 #+begin_src emacs-lisp :tangle early-init.el
 ;; -*- lexical-binding: t -*-
@@ -55,6 +56,7 @@ Adjust some default settings
 (blink-cursor-mode 0)
 (setq frame-resize-pixelwise t)
 (setq use-dialog-box nil)
+(setq use-short-answers t)
 #+end_src
 
 * Basic stuff
@@ -135,15 +137,6 @@ Buffer switching and management
                ("Git" (name . "^magit:"))
                ("Misc" (name . "^\\**.*\\*$"))))))
 
-;; Use human readable Size column instead of original one (emacswiki yoink)
-;;(define-ibuffer-column size-h
-;;  (:name "Size" :inline t)
-;;  (cond
-;;   ((> (buffer-size) 1000000) (format "%7.1fM" (/ (buffer-size) 1000000.0)))
-;;   ((> (buffer-size) 100000) (format "%7.0fk" (/ (buffer-size) 1000.0)))
-;;   ((> (buffer-size) 1000) (format "%7.1fk" (/ (buffer-size) 1000.0)))
-;;   (t (format "%8d" (buffer-size)))))
-
 (setq ibuffer-formats
       '((mark modified read-only vc-status-mini " "
               (name 18 18 :left :elide)
@@ -173,7 +166,7 @@ Default programs for opening filetypes
 This is probably he wrong way to do it?
 
 #+begin_src emacs-lisp
-(setq org-file-apps '((auto-mode . emacs) (directory . emacs) ("\\.mm\\'" . default) ("\\.x?html?\\'" . default) ("\\.pdf\\'" . "zathura %s")))
+(setq org-file-apps '((auto-mode . emacs) (directory . emacs) ("\\.mm\\'" . default) ("\\.x?html?\\'" . default)))
 #+end_src
 
 ** Font setup
@@ -226,8 +219,7 @@ Open files in custom programs in dired
 #+begin_src emacs-lisp
 (use-package dired-open
   :config
-  (setq dired-open-extensions '(("pdf" . "zathura")
-                                ("jpg" . "sxiv")
+  (setq dired-open-extensions '(("jpg" . "sxiv")
                                 ("png" . "sxiv")
                                 ("mkv" . "mpv")
                                 ("mp4" . "mpv"))))
@@ -273,6 +265,34 @@ Some nice additional completing-read stuff
          ("C-(" . er/mark-outside-pairs)))
 #+end_src
 
+** PDF Tools
+Some improvements over DocView
+
+#+begin_src emacs-lisp
+(use-package pdf-tools
+  :config
+  (pdf-tools-install)
+  (setq-default pdf-view-display-size 'fit-page)
+  (add-to-list 'revert-without-query ".pdf")
+  :bind (:map pdf-view-mode-map
+              ("C-=" . pdf-view-enlarge)
+              ("C--" . pdf-view-shrink)
+              ("g"  . pdf-view-first-page)
+              ("G"  . pdf-view-last-page)
+              ("l"  . image-forward-hscroll)
+              ("h"  . image-backward-hscroll)
+              ("j"  . pdf-view-next-line-or-next-page)
+              ("k"  . pdf-view-previous-line-or-previous-page)
+              ("e"  . pdf-view-goto-page)
+              ("i"  . pdf-misc-display-metadata)
+              ("s"  . pdf-occur)))
+
+(add-hook 'pdf-view-mode-hook #'(lambda () (interactive) (display-line-numbers-mode -1)))
+(add-hook 'doc-view-mode-hook #'(lambda () (progn
+                                             (pdf-tools-install)
+                                             (pdf-view-mode))))
+#+end_src
+
 ** Git
 Some git tools
 
@@ -298,13 +318,6 @@ Git status in the gutter
   :config
   (set-face-foreground 'git-gutter:modified "#7fbbb3")
   :hook (prog-mode . git-gutter-mode))
-#+end_src
-
-*** Blamer.el
-Nice git blame UI
-
-#+begin_src emacs-lisp
-(use-package blamer)
 #+end_src
 
 ** Evil
@@ -344,6 +357,7 @@ Setup keybindings
    "SPC" '(switch-to-buffer             :wk "Switch to buffer")
    "/"   '(consult-line                 :wk "Consult line")
    "d"   '(dired                        :wk "Dired")
+   "D"   '(dired-other-window           :wk "Dired other window")
    "p"   '(consult-yank-from-kill-ring  :wk "Paste from history")
    "u"   '(universal-argument           :wk "Universal argument")
    "x"   '(execute-extended-command     :wk "M-x"))
@@ -365,13 +379,14 @@ Setup keybindings
    "f"   '(:ignore t                    :wk "Find")
    "f d" '(consult-fd                   :wk "Consult fd")
    "f f" '(find-file                    :wk "File")
+   "f F" '(find-file-other-window       :wk "File other window")
    "f g" '(consult-ripgrep              :wk "Grep")
    "f i" '(consult-imenu-multi          :wk "Imenu")
    "f m" '(man                          :wk "Manpage"))
 
   (darius/leader-keys
    "g"   '(:ignore t                    :wk "Git")
-   "g b" '(blamer-show-commit-info      :wk "Blame")
+   "g b" '(magit-blame                  :wk "Blame")
    "g n" '(git-gutter:next-hunk         :wk "Next hunk")
    "g p" '(git-gutter:previous-hunk     :wk "Previous hunk")
    "g s" '(magit-status                 :wk "Status")
@@ -394,6 +409,7 @@ Setup keybindings
    "o a" '(org-agenda                   :wk "Agenda")
    "o c" '(org-ctrl-c-ctrl-c            :wk "C-c C-c")
    "o d" '(org-deadline                 :wk "Deadline")
+   "o e" '(org-edit-special             :wk "Edit")
    "o f" '(consult-org-agenda           :wk "Find in Agenda")
    "o h" '(consult-org-heading          :wk "Heading")
 
@@ -489,8 +505,6 @@ Corfu for in-buffer completion
 
   :bind
   (:map corfu-map
-        ("C-n" . corfu-next)
-        ("C-p" . corfu-previous)
         ("RET" . nil))
 
   :init (global-corfu-mode))
@@ -595,14 +609,17 @@ Doesn't work properly if it's not all the way at the end for some reason
   :diminish evil-collection-unimpaired-mode)
 #+end_src
 
-** Ace Window
+** Windows and Frames
 Switching and moving windows
 
 #+begin_src emacs-lisp
 (use-package ace-window
-  :bind ("M-o" . ace-window)
+  :bind (("M-o" . ace-window) ("M-O" . ace-swap-window))
   :custom
   (aw-scope 'frame))
+
+(use-package transpose-frame
+:bind ("C-M-o" . transpose-frame))
 #+end_src
 
 * Languages
@@ -672,6 +689,7 @@ What the hecc is a reftex
 (setq TeX-parse-self t)
 (setq-default TeX-master nil)
 (setq LaTeX-electric-left-right-brace t) ;Also works for stuff like \[
+(setq reftex-plug-into-AUCTeX t)
 
 (use-package tex
   :ensure auctex)
@@ -680,17 +698,17 @@ What the hecc is a reftex
   :custom
   (setq citar-file-open-functions '(("html" . citar-file-open-external) ("pdf" . citar-file-open-external) (t . find-file)))
   (citar-bibliography '("~/Documents/library.bib")))
+
+(use-package cdlatex
+  :config
+  (add-hook 'LaTeX-mode-hook #'turn-on-cdlatex))
 #+end_src
 
-* Window Management
-Emacs as an X window manager!
+* Custom Functions
+Various cringe
 
-#+begin_src emacs-lisp
-(use-package exwm)
-#+end_src
-
-** Custom functions
-Some functions to make stuff easier
+** Old EXWM Stuff
+Used to be stuff for EXWM but kept around just in case
 
 #+begin_src emacs-lisp
 (defun darius/get_executables_in_path ()
@@ -755,109 +773,4 @@ Some functions to make stuff easier
 (defun darius/trackpad-toggle ()
   "Disable the trackpad using xinput"
   (start-process-shell-command "~/Dotfiles/scripts/toggle_trackpad.sh" nil "~/Dotfiles/scripts/toggle_trackpad.sh"))
-#+end_src
-
-** Startup hook
-Hook that runs on EXWM startup, setting up keybindings and some other things
-
-#+begin_src emacs-lisp
-(defun darius/exwm-init-hook ()
-  ;; Make workspace 1 be the one where we land at startup
-  (exwm-workspace-switch-create 1)
-
-  ;; Show battery status in the mode line
-  (display-battery-mode 1)
-
-  ;; Launch apps that will run in the background
-  (darius/run-in-background "nm-applet"))
-
-;; Screen lock
-(exwm-input-set-key (kbd "C-s-l") (lambda () (interactive) (darius/lock-screen)))
-
-;; Media Keys
-(exwm-input-set-key (kbd "<XF86AudioRaiseVolume>") (lambda () (interactive) (darius/volume-up-percent 5)))
-(exwm-input-set-key (kbd "<XF86AudioLowerVolume>") (lambda () (interactive) (darius/volume-down-percent 5)))
-(exwm-input-set-key (kbd "<XF86AudioMute>") (lambda () (interactive) (darius/volume-mute)))
-(exwm-input-set-key (kbd "<XF86AudioMicMute>") (lambda () (interactive) (darius/mic-mute)))
-(exwm-input-set-key (kbd "<XF86MonBrightnessUp>") (lambda () (interactive) (darius/brightness-up 20)))
-(exwm-input-set-key (kbd "<XF86MonBrightnessDown>") (lambda () (interactive) (darius/brightness-down 20)))
-(exwm-input-set-key (kbd "<XF86Favorites>") (lambda () (interactive) (darius/trackpad-toggle)))
-#+end_src
-
-** EXWM setup
-EXWM config stuff
-
-#+begin_src emacs-lisp
-(use-package exwm
-  :config
-  ;; Set the default number of workspaces
-  (setq exwm-workspace-number 10)
-
-  ;; When EXWM starts up, do some extra configuration
-  (add-hook 'exwm-init-hook #'darius/exwm-init-hook)
-
-  ;; When window "class" updates, use it to set the buffer name
-  ;; Also update firefox buffer name based on window title
-  (add-hook 'exwm-update-class-hook #'darius/exwm-update-class)
-  (add-hook 'exwm-update-title-hook #'darius/exwm-update-title)
-
-  ;; Rebind CapsLock to Ctrl
-  ;; (start-process-shell-command "xmodmap" nil "xmodmap ~/.emacs.d/exwm/Xmodmap")
-
-  ;; Set the screen resolution (update this to be the correct resolution for your screen!)
-  (require 'exwm-randr)
-  (exwm-randr-enable)
-  ;; (start-process-shell-command "xrandr" nil "xrandr --output Virtual-1 --primary --mode 2048x1152 --pos 0x0 --rotate normal")
-
-  ;; Load the system tray before exwm-init
-  (require 'exwm-systemtray)
-  (exwm-systemtray-enable)
-
-  ;; These keys should always pass through to Emacs
-  (setq exwm-input-prefix-keys
-        '(?\C-x
-          ?\C-u
-          ?\C-h
-          ?\C-w ;; Evil window management
-          ?\M-x
-          ?\M-`
-          ?\M-&
-          ?\M-:
-          ?\C-\ ))  ;; Ctrl+Space
-
-  ;; Ctrl+Q will enable the next key to be sent directly
-  (define-key exwm-mode-map [?\C-q] 'exwm-input-send-next-key)
-
-  ;; Set up global key bindings.  These always work, no matter the input state!
-  ;; Keep in mind that changing this list after EXWM initializes has no effect.
-  (setq exwm-input-global-keys
-        `(
-          ;; Reset to line-mode (C-c C-k switches to char-mode via exwm-input-release-keyboard)
-          ([?\s-r] . exwm-reset)
-
-          ;; Move between windows
-          ([?\s-h] . windmove-left)
-          ([?\s-j] . windmove-down)
-          ([?\s-k] . windmove-up)
-          ([?\s-l] . windmove-right)
-
-          ;; Launch applications via shell command
-          ([?\s-d] . (lambda ()
-                       (interactive)
-                       (darius/run)))
-
-          ([?\s-&] . (lambda (command)
-                       (interactive (list (read-shell-command "$: ")))
-                       (start-process-shell-command command nil command)))
-
-          ;; Switch workspace
-          ([?\s-w] . exwm-workspace-switch)
-
-          ;; 's-N': Switch to certain workspace with Super (Win) plus a number key (0 - 9)
-          ,@(mapcar (lambda (i)
-                      `(,(kbd (format "s-%d" i)) .
-                        (lambda ()
-                          (interactive)
-                          (exwm-workspace-switch-create ,i))))
-                    (number-sequence 0 9)))))
 #+end_src
