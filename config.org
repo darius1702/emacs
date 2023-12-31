@@ -427,15 +427,10 @@ Setup keybindings
 
   (darius/leader-keys
    "w"   '(:ignore t                    :wk "Window")
-   "w h" '(evil-window-left             :wk "Left")
-   "w j" '(evil-window-down             :wk "Down")
-   "w k" '(evil-window-up               :wk "Up")
-   "w l" '(evil-window-right            :wk "Right")
-   "w n" '(evil-window-new              :wk "New")
    "w o" '(delete-other-windows         :wk "Delete others")
-   "w q" '(evil-quit                    :wk "Quit")
-   "w r" '(evil-window-rotate-downwards :wk "Quit")
-   "w w" '(evil-window-next             :wk "Next"))
+   "w q" '(delete-window                :wk "Quit")
+   "w s" '(split-window-below           :wk "H-Split")
+   "w v" '(split-window-right           :wk "V-Split"))
 
   (darius/leader-keys
    "z"   '(:ignore t                    :wk "Citation")
@@ -688,7 +683,7 @@ What the hecc is a reftex
 #+begin_src emacs-lisp
 (setq TeX-parse-self t)
 (setq-default TeX-master nil)
-(setq LaTeX-electric-left-right-brace t) ;Also works for stuff like \[
+(setq LaTeX-electric-left-right-brace t)
 (setq reftex-plug-into-AUCTeX t)
 
 (use-package tex
