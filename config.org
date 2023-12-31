@@ -133,7 +133,7 @@ Buffer switching and management
                ("LaTeX" (mode . latex-mode))
                ("Dired" (mode . dired-mode))
                ("Org" (mode . org-mode))
-               ("Help" (mode . help-mode))
+               ("Help" (or (mode . help-mode) (mode . Man-mode)))
                ("Git" (name . "^magit:"))
                ("Misc" (name . "^\\**.*\\*$"))))))
 
