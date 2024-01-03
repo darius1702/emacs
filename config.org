@@ -42,8 +42,8 @@ Adjust some default settings
 
 #+begin_src emacs-lisp :tangle early-init.el
 ;; please work
-(setq evil-want-keybinding nil)
-(setq evil-want-C-u-scroll t)
+;; (setq evil-want-keybinding nil)
+;; (setq evil-want-C-u-scroll t)
 
 (setq inhibit-startup-message t)
 (setq native-comp-async-report-warnings-errors nil)
@@ -86,6 +86,10 @@ Some sensible defaults
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 (global-unset-key (kbd "C-x C-c"))      ; stop accidentally quitting emacs
 
+(global-set-key (kbd "C-c c")   'compile)
+(global-set-key (kbd "C-c r")   'recompile)
+(global-set-key (kbd "C-c m")   'man)
+
 (setq read-buffer-completion-ignore-case t)
 (setq scroll-conservatively 101)
 (setq scroll-margin 3)
@@ -96,10 +100,6 @@ Some sensible defaults
 (global-visual-line-mode t)
 (electric-pair-mode t)
 (add-to-list 'write-file-functions 'delete-trailing-whitespace)
-
-(let ((cargo-path (expand-file-name "~/.cargo/bin")))
-  (setenv "PATH" (concat cargo-path ":" (getenv "PATH")))
-  (add-to-list 'exec-path cargo-path))
 #+end_src
 
 ** Prog-mode setup
@@ -108,6 +108,9 @@ Make programming-modes a little nicer with line numbers and current line highlig
 #+begin_src emacs-lisp
 (add-hook 'prog-mode-hook 'display-line-numbers-mode)
 (add-hook 'prog-mode-hook 'hl-line-mode)
+
+(global-set-key (kbd "C-c t")   'darius/todo-comment)
+(global-set-key (kbd "C-c S-T") 'darius/todo-occur)
 #+end_src
 
 ** Man pages
@@ -134,7 +137,7 @@ Buffer switching and management
                ("Dired" (mode . dired-mode))
                ("Org" (mode . org-mode))
                ("Help" (or (mode . help-mode) (mode . Man-mode)))
-               ("Git" (name . "^magit:"))
+               ("Git" (name . "^magit"))
                ("Misc" (name . "^\\**.*\\*$"))))))
 
 (setq ibuffer-formats
@@ -206,6 +209,15 @@ Basic ~package.el~ config
 ** Useful random stuff
 Some packages that don't require much configuration
 
+*** Editorconfig
+Load  ~.editorconfig~ files
+
+#+begin_src emacs-lisp
+(use-package editorconfig
+  :diminish
+  :config (editorconfig-mode 1))
+#+end_src
+
 *** Ibuffer-vc
 Version control integration for Ibuffer
 
@@ -242,13 +254,6 @@ Colorize strings like #a7c080
   :diminish rainbow-mode)
 #+end_src
 
-*** Consult
-Some nice additional completing-read stuff
-
-#+begin_src emacs-lisp
-(use-package consult)
-#+end_src
-
 *** Which-key
 
 #+begin_src emacs-lisp
@@ -263,6 +268,19 @@ Some nice additional completing-read stuff
 (use-package expand-region
   :bind (("M-[" . er/expand-region)
          ("C-(" . er/mark-outside-pairs)))
+#+end_src
+
+** Consult
+Some nice additional completing-read stuff
+
+#+begin_src emacs-lisp
+(use-package consult
+  :bind
+  ("C-x C-S-F" . consult-fd)
+  ("M-S-Y"     . consult-yank-from-kill-ring)
+  ("C-c e"     . consult-compile-error)
+  ("C-S-S"     . consult-line)
+  ("M-g i"     . consult-imenu-multi))
 #+end_src
 
 ** PDF Tools
@@ -320,7 +338,7 @@ Git status in the gutter
   :hook (prog-mode . git-gutter-mode))
 #+end_src
 
-** Evil
+** COMMENT Evil
 Not really a fan but text editing is even worse without it.
 I have no idea what needs to go in ~:init~ and what in ~:config~
 
@@ -341,7 +359,7 @@ I have no idea what needs to go in ~:init~ and what in ~:config~
   :config (evil-collection-init))
 #+end_src
 
-** General
+** COMMENT General
 Setup keybindings
 
 #+begin_src emacs-lisp
@@ -476,6 +494,17 @@ Some org-mode tweaks
 
 (add-hook 'org-mode-hook 'org-indent-mode)
 
+;; Org-specific maps
+(define-key org-mode-map (kbd "C-c h") 'consult-org-heading)
+(define-key org-mode-map (kbd "C-c s") 'org-store-link)
+(define-key org-mode-map (kbd "C-c i") 'org-insert-link)
+
+;; Global keymaps
+(setq darius/global-org-keymap (make-sparse-keymap))
+(define-key global-map (kbd "C-c o") darius/global-org-keymap)
+(define-key darius/global-org-keymap (kbd "a") 'org-agenda)
+(define-key darius/global-org-keymap (kbd "c") 'org-capture)
+
 ;; Fix weird internal link behavior
 (with-eval-after-load 'org-ctags (setq org-open-link-functions nil))
 #+end_src
@@ -600,8 +629,8 @@ Doesn't work properly if it's not all the way at the end for some reason
 #+begin_src emacs-lisp
 (use-package diminish
   :diminish visual-line-mode
-  :diminish auto-revert-mode
-  :diminish evil-collection-unimpaired-mode)
+  :diminish auto-revert-mode)
+  ;; :diminish evil-collection-unimpaired-mode)
 #+end_src
 
 ** Windows and Frames
@@ -620,19 +649,6 @@ Switching and moving windows
 (global-set-key (kbd "M-J") 'windmove-down)
 (global-set-key (kbd "M-K") 'windmove-up)
 (global-set-key (kbd "M-L") 'windmove-right)
-#+end_src
-
-** Spacious Padding
-Give windows some breathing room
-
-#+begin_src emacs-lisp
-(use-package spacious-padding
-  :custom
-  (spacious-padding-subtle-mode-line
-   '(:mode-line-active "#a7c080" :mode-line-inactive "#373737"))
-  (spacious-padding-widths '(:internal-border-width 3 :header-line-width 4 :mode-line-width 1 :right-divider-width 10))
-  :config
-  (spacious-padding-mode 1))
 #+end_src
 
 * Languages
@@ -668,6 +684,10 @@ Language server stuff
 Funny orange crab
 
 #+begin_src emacs-lisp
+(let ((cargo-path (expand-file-name "~/.cargo/bin")))
+  (setenv "PATH" (concat cargo-path ":" (getenv "PATH")))
+  (add-to-list 'exec-path cargo-path))
+
 (use-package rustic
   :config
   (setq rustic-cargo-bin-remote "/usr/local/cargo/bin/cargo")
@@ -705,7 +725,9 @@ What the hecc is a reftex
 (setq reftex-plug-into-AUCTeX t)
 
 (use-package tex
-  :ensure auctex)
+  :ensure auctex
+  :hook
+  (LaTeX-mode . turn-on-flyspell))
 
 (use-package citar
   :custom
@@ -719,6 +741,27 @@ What the hecc is a reftex
 
 * Custom Functions
 Various cringe
+** FIXME-etc comments
+Prompt for a string and insert a command with that string
+
+#+begin_src emacs-lisp
+(setq darius/comment-keyword-list
+      '(("TODO") ("FIXME") ("NOTE") ("OPTIMIZE") ("HACK") ("BUG")))
+
+(defun darius/todo-comment ()
+  (interactive)
+  (let ((keyword (completing-read "Insert comment: " darius/comment-keyword-list)))
+    (progn
+      (insert keyword)
+      (call-interactively #'comment-line)
+      (previous-line)
+      (end-of-line))))
+
+(defun darius/todo-occur ()
+  (interactive)
+  (let ((keyword (completing-read "Occur keyword: " darius/comment-keyword-list)))
+    (occur keyword)))
+#+end_src
 
 ** COMMENT Old EXWM Stuff
 Used to be stuff for EXWM but kept around just in case
