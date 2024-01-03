@@ -614,7 +614,25 @@ Switching and moving windows
   (aw-scope 'frame))
 
 (use-package transpose-frame
-:bind ("C-M-o" . transpose-frame))
+  :bind ("C-M-o" . transpose-frame))
+
+(global-set-key (kbd "M-H") 'windmove-left)
+(global-set-key (kbd "M-J") 'windmove-down)
+(global-set-key (kbd "M-K") 'windmove-up)
+(global-set-key (kbd "M-L") 'windmove-right)
+#+end_src
+
+** Spacious Padding
+Give windows some breathing room
+
+#+begin_src emacs-lisp
+(use-package spacious-padding
+  :custom
+  (spacious-padding-subtle-mode-line
+   '(:mode-line-active "#a7c080" :mode-line-inactive "#373737"))
+  (spacious-padding-widths '(:internal-border-width 3 :header-line-width 4 :mode-line-width 1 :right-divider-width 10))
+  :config
+  (spacious-padding-mode 1))
 #+end_src
 
 * Languages
@@ -702,7 +720,7 @@ What the hecc is a reftex
 * Custom Functions
 Various cringe
 
-** Old EXWM Stuff
+** COMMENT Old EXWM Stuff
 Used to be stuff for EXWM but kept around just in case
 
 #+begin_src emacs-lisp
