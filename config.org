@@ -88,9 +88,11 @@ Some sensible defaults
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 (global-unset-key (kbd "C-x C-c"))      ; stop accidentally quitting emacs
 
-(global-set-key (kbd "C-c c")   'compile)
-(global-set-key (kbd "C-c r")   'recompile)
-(global-set-key (kbd "C-c m")   'man)
+(global-set-key (kbd "C-c c") 'compile)
+(global-set-key (kbd "C-c r") 'recompile)
+(global-set-key (kbd "M-n")   'next-error)
+(global-set-key (kbd "M-p")   'previous-error)
+
 
 (setq read-buffer-completion-ignore-case t)
 (setq scroll-conservatively 101)
@@ -120,6 +122,7 @@ Make manpages look a little better
 
 #+begin_src emacs-lisp
 (require 'man)
+(global-set-key (kbd "C-c m") 'man)
 (set-face-attribute 'Man-overstrike nil :inherit font-lock-type-face :bold t)
 (set-face-attribute 'Man-underline nil :inherit font-lock-keyword-face :underline t)
 #+end_src
