@@ -638,10 +638,10 @@ doom-everforest theme depends on the ~doom-themes~ package
   "Color the filename in the currently selected buffer based on whether it's modified and dim it in inactive buffers"
   (with-current-buffer (window-buffer window)
     (if (not (eq (current-buffer) (window-buffer (selected-window))))
-        (face-remap-set-base 'mode-line-buffer-id '(:foreground "#414b50"))
+        (face-remap-set-base 'mode-line-buffer-id `(:foreground ,(face-foreground 'ansi-color-bright-white)))
       (if (and (buffer-modified-p) (buffer-file-name))
-        (face-remap-set-base 'mode-line-buffer-id '(:foreground "#e67e80"))
-        (face-remap-set-base 'mode-line-buffer-id '(:foreground "#a7c080"))))))
+        (face-remap-set-base 'mode-line-buffer-id `(:foreground ,(face-foreground 'ansi-color-red)))
+        (face-remap-set-base 'mode-line-buffer-id `(:foreground ,(face-foreground 'ansi-color-green)))))))
 
 (add-hook 'post-command-hook (lambda () (walk-windows #'darius/set-buffer-name-color nil t)))
 
