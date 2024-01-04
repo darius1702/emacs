@@ -23,6 +23,7 @@ Prevent some flickering on startup
 Change some variables until after startup to make emacs load faster
 
 #+begin_src emacs-lisp :tangle early-init.el
+(defvar darius/gc-cons-threshold gc-cons-threshold)
 (setq gc-cons-threshold (* 1000 1000 1000))
 
 (defvar darius/file-name-handler-alist file-name-handler-alist)
@@ -34,7 +35,8 @@ Change some variables until after startup to make emacs load faster
 (add-hook 'emacs-startup-hook
           (lambda ()
             (setq file-name-handler-alist darius/file-name-handler-alist
-                  vc-handled-backends darius/vc-handled-backends)))
+                  gc-cons-threshold       darius/gc-cons-threshold
+                  vc-handled-backends     darius/vc-handled-backends)))
 #+end_src
 
 ** Default clutter
@@ -161,7 +163,26 @@ Make dired recognize other buffers as copy/move targets and also list human-read
 
 #+begin_src emacs-lisp
 (setq dired-dwim-target 1)
-(setq dired-listing-switches "-alh"):config
+(setq dired-listing-switches "-alh")
+(setq dired-kill-when-opening-new-dired-buffer t)
+(setq dired-auto-revert-buffer t)
+#+end_src
+
+** Proced
+Interact with running processes
+
+#+begin_src emacs-lisp
+(use-package proced
+  :ensure nil
+  :commands proced
+  :custom
+  (proced-auto-update-flag t)
+  (proced-goal-attribute nil)
+  (proced-enable-color-flag t)
+  (proced-format 'custom)
+  :config
+  (add-to-list 'proced-format-alist
+               '(custom user pid ppid sess tree pcpu pmem rss start time state (args comm))))
 #+end_src
 
 ** Default Applications
@@ -169,7 +190,11 @@ Default programs for opening filetypes
 This is probably he wrong way to do it?
 
 #+begin_src emacs-lisp
-(setq org-file-apps '((auto-mode . emacs) (directory . emacs) ("\\.mm\\'" . default) ("\\.x?html?\\'" . default)))
+(setq org-file-apps
+      '((auto-mode . emacs)
+        (directory . emacs)
+        ("\\.mm\\'" . default)
+        ("\\.x?html?\\'" . default)))
 #+end_src
 
 ** Font setup
@@ -462,11 +487,12 @@ Some org-mode tweaks
 
 #+begin_src emacs-lisp
 (use-package org-modern
-:config (global-org-modern-mode))
+  :config (global-org-modern-mode))
 
 (defun darius/org-setup ()
   (setq org-directory "~/Notes")
   (setq org-default-notes-file (concat org-directory "/scratch.org"))
+  (setq org-agenda-span 'month)
   (setq org-agenda-files '("~/Notes"))
   (setq org-todo-keywords '((sequence "TODO" "IN-PROGRESS" "WAITING" "DONE")))
   (setq org-return-follows-link t))
@@ -613,7 +639,7 @@ doom-everforest theme depends on the ~doom-themes~ package
   (with-current-buffer (window-buffer window)
     (if (not (eq (current-buffer) (window-buffer (selected-window))))
         (face-remap-set-base 'mode-line-buffer-id '(:foreground "#414b50"))
-      (if (buffer-modified-p)
+      (if (and (buffer-modified-p) (buffer-file-name))
         (face-remap-set-base 'mode-line-buffer-id '(:foreground "#e67e80"))
         (face-remap-set-base 'mode-line-buffer-id '(:foreground "#a7c080"))))))
 
@@ -630,7 +656,7 @@ Doesn't work properly if it's not all the way at the end for some reason
 (use-package diminish
   :diminish visual-line-mode
   :diminish auto-revert-mode)
-  ;; :diminish evil-collection-unimpaired-mode)
+;; :diminish evil-collection-unimpaired-mode)
 #+end_src
 
 ** Windows and Frames
