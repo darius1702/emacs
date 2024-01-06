@@ -43,10 +43,6 @@ Change some variables until after startup to make emacs load faster
 Adjust some default settings
 
 #+begin_src emacs-lisp :tangle early-init.el
-;; please work
-;; (setq evil-want-keybinding nil)
-;; (setq evil-want-C-u-scroll t)
-
 (setq inhibit-startup-message t)
 (setq native-comp-async-report-warnings-errors nil)
 (setq initial-scratch-message "")
@@ -365,125 +361,6 @@ Git status in the gutter
   :hook (prog-mode . git-gutter-mode))
 #+end_src
 
-** COMMENT Evil
-Not really a fan but text editing is even worse without it.
-I have no idea what needs to go in ~:init~ and what in ~:config~
-
-#+begin_src emacs-lisp
-(use-package evil
-  :init
-  (evil-mode 1)
-  :config
-  (evil-set-undo-system 'undo-redo)
-  (setq evil-mode-line-format nil))	; no <N> indicator in modeline
-
-;; Make RET still follow links in org mode
-(with-eval-after-load 'evil-maps
-  (define-key evil-motion-state-map (kbd "RET") nil))
-
-(use-package evil-collection
-  :after evil
-  :config (evil-collection-init))
-#+end_src
-
-** COMMENT General
-Setup keybindings
-
-#+begin_src emacs-lisp
-(use-package general
-  :config (general-evil-setup)
-
-  (general-create-definer darius/leader-keys
-    :states '(normal visual)
-    :keymaps 'override
-    :prefix "SPC")
-
-  (darius/leader-keys
-   "SPC" '(switch-to-buffer             :wk "Switch to buffer")
-   "/"   '(consult-line                 :wk "Consult line")
-   "d"   '(dired                        :wk "Dired")
-   "D"   '(dired-other-window           :wk "Dired other window")
-   "p"   '(consult-yank-from-kill-ring  :wk "Paste from history")
-   "u"   '(universal-argument           :wk "Universal argument")
-   "x"   '(execute-extended-command     :wk "M-x"))
-
-  (darius/leader-keys
-   "b"   '(:ignore t                    :wk "Buffer")
-   "b b" '(ibuffer                      :wk "Ibuffer")
-   "b f" '(consult-buffer               :wk "Find")
-   "b k" '(kill-buffer                  :wk "Kill")
-   "b w" '(widen                        :wk "Widen"))
-
-  (darius/leader-keys
-   "c"   '(:ignore t                    :wk "Compiler")
-   "c c" '(compile                      :wk "Compile")
-   "c e" '(consult-compile-error        :wk "Goto error")
-   "c r" '(recompile                    :wk "Recompile"))
-
-  (darius/leader-keys
-   "f"   '(:ignore t                    :wk "Find")
-   "f d" '(consult-fd                   :wk "Consult fd")
-   "f f" '(find-file                    :wk "File")
-   "f F" '(find-file-other-window       :wk "File other window")
-   "f g" '(consult-ripgrep              :wk "Grep")
-   "f i" '(consult-imenu-multi          :wk "Imenu")
-   "f m" '(man                          :wk "Manpage"))
-
-  (darius/leader-keys
-   "g"   '(:ignore t                    :wk "Git")
-   "g b" '(magit-blame                  :wk "Blame")
-   "g n" '(git-gutter:next-hunk         :wk "Next hunk")
-   "g p" '(git-gutter:previous-hunk     :wk "Previous hunk")
-   "g s" '(magit-status                 :wk "Status")
-   "g v" '(git-gutter:popup-hunk        :wk "View hunk"))
-
-  (darius/leader-keys
-   "h"   '(:ignore t                    :wk "Help")
-   "h f" '(describe-function            :wk "Function")
-   "h k" '(describe-key                 :wk "Key")
-   "h v" '(describe-variable            :wk "Variable"))
-
-  (darius/leader-keys
-   "l"   '(:ignore t                    :wk "LaTeX")
-   "l e" '(LaTeX-environment            :wk "Environment")
-   "l m" '(TeX-insert-macro             :wk "Macro")
-   "l s" '(LaTeX-section                :wk "Section"))
-
-  (darius/leader-keys
-   "o"   '(:ignore t                    :wk "Org")
-   "o a" '(org-agenda                   :wk "Agenda")
-   "o c" '(org-ctrl-c-ctrl-c            :wk "C-c C-c")
-   "o d" '(org-deadline                 :wk "Deadline")
-   "o e" '(org-edit-special             :wk "Edit")
-   "o f" '(consult-org-agenda           :wk "Find in Agenda")
-   "o h" '(consult-org-heading          :wk "Heading")
-
-   "o l"   '(:ignore t                  :wk "Link")
-   "o l i" '(org-insert-link            :wk "Insert")
-   "o l y" '(org-store-link             :wk "Store")
-
-   "o n"   '(:ignore t                  :wk "Narrow")
-   "o n s" '(org-narrow-to-subtree      :wk "Subtree")
-
-   "o p" '(org-priority                 :wk "Priority")
-   "o s" '(org-schedule                 :wk "Schedule")
-   "o t" '(org-todo                     :wk "Todo")
-   "o y" '(org-store-link               :wk "Copy link"))
-
-  (darius/leader-keys
-   "w"   '(:ignore t                    :wk "Window")
-   "w o" '(delete-other-windows         :wk "Delete others")
-   "w q" '(delete-window                :wk "Quit")
-   "w s" '(split-window-below           :wk "H-Split")
-   "w v" '(split-window-right           :wk "V-Split"))
-
-  (darius/leader-keys
-   "z"   '(:ignore t                    :wk "Citation")
-   "z d" '(citar-dwim                   :wk "Dwim")
-   "z i" '(citar-insert-citation        :wk "Insert")
-   "z o" '(citar-open                   :wk "Open")))
-#+end_src
-
 ** Org
 Some org-mode tweaks
 
@@ -656,7 +533,6 @@ Doesn't work properly if it's not all the way at the end for some reason
 (use-package diminish
   :diminish visual-line-mode
   :diminish auto-revert-mode)
-;; :diminish evil-collection-unimpaired-mode)
 #+end_src
 
 ** Windows and Frames
