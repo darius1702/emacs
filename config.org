@@ -86,18 +86,25 @@ Some sensible defaults
 
 #+begin_src emacs-lisp
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
-(global-unset-key (kbd "C-x C-c"))      ; stop accidentally quitting emacs
+(global-unset-key (kbd "C-x C-c"))          ; stop accidentally quitting emacs
+(global-unset-key (kbd "C-x C-z"))          ; stop accidentally suspending emacs
+(global-set-key (kbd "C-x C-z") 'grep-find) ; something more useful
 
 (global-set-key (kbd "C-c c") 'compile)
 (global-set-key (kbd "C-c r") 'recompile)
-(global-set-key (kbd "M-n")   'next-error)
-(global-set-key (kbd "M-p")   'previous-error)
 
+(global-set-key (kbd "M-n")   'flymake-goto-next-error)
+(global-set-key (kbd "M-p")   'flymake-goto-prev-error)
+
+(global-set-key (kbd "M-N")   'next-error)
+(global-set-key (kbd "M-P")   'previous-error)
 
 (setq read-buffer-completion-ignore-case t)
+(setq read-file-name-completion-ignore-case t)
 (setq scroll-conservatively 101)
 (setq scroll-margin 3)
 (setq display-line-numbers-type 'relative)
+(setq text-scale-mode-step 1.05)
 (setq-default indent-tabs-mode nil)
 (column-number-mode t)
 (show-paren-mode t)
@@ -112,6 +119,7 @@ Make programming-modes a little nicer with line numbers and current line highlig
 #+begin_src emacs-lisp
 (add-hook 'prog-mode-hook 'display-line-numbers-mode)
 (add-hook 'prog-mode-hook 'hl-line-mode)
+(add-hook 'prog-mode-hook 'flyspell-prog-mode)
 
 (global-set-key (kbd "C-c t")   'darius/todo-comment)
 (global-set-key (kbd "C-c S-T") 'darius/todo-occur)
@@ -305,7 +313,7 @@ Some nice additional completing-read stuff
 (use-package consult
   :bind
   ("C-x C-S-F" . consult-fd)
-  ("M-S-Y"     . consult-yank-from-kill-ring)
+  ("C-S-Y"     . consult-yank-from-kill-ring)
   ("C-c e"     . consult-compile-error)
   ("C-S-S"     . consult-line)
   ("M-g i"     . consult-imenu-multi))
@@ -322,16 +330,7 @@ Some improvements over DocView
   (add-to-list 'revert-without-query ".pdf")
   :bind (:map pdf-view-mode-map
               ("C-=" . pdf-view-enlarge)
-              ("C--" . pdf-view-shrink)
-              ("g"  . pdf-view-first-page)
-              ("G"  . pdf-view-last-page)
-              ("l"  . image-forward-hscroll)
-              ("h"  . image-backward-hscroll)
-              ("j"  . pdf-view-next-line-or-next-page)
-              ("k"  . pdf-view-previous-line-or-previous-page)
-              ("e"  . pdf-view-goto-page)
-              ("i"  . pdf-misc-display-metadata)
-              ("s"  . pdf-occur)))
+              ("C--" . pdf-view-shrink)))
 
 (add-hook 'pdf-view-mode-hook #'(lambda () (interactive) (display-line-numbers-mode -1)))
 (add-hook 'doc-view-mode-hook #'(lambda () (progn
@@ -633,18 +632,16 @@ doom-everforest theme depends on the ~doom-themes~ package
 (add-to-list 'custom-theme-load-path "~/.emacs.d/doom-everforest-theme")
 (setq doom-everforest-background "hard")
 (use-package doom-themes
-:config
-(doom-themes-org-config)
-(setq doom-themes-enable-italic nil))
+  :config
+  (doom-themes-org-config)
+  (setq doom-themes-enable-italic nil))
 
 (defun darius/set-buffer-name-color (window)
-  "Color the filename in the currently selected buffer based on whether it's modified and dim it in inactive buffers"
+  "Color the filename in the currently selected buffer based on whether it's modified"
   (with-current-buffer (window-buffer window)
-    (if (not (eq (current-buffer) (window-buffer (selected-window))))
-        (face-remap-set-base 'mode-line-buffer-id `(:foreground ,(face-foreground 'ansi-color-bright-white)))
-      (if (and (buffer-modified-p) (buffer-file-name))
+    (if (and (buffer-modified-p) (buffer-file-name))
         (face-remap-set-base 'mode-line-buffer-id `(:foreground ,(face-foreground 'ansi-color-red)))
-        (face-remap-set-base 'mode-line-buffer-id `(:foreground ,(face-foreground 'ansi-color-green)))))))
+      (face-remap-set-base 'mode-line-buffer-id `(:foreground ,(face-foreground 'ansi-color-green))))))
 
 (add-hook 'post-command-hook (lambda () (walk-windows #'darius/set-buffer-name-color nil t)))
 
@@ -683,6 +680,13 @@ Switching and moving windows
 * Languages
 Programming language specific stuff
 
+** Tree-sitter
+General tree-sitter setup
+
+#+begin_src emacs-lisp
+(setq treesit-font-lock-level 4)
+#+end_src
+
 ** Eglot Setup
 Language server stuff
 
@@ -709,6 +713,15 @@ Language server stuff
   (add-hook 'latex-mode-hook #'eglot-ensure))
 #+end_src
 
+** C and C++
+
+#+begin_src emacs-lisp
+(add-to-list 'major-mode-remap-alist '(c-mode . c-ts-mode))
+(add-to-list 'major-mode-remap-alist '(c++-mode . c++-ts-mode))
+(add-to-list 'major-mode-remap-alist
+             '(c-or-c++-mode . c-or-c++-ts-mode))
+#+end_src
+
 ** Rust
 Funny orange crab
 
@@ -716,11 +729,6 @@ Funny orange crab
 (let ((cargo-path (expand-file-name "~/.cargo/bin")))
   (setenv "PATH" (concat cargo-path ":" (getenv "PATH")))
   (add-to-list 'exec-path cargo-path))
-
-(use-package rustic
-  :config
-  (setq rustic-cargo-bin-remote "/usr/local/cargo/bin/cargo")
-  (setq rustic-lsp-client 'eglot))
 #+end_src
 
 ** Haskell
@@ -748,24 +756,32 @@ Also requires auctex
 What the hecc is a reftex
 
 #+begin_src emacs-lisp
-(setq TeX-parse-self t)
-(setq-default TeX-master nil)
-(setq LaTeX-electric-left-right-brace t)
-(setq reftex-plug-into-AUCTeX t)
+(defun darius/LaTeX-mode-setup ()
+  (font-latex-add-keywords '(("autoref" "*{") ("Autoref" "{")) 'reference))
 
 (use-package tex
   :ensure auctex
+  :custom
+  (TeX-parse-self t)
+  (LaTeX-electric-left-right-brace t)
+  (reftex-plug-into-AUCTeX t)
+  (reftex-default-bibliography "~/Documents/library.bib")
+  :config
+  (setq-default TeX-master 'shared)
+  (add-to-list 'TeX-view-program-selection '(output-pdf "Zathura"))
   :hook
-  (LaTeX-mode . turn-on-flyspell))
+  (LaTeX-mode . turn-on-flyspell)
+  (LaTeX-mode . hl-line-mode)
+  (LaTeX-mode . darius/LaTeX-mode-setup))
 
 (use-package citar
   :custom
-  (setq citar-file-open-functions '(("html" . citar-file-open-external) ("pdf" . citar-file-open-external) (t . find-file)))
-  (citar-bibliography '("~/Documents/library.bib")))
+  (citar-file-open-functions '(("html" . citar-file-open-external) ("pdf" . citar-file-open-external) (t . find-file)))
+  (citar-bibliography '("~/Documents/library.bib"))
+  :bind ("C-c z" . 'citar-insert-citation))
 
 (use-package cdlatex
-  :config
-  (add-hook 'LaTeX-mode-hook #'turn-on-cdlatex))
+  :hook (LaTeX-mode . turn-on-cdlatex))
 #+end_src
 
 * Custom Functions
