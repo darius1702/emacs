@@ -81,13 +81,13 @@ Disble all annoying auto-generated files and make ~custom-set-variables~ go to t
 Some sensible defaults
 
 #+begin_src emacs-lisp
-(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 (global-unset-key (kbd "C-x C-c"))          ; stop accidentally quitting emacs
 (global-unset-key (kbd "C-x C-z"))          ; stop accidentally suspending emacs
 (global-set-key (kbd "C-x C-z") 'grep-find) ; something more useful
 
 (global-set-key (kbd "C-c c") 'compile)
 (global-set-key (kbd "C-c r") 'recompile)
+(global-set-key (kbd "C-c s") 'shell)
 
 (global-set-key (kbd "M-n")   'flymake-goto-next-error)
 (global-set-key (kbd "M-p")   'flymake-goto-prev-error)
@@ -97,11 +97,15 @@ Some sensible defaults
 
 (setq read-buffer-completion-ignore-case t)
 (setq read-file-name-completion-ignore-case t)
+(setq comint-prompt-read-only t)
 (setq scroll-conservatively 101)
 (setq scroll-margin 3)
 (setq display-line-numbers-type 'relative)
 (setq text-scale-mode-step 1.05)
+(setq line-spacing 0.12)
 (setq-default indent-tabs-mode nil)
+(setq ispell-dictionary "en_US")
+(setq isearch-wrap-pause 'no-ding)
 (column-number-mode t)
 (show-paren-mode t)
 (global-visual-line-mode t)
@@ -209,7 +213,8 @@ Iosevka is the best font fight me.
 Need to set it in an extra hook to make it work in emacsclient frames.
 
 #+begin_src emacs-lisp
-(setq darius/fixed-pitch-font "Iosevka Nerd Font Mono")
+;; (setq darius/fixed-pitch-font "Iosevka Nerd Font Mono")
+(setq darius/fixed-pitch-font "JetBrainsMono Nerd Font Mono")
 (setq darius/variable-pitch-font "Iosevka Aile")
 
 (defun darius/set-up-fonts ()
@@ -300,6 +305,16 @@ Colorize strings like #a7c080
 (use-package expand-region
   :bind (("M-[" . er/expand-region)
          ("C-(" . er/mark-outside-pairs)))
+#+end_src
+
+*** Spacious Padding
+Some breathing room around everything
+
+#+begin_src emacs-lisp
+(use-package spacious-padding
+  :custom
+  (spacious-padding-widths '(:internal-border-width 10 :header-line-width 4 :mode-line-width 4 :tab-width 4 :right-divider-width 30 :scroll-bar-width 8))
+  :hook (after-init . spacious-padding-mode))
 #+end_src
 
 ** Consult
@@ -399,16 +414,18 @@ Some org-mode tweaks
 
 (add-hook 'org-mode-hook 'org-indent-mode)
 
-;; Org-specific maps
-(define-key org-mode-map (kbd "C-c h") 'consult-org-heading)
-(define-key org-mode-map (kbd "C-c s") 'org-store-link)
-(define-key org-mode-map (kbd "C-c i") 'org-insert-link)
-
 ;; Global keymaps
 (setq darius/global-org-keymap (make-sparse-keymap))
 (define-key global-map (kbd "C-c o") darius/global-org-keymap)
 (define-key darius/global-org-keymap (kbd "a") 'org-agenda)
 (define-key darius/global-org-keymap (kbd "c") 'org-capture)
+
+;; Org-specific maps
+(setq darius/local-org-keymap (make-sparse-keymap))
+(define-key org-mode-map (kbd "C-c o") darius/local-org-keymap)
+(define-key darius/local-org-keymap (kbd "h") 'consult-org-heading)
+(define-key darius/local-org-keymap (kbd "s") 'org-store-link)
+(define-key darius/local-org-keymap (kbd "i") 'org-insert-link)
 
 ;; Fix weird internal link behavior
 (with-eval-after-load 'org-ctags (setq org-open-link-functions nil))
@@ -502,27 +519,15 @@ Set up vertico, orderless and savehist and tweak some emacs completion defaults
 
 ** Colorscheme
 The most important thing tbh.
-doom-everforest theme depends on the ~doom-themes~ package
-- [ ] Get rid of ~doom-themes~ dependency
 
 #+begin_src emacs-lisp
-(add-to-list 'custom-theme-load-path "~/.emacs.d/doom-everforest-theme")
-(setq doom-everforest-background "hard")
-(use-package doom-themes
-  :config
-  (doom-themes-org-config)
-  (setq doom-themes-enable-italic nil))
-
-(defun darius/set-buffer-name-color (window)
-  "Color the filename in the currently selected buffer based on whether it's modified"
-  (with-current-buffer (window-buffer window)
-    (if (and (buffer-modified-p) (buffer-file-name))
-        (face-remap-set-base 'mode-line-buffer-id `(:foreground ,(face-foreground 'ansi-color-red)))
-      (face-remap-set-base 'mode-line-buffer-id `(:foreground ,(face-foreground 'ansi-color-green))))))
-
-(add-hook 'post-command-hook (lambda () (walk-windows #'darius/set-buffer-name-color nil t)))
-
-(load-theme 'doom-everforest t)
+(use-package modus-themes
+  :custom
+  (modus-themes-bold-constructs t)
+  (modus-themes-org-blocks 'gray-background)
+  (modus-themes-to-toggle '(modus-operandi-tinted modus-vivendi-tinted)))
+(modus-themes-select 'modus-operandi-tinted)
+(global-set-key (kbd "<f12>") 'modus-themes-toggle)
 #+end_src
 
 ** Diminish
@@ -629,26 +634,32 @@ The one and only
 ** LaTeX and Citar
 Work with citations
 Also requires auctex
-What the hecc is a reftex
 
 #+begin_src emacs-lisp
 (defun darius/LaTeX-mode-setup ()
-  (font-latex-add-keywords '(("autoref" "*{") ("Autoref" "{")) 'reference))
+  (progn
+    (add-to-list 'TeX-view-program-selection '(output-pdf "Zathura"))
+    (add-to-list 'reftex-ref-style-default-list "Hyperref")
+    (TeX-source-correlate-mode t)
+    (define-key LaTeX-mode-map (kbd "C-c C-r") 'reftex-reference)
+    (font-latex-add-keywords '(("autoref" "*{") ("Autoref" "{")) 'reference)))
+
+
 
 (use-package tex
   :ensure auctex
-  :custom
-  (TeX-parse-self t)
-  (LaTeX-electric-left-right-brace t)
-  (reftex-plug-into-AUCTeX t)
-  (reftex-default-bibliography "~/Documents/library.bib")
   :config
+  (setq TeX-parse-self t)
+  (setq TeX-auto-save t)
+  (setq LaTeX-electric-left-right-brace t)
+  (setq reftex-plug-into-AUCTeX t)
+  (setq reftex-default-bibliography "~/Documents/library.bib")
   (setq-default TeX-master 'shared)
-  (add-to-list 'TeX-view-program-selection '(output-pdf "Zathura"))
   :hook
   (LaTeX-mode . turn-on-flyspell)
   (LaTeX-mode . hl-line-mode)
-  (LaTeX-mode . darius/LaTeX-mode-setup))
+  (LaTeX-mode . darius/LaTeX-mode-setup)
+  (LaTeX-mode . turn-on-reftex))
 
 (use-package citar
   :custom
@@ -657,6 +668,7 @@ What the hecc is a reftex
   :bind ("C-c z" . 'citar-insert-citation))
 
 (use-package cdlatex
+  :custom (cdlatex-takeover-parenthesis nil)
   :hook (LaTeX-mode . turn-on-cdlatex))
 #+end_src
 
