@@ -87,13 +87,15 @@ Some sensible defaults
 
 (global-set-key (kbd "C-c c") 'compile)
 (global-set-key (kbd "C-c r") 'recompile)
-(global-set-key (kbd "C-c s") 'shell)
 
 (global-set-key (kbd "M-n")   'flymake-goto-next-error)
 (global-set-key (kbd "M-p")   'flymake-goto-prev-error)
 
 (global-set-key (kbd "M-N")   'next-error)
 (global-set-key (kbd "M-P")   'previous-error)
+
+(global-set-key (kbd "C-v") 'darius/scroll-up-half)
+(global-set-key (kbd "M-v") 'darius/scroll-down-half)
 
 (setq read-buffer-completion-ignore-case t)
 (setq read-file-name-completion-ignore-case t)
@@ -224,7 +226,7 @@ Need to set it in an extra hook to make it work in emacsclient frames.
 
 #+begin_src emacs-lisp
 ;; (setq darius/fixed-pitch-font "Iosevka Nerd Font Mono")
-(setq darius/fixed-pitch-font "Iosevka Nerd Font Mono")
+(setq darius/fixed-pitch-font "JetBrainsMono Nerd Font Mono")
 (setq darius/variable-pitch-font "Iosevka Aile")
 
 (defun darius/set-up-fonts ()
@@ -315,16 +317,6 @@ Colorize strings like #a7c080
 (use-package expand-region
   :bind (("M-[" . er/expand-region)
          ("C-(" . er/mark-outside-pairs)))
-#+end_src
-
-*** Spacious Padding
-Some breathing room around everything
-
-#+begin_src emacs-lisp
-(use-package spacious-padding
-  :custom
-  (spacious-padding-widths '(:internal-border-width 10 :header-line-width 4 :mode-line-width 4 :tab-width 4 :right-divider-width 30 :scroll-bar-width 8))
-  :hook (after-init . spacious-padding-mode))
 #+end_src
 
 ** Consult
@@ -444,6 +436,22 @@ Some org-mode tweaks
 (with-eval-after-load 'org-ctags (setq org-open-link-functions nil))
 #+end_src
 
+** Embark
+Very cool
+
+#+begin_src emacs-lisp
+(use-package embark
+  :bind ("C-." . embark-act))
+#+end_src
+
+** VTerm
+Terminal emulator inside emacs using libvterm
+
+#+begin_src emacs-lisp
+(use-package vterm
+  :bind ("C-c s" . vterm))
+#+end_src
+
 ** Completion at point
 Corfu for in-buffer completion
 
@@ -539,9 +547,13 @@ The most important thing tbh.
   (modus-themes-bold-constructs t)
   (modus-themes-org-blocks 'gray-background)
   (modus-themes-prompts '(bold))
-  (modus-themes-to-toggle '(modus-operandi-tinted modus-vivendi-tinted)))
+  (modus-themes-to-toggle '(modus-operandi-tinted modus-vivendi-tinted))
+  :bind
+  ("<f12>" . modus-themes-toggle))
 (modus-themes-select 'modus-operandi-tinted)
-(global-set-key (kbd "<f12>") 'modus-themes-toggle)
+
+;; backup dark theme, `nordic-midnight' is very pretty
+(use-package nordic-night-theme)
 #+end_src
 
 ** Diminish
@@ -591,6 +603,28 @@ General tree-sitter setup
 
 (add-to-list 'auto-mode-alist '("\\.yaml\\'" . yaml-ts-mode))
 (add-to-list 'org-src-lang-modes '("yaml" . yaml-ts))
+
+(setq treesit-language-source-alist
+      '((bash "https://github.com/tree-sitter/tree-sitter-bash")
+        (cmake "https://github.com/uyha/tree-sitter-cmake")
+        (c "https://github.com/tree-sitter/tree-sitter-c")
+        (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
+        (css "https://github.com/tree-sitter/tree-sitter-css")
+        (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+        (go "https://github.com/tree-sitter/tree-sitter-go")
+        (html "https://github.com/tree-sitter/tree-sitter-html")
+        (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
+        (json "https://github.com/tree-sitter/tree-sitter-json")
+        (make "https://github.com/alemuller/tree-sitter-make")
+        (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+        (python "https://github.com/tree-sitter/tree-sitter-python")
+        (toml "https://github.com/tree-sitter/tree-sitter-toml")
+        (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
+        (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+        (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
+
+(defun darius/install-ts-grammars ()
+  (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist)))
 #+end_src
 
 ** Eglot Setup
@@ -707,7 +741,7 @@ Also requires auctex
 
 * Custom Functions
 Various cringe
-** FIXME-etc comments
+** Todo comments
 Prompt for a string and insert a command with that string
 
 #+begin_src emacs-lisp
@@ -727,6 +761,27 @@ Prompt for a string and insert a command with that string
   (interactive)
   (let ((keyword (completing-read "Occur keyword: " darius/comment-keyword-list)))
     (occur keyword)))
+#+end_src
+
+** Scroll half pages
+C-v and M-v scrolling entire pages is kind of disorienting
+
+#+begin_src emacs-lisp
+(defun darius/scroll-up-half ()
+  (interactive)
+  (scroll-up-command
+   (floor
+    (- (window-height)
+       next-screen-context-lines)
+    2)))
+
+(defun darius/scroll-down-half ()
+  (interactive)
+  (scroll-down-command
+   (floor
+    (- (window-height)
+       next-screen-context-lines)
+    2)))
 #+end_src
 
 ** COMMENT Old EXWM Stuff
