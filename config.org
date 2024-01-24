@@ -104,6 +104,7 @@ Some sensible defaults
 
 (setq scroll-conservatively 101)
 (setq scroll-margin 3)
+(pixel-scroll-precision-mode 1)
 
 (setq display-line-numbers-type 'relative)
 (setq text-scale-mode-step 1.05)
@@ -132,9 +133,6 @@ Make programming-modes a little nicer with line numbers and current line highlig
 (add-hook 'prog-mode-hook 'display-line-numbers-mode)
 (add-hook 'prog-mode-hook 'hl-line-mode)
 (add-hook 'prog-mode-hook 'flyspell-prog-mode)
-
-(global-set-key (kbd "C-c t")   'darius/todo-comment)
-(global-set-key (kbd "C-c S-T") 'darius/todo-occur)
 #+end_src
 
 ** Man pages
@@ -319,6 +317,14 @@ Colorize strings like #a7c080
          ("C-(" . er/mark-outside-pairs)))
 #+end_src
 
+*** TLDR pages
+Read tldr pages in emacs
+
+#+begin_src emacs-lisp
+(use-package tldr
+  :bind ("C-c t" . tldr))
+#+end_src
+
 ** Consult
 Some nice additional completing-read stuff
 
@@ -383,9 +389,6 @@ Git status in the gutter
 Some org-mode tweaks
 
 #+begin_src emacs-lisp
-(use-package org-modern
-  :config (global-org-modern-mode))
-
 (defun darius/org-setup ()
   (setq org-directory "~/Notes")
   (setq org-default-notes-file (concat org-directory "/scratch.org"))
@@ -414,7 +417,7 @@ Some org-mode tweaks
   (darius/org-font-setup)
   (setq org-src-preserve-indentation nil
         org-edit-src-content-indentation 0)
-  (setq org-ellipsis "▾"))
+  (setq org-ellipsis ""))
 
 (add-hook 'org-mode-hook 'org-indent-mode)
 
@@ -438,10 +441,13 @@ Some org-mode tweaks
 
 ** Embark
 Very cool
+Still not 100% sure I get what it does
 
 #+begin_src emacs-lisp
 (use-package embark
   :bind ("C-." . embark-act))
+
+(use-package embark-consult)
 #+end_src
 
 ** VTerm
@@ -542,18 +548,8 @@ Set up vertico, orderless and savehist and tweak some emacs completion defaults
 The most important thing tbh.
 
 #+begin_src emacs-lisp
-(use-package modus-themes
-  :custom
-  (modus-themes-bold-constructs t)
-  (modus-themes-org-blocks 'gray-background)
-  (modus-themes-prompts '(bold))
-  (modus-themes-to-toggle '(modus-operandi-tinted modus-vivendi-tinted))
-  :bind
-  ("<f12>" . modus-themes-toggle))
-(modus-themes-select 'modus-operandi-tinted)
-
-;; backup dark theme, `nordic-midnight' is very pretty
-(use-package nordic-night-theme)
+(use-package danneskjold-theme
+  :config (load-theme 'danneskjold t))
 #+end_src
 
 ** Diminish
@@ -648,9 +644,9 @@ Language server stuff
                     "--pch-storage=memory"
                     "--header-insertion=never"
                     "--header-insertion-decorators=0")))
-  (add-hook 'c-mode-hook #'eglot-ensure)
-  (add-hook 'c++-mode-hook #'eglot-ensure)
-  (add-hook 'latex-mode-hook #'eglot-ensure))
+  (add-hook 'c-ts-mode-hook #'eglot-ensure)
+  (add-hook 'c++-ts-mode-hook #'eglot-ensure)
+  (add-hook 'LaTeX-mode-hook #'eglot-ensure))
 #+end_src
 
 ** C and C++
@@ -782,72 +778,4 @@ C-v and M-v scrolling entire pages is kind of disorienting
     (- (window-height)
        next-screen-context-lines)
     2)))
-#+end_src
-
-** COMMENT Old EXWM Stuff
-Used to be stuff for EXWM but kept around just in case
-
-#+begin_src emacs-lisp
-(defun darius/get_executables_in_path ()
-  (split-string (shell-command-to-string "dmenu_path") "\n"))
-
-(defun darius/run ()
-  (interactive)
-  (let* ((option (completing-read "Run: " (darius/get_executables_in_path))))
-    (start-process option nil option))) ;; re-use option for process name as well
-
-(defun darius/exwm-update-class ()
-  (exwm-workspace-rename-buffer exwm-class-name))
-
-(defun darius/exwm-update-title ()
-  (pcase exwm-class-name
-    ("firefox" (exwm-workspace-rename-buffer (format "Firefox: %s" exwm-title)))))
-
-(defun darius/run-in-background (command)
-  (let ((command-parts (split-string command "[ ]+")))
-    (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
-
-(defun darius/set-volume (amount)
-  "Set the system volume to the AMOUNT string using pactl"
-  (let ((command (format "pactl -- set-sink-volume @DEFAULT_SINK@ %s" amount)))
-    (start-process-shell-command command nil command)))
-
-(defun darius/volume-up-percent (amount)
-  "Increase system volume by AMOUNT percent"
-  (darius/set-volume (format "+%d%%" amount)))
-
-(defun darius/volume-down-percent (amount)
-  "Decrease system volume by AMOUNT percent"
-  (darius/set-volume (format "-%d%%" amount)))
-
-(defun darius/volume-mute ()
-  "Mute system volume using pactl"
-  (let ((command "pactl -- set-sink-mute @DEFAULT_SINK@ toggle"))
-    (start-process-shell-command command nil command)))
-
-(defun darius/mic-mute ()
-  "Mute the microphone using pactl"
-  (let ((command "pactl -- set-source-mute 0 toggle"))
-    (start-process-shell-command command nil command)))
-
-(defun darius/set-brightness (amount)
-  "Pass AMOUNT string to brightnessctl"
-  (let ((command (format "brightnessctl s %s" amount)))
-    (start-process-shell-command command nil command)))
-
-(defun darius/brightness-up (amount)
-  "Increase screen brightness by AMOUNT"
-  (darius/set-brightness (format "%d+" amount)))
-
-(defun darius/brightness-down (amount)
-  "Decrease screen brightness by AMOUNT"
-  (darius/set-brightness (format "%d-" amount)))
-
-(defun darius/lock-screen ()
-  "Lock the screen using i3lock"
-  (start-process-shell-command "~/.config/i3/lock.sh" nil "~/.config/i3/lock.sh"))
-
-(defun darius/trackpad-toggle ()
-  "Disable the trackpad using xinput"
-  (start-process-shell-command "~/Dotfiles/scripts/toggle_trackpad.sh" nil "~/Dotfiles/scripts/toggle_trackpad.sh"))
 #+end_src
