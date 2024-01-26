@@ -97,6 +97,10 @@ Some sensible defaults
 (global-set-key (kbd "C-v") 'darius/scroll-up-half)
 (global-set-key (kbd "M-v") 'darius/scroll-down-half)
 
+(global-unset-key (kbd "C-<wheel-up>"))
+(global-unset-key (kbd "C-<wheel-down>"))
+(global-unset-key (kbd "<pinch>"))
+
 (setq read-buffer-completion-ignore-case t)
 (setq read-file-name-completion-ignore-case t)
 
@@ -219,12 +223,10 @@ This is probably he wrong way to do it?
 #+end_src
 
 ** Font setup
-Iosevka is the best font fight me.
 Need to set it in an extra hook to make it work in emacsclient frames.
 
 #+begin_src emacs-lisp
-;; (setq darius/fixed-pitch-font "Iosevka Nerd Font Mono")
-(setq darius/fixed-pitch-font "JetBrainsMono Nerd Font Mono")
+(setq darius/fixed-pitch-font "IosevkaComfyFixed Nerd Font")
 (setq darius/variable-pitch-font "Iosevka Aile")
 
 (defun darius/set-up-fonts ()
@@ -548,8 +550,21 @@ Set up vertico, orderless and savehist and tweak some emacs completion defaults
 The most important thing tbh.
 
 #+begin_src emacs-lisp
-(use-package danneskjold-theme
-  :config (load-theme 'danneskjold t))
+(use-package modus-themes
+  :custom
+  (modus-themes-bold-constructs t)
+  (modus-themes-org-blocks 'gray-background)
+  (modus-themes-prompts '(bold))
+  (modus-themes-to-toggle '(modus-operandi-tinted modus-vivendi))
+  (modus-themes-common-palette-overrides
+   '((border-mode-line-active unspecified)
+     (border-mode-line-inactive unspecified)
+     (fg-region unspecified)
+     (fringe unspecified)))
+  :bind
+  ("<f12>" . modus-themes-toggle))
+
+(modus-themes-select 'modus-vivendi)
 #+end_src
 
 ** Diminish
