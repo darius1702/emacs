@@ -400,23 +400,9 @@ Some org-mode tweaks
   (setq org-return-follows-link t)
   (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file))
 
-(defun darius/org-font-setup ()
-  (custom-set-faces '(org-document-title ((t (:height 1.3)))))
-  ;; Larger font size for some headings
-  (dolist (face '((org-level-1 . 1.15)
-                  (org-level-2 . 1.1)
-                  (org-level-3 . 1.05)
-                  (org-level-4 . 1.0)
-                  (org-level-5 . 1.0)
-                  (org-level-6 . 1.0)
-                  (org-level-7 . 1.0)
-                  (org-level-8 . 1.0)))
-    (set-face-attribute (car face) nil :font darius/fixed-pitch-font :weight 'regular :height (cdr face))))
-
 (use-package org
   :config
   (darius/org-setup)
-  (darius/org-font-setup)
   (setq org-src-preserve-indentation nil
         org-edit-src-content-indentation 0)
   (setq org-ellipsis ""))
@@ -552,19 +538,24 @@ The most important thing tbh.
 #+begin_src emacs-lisp
 (use-package modus-themes
   :custom
+  (modus-themes-mixed-fonts t)
   (modus-themes-bold-constructs t)
   (modus-themes-org-blocks 'gray-background)
   (modus-themes-prompts '(bold))
-  (modus-themes-to-toggle '(modus-operandi-tinted modus-vivendi))
+  (modus-themes-to-toggle '(modus-operandi modus-vivendi))
   (modus-themes-common-palette-overrides
    '((border-mode-line-active unspecified)
      (border-mode-line-inactive unspecified)
      (fg-region unspecified)
      (fringe unspecified)))
+  (modus-themes-headings
+   '((1 . (1.15))
+     (2 . (1.10))
+     (3 . (1.05))))
   :bind
   ("<f12>" . modus-themes-toggle))
 
-(modus-themes-select 'modus-vivendi)
+(modus-themes-select 'modus-operandi)
 #+end_src
 
 ** Diminish
@@ -603,6 +594,29 @@ Prettier csv files
   :hook (csv-mode . csv-align-mode))
 #+end_src
 
+** Evil mode
+Noooo
+
+#+begin_src emacs-lisp :tangle early-init.el
+(setq evil-want-keybinding nil)
+(setq evil-want-C-u-scroll t)
+#+end_src
+
+
+#+begin_src emacs-lisp
+(use-package evil
+  :config
+  (evil-set-undo-system 'undo-redo)
+  (setq evil-mode-line-format nil)
+  (add-to-list 'evil-emacs-state-modes 'dired-mode)
+  (evil-mode 1))
+
+(with-eval-after-load 'evil-maps
+  (define-key evil-motion-state-map (kbd "RET") nil)
+  (define-key evil-motion-state-map (kbd "TAB") nil)
+  (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state))
+#+end_src
+
 * Languages
 Programming language specific stuff
 
@@ -614,6 +628,8 @@ General tree-sitter setup
 
 (add-to-list 'auto-mode-alist '("\\.yaml\\'" . yaml-ts-mode))
 (add-to-list 'org-src-lang-modes '("yaml" . yaml-ts))
+(add-to-list 'auto-mode-alist '("\\.json\\'" . json-ts-mode))
+(add-to-list 'org-src-lang-modes '("json" . json-ts))
 
 (setq treesit-language-source-alist
       '((bash "https://github.com/tree-sitter/tree-sitter-bash")
@@ -766,22 +782,13 @@ Prompt for a string and insert a command with that string
 (setq darius/comment-keyword-list
       '(("TODO") ("FIXME") ("NOTE") ("OPTIMIZE") ("HACK") ("BUG")))
 
-(defun darius/todo-comment ()
-  (interactive)
-  (let ((keyword (completing-read "Insert comment: " darius/comment-keyword-list)))
-    (progn
-      (insert keyword)
-      (call-interactively #'comment-line)
-      (previous-line)
-      (end-of-line))))
-
 (defun darius/todo-occur ()
   (interactive)
   (let ((keyword (completing-read "Occur keyword: " darius/comment-keyword-list)))
     (occur keyword)))
 #+end_src
 
-** Scroll half pages
+** COMMENT Scroll half pages
 C-v and M-v scrolling entire pages is kind of disorienting
 
 #+begin_src emacs-lisp
