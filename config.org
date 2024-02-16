@@ -457,12 +457,23 @@ Some org-mode tweaks
 ;; For some reason there is an error if I set this using use-package's :hook inside the org block
 (add-hook 'org-mode-hook 'org-indent-mode)
 
+;; Timer keymap
+(setq darius/timer-running nil)
+(add-hook 'org-timer-start-hook '(lambda () (setq darius/timer-running t)))
+(add-hook 'org-timer-stop-hook '(lambda () (setq darius/timer-running nil)))
+(defun darius/org-timer-toggle ()
+  (interactive)
+  (if darius/timer-running
+      (org-timer-stop)
+    (org-timer-start)))
+
 ;; Global keymaps
 (setq darius/global-org-keymap (make-sparse-keymap))
 (define-key global-map (kbd "C-c o") darius/global-org-keymap)
 (define-key darius/global-org-keymap (kbd "a") 'org-agenda)
 (define-key darius/global-org-keymap (kbd "g") 'consult-org-agenda)
 (define-key darius/global-org-keymap (kbd "c") 'org-capture)
+(define-key darius/global-org-keymap (kbd "t") 'darius/org-timer-toggle)
 
 ;; Org-specific maps
 (setq darius/local-org-keymap (make-sparse-keymap))
@@ -630,7 +641,7 @@ Noooo
   :config
   (evil-set-undo-system 'undo-redo)
   (setq evil-mode-line-format nil)
-  (dolist (mode '(dired-mode image-mode vterm-mode help-mode nov-mode pdf-annot-list-mode))
+  (dolist (mode '(dired-mode image-mode vterm-mode help-mode nov-mode pdf-annot-list-mode help-mode))
     (add-to-list 'evil-emacs-state-modes mode))
   (evil-mode 1))
 
