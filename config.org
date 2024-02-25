@@ -111,6 +111,7 @@ Some sensible defaults
 (pixel-scroll-precision-mode 1)
 
 (setq display-line-numbers-type 'relative)
+(setq display-line-numbers-width 3)
 (setq text-scale-mode-step 1.05)
 (setq line-spacing 0.12)
 
@@ -332,9 +333,10 @@ Read tldr pages in emacs
 Read epubs in emacs
 
 #+begin_src emacs-lisp
-(use-package nov)
+(use-package nov
   :defer t
-  (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
+  :config
+  (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode)))
 #+end_src
 
 *** VTerm
@@ -364,7 +366,7 @@ Prettier csv files
   :hook (csv-mode . csv-align-mode))
 #+end_src
 
-*** Mardown mode
+*** Markdown mode
 Syntax highlighting and other stuff for markdown documents
 
 #+begin_src emacs-lisp
@@ -380,7 +382,7 @@ Some nice additional completing-read stuff
   ("C-x C-S-F" . consult-fd)
   ("C-S-Y"     . consult-yank-from-kill-ring)
   ("C-c e"     . consult-compile-error)
-  ("C-S-S"     . consult-line)
+  ("C-s"       . consult-line)
   ("M-g i"     . consult-imenu-multi))
 #+end_src
 
@@ -445,6 +447,8 @@ Some org-mode tweaks
   (setq org-return-follows-link t)
   (setq calendar-date-style 'european)
   (setq calendar-week-start-day 1)
+  (setq org-imenu-depth 7)
+  (setq org-M-RET-may-split-line '((default . nil)))
   (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file))
 
 (use-package org
@@ -457,7 +461,7 @@ Some org-mode tweaks
 ;; For some reason there is an error if I set this using use-package's :hook inside the org block
 (add-hook 'org-mode-hook 'org-indent-mode)
 
-;; Timer keymap
+;; Timer
 (setq darius/timer-running nil)
 (add-hook 'org-timer-start-hook '(lambda () (setq darius/timer-running t)))
 (add-hook 'org-timer-stop-hook '(lambda () (setq darius/timer-running nil)))
@@ -641,8 +645,8 @@ Noooo
   :config
   (evil-set-undo-system 'undo-redo)
   (setq evil-mode-line-format nil)
-  (dolist (mode '(dired-mode image-mode vterm-mode help-mode nov-mode pdf-annot-list-mode help-mode))
-    (add-to-list 'evil-emacs-state-modes mode))
+  (dolist (mode '(dired-mode image-mode vterm-mode nov-mode pdf-annot-list-mode help-mode))
+    (evil-set-initial-state mode 'emacs))
   (evil-mode 1))
 
 (use-package evil-commentary
@@ -656,6 +660,12 @@ Noooo
 (with-eval-after-load 'evil-maps
   (define-key evil-motion-state-map (kbd "RET") nil)
   (define-key evil-motion-state-map (kbd "TAB") nil)
+  (define-key evil-motion-state-map (kbd "C-.") 'embark-act)
+  (define-key evil-normal-state-map (kbd "C-.") 'embark-act)
+  (define-key evil-normal-state-map (kbd "C-n") nil)
+  (define-key evil-normal-state-map (kbd "C-p") nil)
+  (define-key evil-insert-state-map (kbd "C-n") nil)
+  (define-key evil-insert-state-map (kbd "C-p") nil)
   (define-key evil-normal-state-map (kbd "M-.") 'xref-find-definitions)
   (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state))
 #+end_src
@@ -776,6 +786,16 @@ Snek
              '(python-mode . python-ts-mode))
 #+end_src
 
+** Lua
+🇧🇷
+
+#+begin_src emacs-lisp
+(use-package lua-mode
+  :custom
+  (lua-indent-level 2)
+  (lua-indent-nested-block-content-align nil))
+#+end_src
+
 ** LaTeX and Citar
 Work with citations
 Also requires auctex
@@ -789,8 +809,6 @@ Also requires auctex
     (define-key LaTeX-mode-map (kbd "C-c C-r") 'reftex-reference)
     (font-latex-add-keywords '(("autoref" "*{") ("Autoref" "{")) 'reference)))
 
-
-
 (use-package tex
   :ensure auctex
   :config
@@ -800,6 +818,7 @@ Also requires auctex
   (setq reftex-plug-into-AUCTeX t)
   (setq reftex-default-bibliography "~/Documents/library.bib")
   (setq-default TeX-master 'shared)
+  (setq-default TeX-command-extra-options "--shell-escape")
   :hook
   (LaTeX-mode . turn-on-flyspell)
   (LaTeX-mode . hl-line-mode)
@@ -830,6 +849,23 @@ Prompt for a string and insert a command with that string
   (interactive)
   (let ((keyword (completing-read "Occur keyword: " darius/comment-keyword-list)))
     (occur keyword)))
+#+end_src
+
+** Notify-send
+Send a notification using ~notify-send~
+
+#+begin_src emacs-lisp
+(defun darius/notify-send (msg)
+  (shell-command (format "notify-send %s" msg) nil nil))
+#+end_src
+
+** Countdown timer
+Send a notification after a given time
+
+#+begin_src emacs-lisp
+(defun darius/countdown-with-notify (time)
+  (interactive "sSet timer for: ")
+  (run-at-time time nil #'darius/notify-send "-u critical Time\\'s\\ up!"))
 #+end_src
 
 ** COMMENT Scroll half pages
