@@ -55,6 +55,8 @@ Adjust some default settings
 (setq frame-resize-pixelwise t)
 (setq use-dialog-box nil)
 (setq use-short-answers t)
+(winner-mode t)                         ; window layout history
+(undelete-frame-mode t)
 #+end_src
 
 * Basic stuff
@@ -93,9 +95,6 @@ Some sensible defaults
 
 (global-set-key (kbd "M-N")   'next-error)
 (global-set-key (kbd "M-P")   'previous-error)
-
-(global-set-key (kbd "C-v") 'darius/scroll-up-half)
-(global-set-key (kbd "M-v") 'darius/scroll-down-half)
 
 (global-unset-key (kbd "C-<wheel-up>"))
 (global-unset-key (kbd "C-<wheel-down>"))
@@ -347,6 +346,14 @@ Terminal emulator inside emacs using libvterm
   :bind ("C-c s" . vterm))
 #+end_src
 
+*** PDFgrep mode
+Grep in pdfs
+
+#+begin_src emacs-lisp
+(use-package pdfgrep
+  :config (pdfgrep-mode))
+#+end_src
+
 *** Embark
 Very cool
 Still not 100% sure I get what it does
@@ -371,6 +378,34 @@ Syntax highlighting and other stuff for markdown documents
 
 #+begin_src emacs-lisp
 (use-package markdown-mode)
+#+end_src
+
+** Git
+Some git tools
+
+*** Magit
+Very nice git interface
+
+#+begin_src emacs-lisp
+(use-package magit
+  :defer t)
+#+end_src
+
+*** Git-Gutter
+Git status in the gutter
+
+#+begin_src emacs-lisp
+(use-package git-gutter
+  :diminish
+  :init
+  (setq
+   git-gutter:update-interval 0
+   git-gutter:modified-sign "│"
+   git-gutter:added-sign "│"
+   git-gutter:deleted-sign "│")
+  :config
+  (set-face-foreground 'git-gutter:modified "#7fbbb3")
+  :hook (prog-mode . git-gutter-mode))
 #+end_src
 
 ** Consult
@@ -404,34 +439,6 @@ Some improvements over DocView
 (add-hook 'doc-view-mode-hook #'(lambda () (progn
                                              (pdf-tools-install)
                                              (pdf-view-mode))))
-#+end_src
-
-** Git
-Some git tools
-
-*** Magit
-Very nice git interface
-
-#+begin_src emacs-lisp
-(use-package magit
-  :defer t)
-#+end_src
-
-*** Git-Gutter
-Git status in the gutter
-
-#+begin_src emacs-lisp
-(use-package git-gutter
-  :diminish
-  :init
-  (setq
-   git-gutter:update-interval 0
-   git-gutter:modified-sign "│"
-   git-gutter:added-sign "│"
-   git-gutter:deleted-sign "│")
-  :config
-  (set-face-foreground 'git-gutter:modified "#7fbbb3")
-  :hook (prog-mode . git-gutter-mode))
 #+end_src
 
 ** Org
@@ -534,6 +541,10 @@ Corfu for in-buffer completion
   ;; Enable indentation+completion using the TAB key.
   ;; `completion-at-point' is often bound to M-TAB.
   (setq tab-always-indent 'complete))
+
+(use-package cape
+  :init
+  (add-to-list 'completion-at-point-functions #'cape-file))
 #+end_src
 
 ** Minibuffer completion
@@ -645,7 +656,7 @@ Noooo
   :config
   (evil-set-undo-system 'undo-redo)
   (setq evil-mode-line-format nil)
-  (dolist (mode '(dired-mode image-mode vterm-mode nov-mode pdf-annot-list-mode help-mode))
+  (dolist (mode '(dired-mode image-mode vterm-mode nov-mode pdf-annot-list-mode))
     (evil-set-initial-state mode 'emacs))
   (evil-mode 1))
 
@@ -718,7 +729,7 @@ Language server stuff
   (add-to-list 'eglot-server-programs
                '((c-mode c++-mode c-ts-mode c++-ts-mode)
                  . ("clangd"
-                    "-j=8"
+                    "-j=16"
                     "--log=error"
                     "--malloc-trim"
                     "--background-index"
@@ -728,9 +739,7 @@ Language server stuff
                     "--pch-storage=memory"
                     "--header-insertion=never"
                     "--header-insertion-decorators=0")))
-  (add-hook 'c-ts-mode-hook #'eglot-ensure)
-  (add-hook 'c++-ts-mode-hook #'eglot-ensure)
-  (add-hook 'LaTeX-mode-hook #'eglot-ensure))
+  :hook ((c-ts-mode c++-ts-mode LaTeX-mode) . eglot-ensure))
 #+end_src
 
 ** C and C++
