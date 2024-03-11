@@ -22,8 +22,9 @@ multisession/
 .lsp-session-v1
 themes
 lisp
-tree-sitter
 tramp
 ede-projects.el
 /tldr/
 nov-places
+/org-roam.db
+/.org-id-locations

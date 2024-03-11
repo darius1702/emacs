@@ -23,8 +23,7 @@ Prevent some flickering on startup
 Change some variables until after startup to make emacs load faster
 
 #+begin_src emacs-lisp :tangle early-init.el
-(defvar darius/gc-cons-threshold gc-cons-threshold)
-(setq gc-cons-threshold (* 1000 1000 1000))
+(setq gc-cons-threshold (eval-when-compile (* 5 1024 1024 1024)))
 
 (defvar darius/file-name-handler-alist file-name-handler-alist)
 (setq file-name-handler-alist nil)
@@ -35,7 +34,6 @@ Change some variables until after startup to make emacs load faster
 (add-hook 'emacs-startup-hook
           (lambda ()
             (setq file-name-handler-alist darius/file-name-handler-alist
-                  gc-cons-threshold       darius/gc-cons-threshold
                   vc-handled-backends     darius/vc-handled-backends)))
 #+end_src
 
@@ -100,6 +98,8 @@ Some sensible defaults
 (global-unset-key (kbd "C-<wheel-down>"))
 (global-unset-key (kbd "<pinch>"))
 
+(run-with-idle-timer 2 t (lambda () (garbage-collect)))
+
 (setq read-buffer-completion-ignore-case t)
 (setq read-file-name-completion-ignore-case t)
 
@@ -111,6 +111,7 @@ Some sensible defaults
 
 (setq display-line-numbers-type 'relative)
 (setq display-line-numbers-width 3)
+(setq display-line-numbers-grow-only t)
 (setq text-scale-mode-step 1.05)
 (setq line-spacing 0.12)
 
@@ -377,7 +378,17 @@ Prettier csv files
 Syntax highlighting and other stuff for markdown documents
 
 #+begin_src emacs-lisp
-(use-package markdown-mode)
+(use-package markdown-mode
+  :mode ("README\\.md\\'" . gfm-mode))
+#+end_src
+
+*** TMR
+Set timers
+
+#+begin_src emacs-lisp
+(use-package tmr
+  :custom
+  (tmr-sound-file nil))
 #+end_src
 
 ** Git
@@ -418,7 +429,7 @@ Some nice additional completing-read stuff
   ("C-S-Y"     . consult-yank-from-kill-ring)
   ("C-c e"     . consult-compile-error)
   ("C-s"       . consult-line)
-  ("M-g i"     . consult-imenu-multi))
+  ("M-g i"     . consult-imenu))
 #+end_src
 
 ** PDF Tools
@@ -432,6 +443,8 @@ Some improvements over DocView
   (add-to-list 'revert-without-query ".pdf")
   (setq pdf-annot-default-annotation-properties '((t (label . "Darius Schefer")) (text (icon . "Comment"))))
   :bind (:map pdf-view-mode-map
+              ("j" . pdf-view-next-line-or-next-page)
+              ("k" . pdf-view-previous-line-or-previous-page)
               ("C-=" . pdf-view-enlarge)
               ("C--" . pdf-view-shrink)))
 
@@ -491,10 +504,24 @@ Some org-mode tweaks
 (define-key org-mode-map (kbd "C-c o") darius/local-org-keymap)
 (define-key darius/local-org-keymap (kbd "h") 'consult-org-heading)
 (define-key darius/local-org-keymap (kbd "s") 'org-store-link)
-(define-key darius/local-org-keymap (kbd "i") 'org-insert-link)
 
 ;; Fix weird internal link behavior
 (with-eval-after-load 'org-ctags (setq org-open-link-functions nil))
+#+end_src
+
+** Org-roam
+Pls
+
+#+begin_src emacs-lisp
+(use-package org-roam
+  :custom
+  (org-roam-directory (f-join org-directory "org-roam"))
+  :config
+  (org-roam-db-autosync-mode)
+  :bind
+  ("C-c o f" . org-roam-node-find)
+  ("C-c o b" . org-roam-buffer-toggle)
+  ("C-c o i" . org-roam-node-insert))
 #+end_src
 
 ** Completion at point
@@ -656,7 +683,7 @@ Noooo
   :config
   (evil-set-undo-system 'undo-redo)
   (setq evil-mode-line-format nil)
-  (dolist (mode '(dired-mode image-mode vterm-mode nov-mode pdf-annot-list-mode))
+  (dolist (mode '(dired-mode image-mode vterm-mode nov-mode pdf-annot-list-mode xref--xref-buffer-mode))
     (evil-set-initial-state mode 'emacs))
   (evil-mode 1))
 
@@ -679,6 +706,24 @@ Noooo
   (define-key evil-insert-state-map (kbd "C-p") nil)
   (define-key evil-normal-state-map (kbd "M-.") 'xref-find-definitions)
   (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state))
+#+end_src
+
+** Avy
+Jumping around
+
+#+begin_src emacs-lisp
+(use-package avy
+  :bind ("M-j" . avy-goto-char-timer))
+#+end_src
+
+** Eldoc-Box
+Eldoc in a popup frame
+
+#+begin_src emacs-lisp
+(setq eldoc-echo-area-use-multiline-p nil)
+(use-package eldoc-box
+:bind ("C-c k" . #'eldoc-box-help-at-point))
+(define-key eglot-mode-map (kbd "C-c K") #'eldoc-box-eglot-help-at-point)
 #+end_src
 
 * Languages
@@ -723,9 +768,12 @@ Language server stuff
 
 #+begin_src emacs-lisp
 (use-package eglot
+  :custom
+  (eglot-events-buffer-size 0)
+  (eglot-ignored-server-capabilities '(:documentHighlightProvider))
+  (eglot-autoshutdown t)
+  (eglot-extend-to-xref t)
   :config
-  (customize-set-variable 'eglot-autoshutdown t)
-  (customize-set-variable 'eglot-extend-to-xref t)
   (add-to-list 'eglot-server-programs
                '((c-mode c++-mode c-ts-mode c++-ts-mode)
                  . ("clangd"
@@ -866,15 +914,6 @@ Send a notification using ~notify-send~
 #+begin_src emacs-lisp
 (defun darius/notify-send (msg)
   (shell-command (format "notify-send %s" msg) nil nil))
-#+end_src
-
-** Countdown timer
-Send a notification after a given time
-
-#+begin_src emacs-lisp
-(defun darius/countdown-with-notify (time)
-  (interactive "sSet timer for: ")
-  (run-at-time time nil #'darius/notify-send "-u critical Time\\'s\\ up!"))
 #+end_src
 
 ** COMMENT Scroll half pages
