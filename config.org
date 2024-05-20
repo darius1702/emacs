@@ -109,8 +109,6 @@ Some sensible defaults
 (setq scroll-margin 3)
 
 (pixel-scroll-precision-mode 1)
-(global-set-key (kbd "M-v") (lambda () (interactive) (darius/scroll-down 0.5)))
-(global-set-key (kbd "C-v") (lambda () (interactive) (darius/scroll-up 0.5)))
 
 (setq display-line-numbers-type 'relative)
 (setq display-line-numbers-width 3)
@@ -286,8 +284,8 @@ Open files in custom programs in dired
 #+begin_src emacs-lisp
 (use-package dired-open
   :config
-  (setq dired-open-extensions '(("jpg" . "sxiv")
-                                ("png" . "sxiv")
+  (setq dired-open-extensions '(("jpg" . "imv")
+                                ("png" . "imv")
                                 ("mkv" . "mpv")
                                 ("mp4" . "mpv"))))
 #+end_src
@@ -533,9 +531,9 @@ Corfu for in-buffer completion
 (use-package corfu
   :custom
   (corfu-cycle t)
-  ;; (corfu-auto t)
-  ;; (corfu-auto-prefix 0)
-  ;; (corfu-auto-delay 0)
+  (corfu-auto t)
+  (corfu-auto-prefix 0)
+  (corfu-auto-delay 0.5)
   (corfu-separator ?\s)             ;; Orderless field separator
   (corfu-popupinfo-mode t)
   ;; (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
@@ -671,7 +669,7 @@ Switching and moving windows
 (global-set-key (kbd "M-L") 'windmove-right)
 #+end_src
 
-** COMMENT Evil mode
+** Evil mode
 Noooo
 
 #+begin_src emacs-lisp :tangle early-init.el
@@ -708,6 +706,11 @@ Noooo
   (define-key evil-insert-state-map (kbd "C-p") nil)
   (define-key evil-normal-state-map (kbd "M-.") 'xref-find-definitions)
   (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state))
+
+(use-package evil-escape
+  :custom (evil-escape-key-sequence "jk")
+  :config (evil-escape-mode)
+  :diminish)
 #+end_src
 
 ** Avy
@@ -725,14 +728,6 @@ Eldoc in a popup frame
 (setq eldoc-echo-area-use-multiline-p nil)
 (use-package eldoc-box
   :bind ("C-c k" . #'eldoc-box-help-at-point))
-#+end_src
-
-** Multiple Cursors
-Fancy
-
-#+begin_src emacs-lisp
-(use-package multiple-cursors
-  :bind ("C->" . mc/mark-next-like-this))
 #+end_src
 
 * Languages
@@ -784,6 +779,7 @@ Language server stuff
   (eglot-autoshutdown t)
   (eglot-extend-to-xref t)
   :config
+  (fset #'jsonrpc--log-event #'ignore)
   (add-to-list 'eglot-server-programs
                '((c-mode c++-mode c-ts-mode c++-ts-mode)
                  . ("clangd"
@@ -903,8 +899,27 @@ Also requires auctex
 (use-package citar
   :custom
   (citar-file-open-functions '(("html" . citar-file-open-external) ("pdf" . citar-file-open-external) (t . find-file)))
-  (citar-bibliography '("~/Documents/library.bib"))
-  :bind ("C-c z" . 'citar-insert-citation))
+  (org-cite-global-bibliography '("~/Documents/library.bib"))
+  (org-cite-insert-processor 'citar)
+  (org-cite-follow-processor 'citar)
+  (org-cite-activate-processor 'citar)
+  (citar-bibliography org-cite-global-bibliography)
+  :hook
+  (LaTeX-mode . citar-capf-setup)
+  (org-mode . citar-capf-setup)
+  :bind ("C-c z" . 'citar-insert-citation)
+  (:map org-mode-map :package org ("C-c b" . #'org-cite-insert)))
+
+(use-package citar-embark
+  :after citar embark
+  :diminish
+  :config (citar-embark-mode))
+
+(use-package citar-org-roam
+  :after citar org-roam
+  :diminish
+  :custom (citar-org-roam-note-title-template "${author} - ${title}")
+  :config (citar-org-roam-mode))
 
 (use-package cdlatex
   :custom (cdlatex-takeover-parenthesis nil)
