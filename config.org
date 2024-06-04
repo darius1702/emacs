@@ -88,6 +88,14 @@ Some sensible defaults
 (global-set-key (kbd "C-c c") 'compile)
 (global-set-key (kbd "C-c r") 'recompile)
 
+;; Act on region if active, otherwise on line
+(global-set-key (kbd "M-D") 'duplicate-dwim)
+
+;; Act on region if active, otherwise on word
+(global-set-key (kbd "M-u") 'upcase-dwim)
+(global-set-key (kbd "M-l") 'downcase-dwim)
+(global-set-key (kbd "M-c") 'capitalize-dwim)
+
 (global-set-key (kbd "M-n")   'flymake-goto-next-error)
 (global-set-key (kbd "M-p")   'flymake-goto-prev-error)
 
@@ -100,37 +108,39 @@ Some sensible defaults
 
 (run-with-idle-timer 2 t (lambda () (garbage-collect)))
 
-(setq read-buffer-completion-ignore-case t)
-(setq read-file-name-completion-ignore-case t)
+(setq suggest-key-bindings nil
+      echo-keystrokes 0.01)
+
+(setq read-buffer-completion-ignore-case t
+      read-file-name-completion-ignore-case t)
 
 (setq comint-prompt-read-only t)
 
-(setq scroll-conservatively 101)
-(setq scroll-margin 3)
-
+(setq scroll-conservatively 101
+      scroll-margin 3)
 (pixel-scroll-precision-mode 1)
 
-(setq display-line-numbers-type 'relative)
-(setq display-line-numbers-width 3)
-(setq display-line-numbers-grow-only t)
+(setq display-line-numbers-type 'relative
+      display-line-numbers-width 3
+      display-line-numbers-grow-only t)
 (setq text-scale-mode-step 1.05)
 
 (setq-default indent-tabs-mode nil)
+(add-to-list 'write-file-functions 'delete-trailing-whitespace)
 
-(setq sentence-end-double-space nil)
-(setq sentence-end "[.\",;!?*:'] ")
+(setq sentence-end-double-space nil
+      sentence-end "[.\",;!?*:'] ")
 
-(setq ispell-dictionary "en_US")
-(setq ispell-program-name "hunspell")
-
-(setq isearch-wrap-pause 'no-ding)
+(setq ispell-dictionary "en_US"
+      ispell-program-name "hunspell"
+      isearch-wrap-pause 'no-ding)
 
 (setq tab-bar-show 1)                   ; only show tab bar on frames with more than one tab
 (column-number-mode t)
 (show-paren-mode t)
+(setq show-paren-when-point-inside-paren t)
 (global-visual-line-mode t)
 (electric-pair-mode t)
-(add-to-list 'write-file-functions 'delete-trailing-whitespace)
 #+end_src
 
 ** Prog-mode setup
@@ -230,8 +240,8 @@ This is probably he wrong way to do it?
 Need to set it in an extra hook to make it work in emacsclient frames.
 
 #+begin_src emacs-lisp
-(setq darius/fixed-pitch-font "Iosevka Comfy Fixed")
-(setq darius/variable-pitch-font "Iosevka Comfy Fixed")
+(setq darius/fixed-pitch-font "IosevkaTerm NFP")
+(setq darius/variable-pitch-font "IosevkaTerm NFP")
 
 (defun darius/set-up-fonts ()
   (set-face-attribute 'default nil :font darius/fixed-pitch-font :height 130)
@@ -321,6 +331,18 @@ Colorize strings like #a7c080
 (use-package expand-region
   :bind (("M-[" . er/expand-region)
          ("C-(" . er/mark-outside-pairs)))
+#+end_src
+
+*** Multiple cursors
+Easily place multiple cursors for edits
+
+#+begin_src emacs-lisp
+(use-package multiple-cursors
+  :custom (mc/always-run-for-all t)
+  :bind (("C-S-c C-S-c" . mc/edit-lines)
+         ("C->". mc/mark-next-like-this-word)
+         ("C-<" . mc/mark-previous-like-this-word)
+         ("C-c C-<" . mc/mark-all-like-this)))
 #+end_src
 
 *** TLDR pages
@@ -623,7 +645,6 @@ The most important thing tbh.
   :custom
   (modus-themes-mixed-fonts t)
   (modus-themes-bold-constructs t)
-  (modus-themes-org-blocks 'gray-background)
   (modus-themes-prompts '(bold))
   (modus-themes-to-toggle '(modus-operandi modus-vivendi))
   (modus-themes-common-palette-overrides
@@ -669,7 +690,7 @@ Switching and moving windows
 (global-set-key (kbd "M-L") 'windmove-right)
 #+end_src
 
-** Evil mode
+** COMMENT Evil mode
 Noooo
 
 #+begin_src emacs-lisp :tangle early-init.el
@@ -814,7 +835,7 @@ Funny orange crab
   (add-to-list 'exec-path cargo-path))
 #+end_src
 
-** COMMENT Haskell
+** Haskell
 The one and only
 
 #+begin_src emacs-lisp
@@ -859,7 +880,7 @@ Snek
   (lua-indent-nested-block-content-align nil))
 #+end_src
 
-** Nix
+** COMMENT Nix
 ❄
 
 #+begin_src emacs-lisp
