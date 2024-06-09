@@ -539,21 +539,6 @@ Some org-mode tweaks
 (with-eval-after-load 'org-ctags (setq org-open-link-functions nil))
 #+end_src
 
-** Org-roam
-Pls
-
-#+begin_src emacs-lisp
-(require 'f) ; otherwise org-roam doesn't find `f-join'
-(use-package org-roam
-  :config
-  (setq org-roam-directory (f-join org-directory "org-roam"))
-  (org-roam-db-autosync-mode)
-  :bind
-  ("C-c o f" . org-roam-node-find)
-  ("C-c o b" . org-roam-buffer-toggle)
-  ("C-c o i" . org-roam-node-insert))
-#+end_src
-
 ** Completion at point
 Corfu for in-buffer completion
 
@@ -949,12 +934,6 @@ Also requires auctex
   :after citar embark
   :diminish
   :config (citar-embark-mode))
-
-(use-package citar-org-roam
-  :after citar org-roam
-  :diminish
-  :custom (citar-org-roam-note-title-template "${author} - ${title}")
-  :config (citar-org-roam-mode))
 
 (use-package cdlatex
   :custom (cdlatex-takeover-parenthesis nil)
