@@ -414,6 +414,14 @@ Sudoedit files a little nicer than the built-in /sudoedit::
 (use-package sudo-edit)
 #+end_src
 
+*** Casual Calc
+Make calc a lot easier to work with
+
+#+begin_src emacs-lisp
+(use-package casual-calc
+  :bind (:map calc-mode-map ("C-o" .  #'casual-calc-tmenu)))
+#+end_src
+
 ** Git
 Some git tools
 
@@ -486,7 +494,7 @@ Some org-mode tweaks
   (setq org-default-notes-file (concat org-directory "/scratch.org"))
   (setq org-agenda-span 'month)
   (setq org-agenda-files '("~/Notes"))
-  (setq org-todo-keywords '((sequence "TODO" "IN-PROGRESS" "WAITING" "DONE")))
+  (setq org-todo-keywords '((sequence "TODO(t)" "IN-PROGRESS(p)" "WAITING(w)" "|" "DONE(d)")))
   (setq org-return-follows-link t)
   (setq calendar-date-style 'european)
   (setq calendar-week-start-day 1)
@@ -651,7 +659,8 @@ The most important thing tbh.
    '((border-mode-line-active unspecified)
      (border-mode-line-inactive unspecified)
      (fg-region unspecified)
-     (fringe unspecified)))
+     (fringe unspecified)
+     (bg-line-number-active unspecified)))
   (modus-themes-headings
    '((1 . (1.2))
      (2 . (1.15))
@@ -852,6 +861,11 @@ The one and only
   :bind (:map haskell-mode-map
               ("M-n" . 'haskell-goto-next-error)
               ("M-p" . 'haskell-goto-prev-error)))
+
+(use-package hindent
+  :after haskell-mode
+  :hook (haskell-mode . hindent-mode)
+  :diminish)
 #+end_src
 
 ** COMMENT Agda
