@@ -81,9 +81,12 @@ Disble all annoying auto-generated files and make ~custom-set-variables~ go to t
 Some sensible defaults
 
 #+begin_src emacs-lisp
-(global-unset-key (kbd "C-x C-c"))          ; stop accidentally quitting emacs
-(global-unset-key (kbd "C-x C-z"))          ; stop accidentally suspending emacs
-(global-set-key (kbd "C-x C-z") 'grep-find) ; something more useful
+(global-unset-key (kbd "C-x C-c"))            ; stop accidentally quitting emacs
+(global-unset-key (kbd "C-x C-z"))            ; stop accidentally suspending emacs
+(global-unset-key (kbd "C-z"))                ; stop accidentally suspending emacs (other binding)
+
+(global-set-key (kbd "C-x C-z") 'grep-find)   ; something more useful
+(global-set-key (kbd "C-z") 'consult-ripgrep) ; something more useful
 
 (global-set-key (kbd "C-c c") 'compile)
 (global-set-key (kbd "C-c r") 'recompile)
@@ -951,6 +954,7 @@ Prompt for a string and insert a command with that string
       '(("TODO") ("FIXME") ("NOTE") ("OPTIMIZE") ("HACK") ("BUG")))
 
 (defun darius/todo-occur ()
+  "List all lines containing a keyword from `darius/comment-keyword-list'"
   (interactive)
   (let ((keyword (completing-read "Occur keyword: " darius/comment-keyword-list)))
     (occur keyword)))
