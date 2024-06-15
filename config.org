@@ -149,7 +149,6 @@ Make programming-modes a little nicer with line numbers and current line highlig
 #+begin_src emacs-lisp
 (add-hook 'prog-mode-hook 'display-line-numbers-mode)
 (add-hook 'prog-mode-hook 'hl-line-mode)
-(add-hook 'prog-mode-hook 'flyspell-prog-mode)
 #+end_src
 
 ** Man pages
@@ -338,9 +337,11 @@ Easily place multiple cursors for edits
 
 #+begin_src emacs-lisp
 (use-package multiple-cursors
-  :custom (mc/always-run-for-all t)
+  :custom ((mc/always-run-for-all t)
+           (mc/cmds-to-run-once nil))
+
   :bind (("C-S-c C-S-c" . mc/edit-lines)
-         ("C->". mc/mark-next-like-this-word)
+         ("C->" . mc/mark-next-like-this-word)
          ("C-<" . mc/mark-previous-like-this-word)
          ("C-c C-<" . mc/mark-all-like-this)))
 #+end_src
