@@ -290,18 +290,6 @@ Version control integration for Ibuffer
 (use-package ibuffer-vc)
 #+end_src
 
-*** Dired open
-Open files in custom programs in dired
-
-#+begin_src emacs-lisp
-(use-package dired-open
-  :config
-  (setq dired-open-extensions '(("jpg" . "imv")
-                                ("png" . "imv")
-                                ("mkv" . "mpv")
-                                ("mp4" . "mpv"))))
-#+end_src
-
 *** Marginalia
 Usful info in the minibuffer
 
@@ -422,7 +410,7 @@ Sudoedit files a little nicer than the built-in /sudoedit::
 Make calc a lot easier to work with
 
 #+begin_src emacs-lisp
-(use-package casual-calc
+(use-package casual
   :bind (:map calc-mode-map ("C-o" .  #'casual-calc-tmenu)))
 #+end_src
 
@@ -495,7 +483,10 @@ Some org-mode tweaks
 #+begin_src emacs-lisp
 (defun darius/org-setup ()
   (setq org-directory "~/Notes")
-  (setq org-default-notes-file (concat org-directory "/scratch.org"))
+  (setq org-default-notes-file (concat org-directory "/captures.org"))
+  (setq org-refile-targets
+        '((nil :maxlevel . 3)
+          (org-agenda-files :maxlevel . 3)))
   (setq org-agenda-span 'month)
   (setq org-agenda-files '("~/Notes"))
   (setq org-todo-keywords '((sequence "TODO(t)" "IN-PROGRESS(p)" "WAITING(w)" "|" "DONE(d)")))
@@ -550,9 +541,9 @@ Corfu for in-buffer completion
 (use-package corfu
   :custom
   (corfu-cycle t)
-  (corfu-auto t)
-  (corfu-auto-prefix 0)
-  (corfu-auto-delay 0.5)
+  ;; (corfu-auto t)
+  ;; (corfu-auto-prefix 0)
+  ;; (corfu-auto-delay 0.5)
   (corfu-separator ?\s)             ;; Orderless field separator
   (corfu-popupinfo-mode t)
   ;; (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
@@ -643,7 +634,7 @@ The most important thing tbh.
   (modus-themes-mixed-fonts t)
   (modus-themes-bold-constructs t)
   (modus-themes-prompts '(bold))
-  (modus-themes-to-toggle '(modus-operandi modus-vivendi))
+  (modus-themes-to-toggle '(modus-operandi modus-vivendi-tinted))
   (modus-themes-common-palette-overrides
    '((border-mode-line-active unspecified)
      (border-mode-line-inactive unspecified)
@@ -758,10 +749,10 @@ General tree-sitter setup
 #+begin_src emacs-lisp
 (setq treesit-font-lock-level 4)
 
-(add-to-list 'auto-mode-alist '("\\.yaml\\'" . yaml-ts-mode))
-(add-to-list 'org-src-lang-modes '("yaml" . yaml-ts))
-(add-to-list 'auto-mode-alist '("\\.json\\'" . json-ts-mode))
-(add-to-list 'org-src-lang-modes '("json" . json-ts))
+;; (add-to-list 'auto-mode-alist '("\\.yaml\\'" . yaml-ts-mode))
+;; (add-to-list 'org-src-lang-modes '("yaml" . yaml-ts))
+;; (add-to-list 'auto-mode-alist '("\\.json\\'" . json-ts-mode))
+;; (add-to-list 'org-src-lang-modes '("json" . json-ts))
 
 (setq treesit-language-source-alist
       '((bash "https://github.com/tree-sitter/tree-sitter-bash")
@@ -818,10 +809,10 @@ Language server stuff
 ** C and C++
 
 #+begin_src emacs-lisp
-(add-to-list 'major-mode-remap-alist '(c-mode . c-ts-mode))
-(add-to-list 'major-mode-remap-alist '(c++-mode . c++-ts-mode))
-(add-to-list 'major-mode-remap-alist
-             '(c-or-c++-mode . c-or-c++-ts-mode))
+;; (add-to-list 'major-mode-remap-alist '(c-mode . c-ts-mode))
+;; (add-to-list 'major-mode-remap-alist '(c++-mode . c++-ts-mode))
+;; (add-to-list 'major-mode-remap-alist
+;;              '(c-or-c++-mode . c-or-c++-ts-mode))
 #+end_src
 
 ** COMMENT Rust
@@ -871,6 +862,14 @@ Snek
 #+begin_src emacs-lisp
 (add-to-list 'major-mode-remap-alist
              '(python-mode . python-ts-mode))
+#+end_src
+
+** Clojure
+I guess?
+
+#+begin_src emacs-lisp
+(use-package cider
+  :hook (clojure-mode . cider-mode))
 #+end_src
 
 ** Lua
