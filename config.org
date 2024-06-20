@@ -85,11 +85,12 @@ Some sensible defaults
 (global-unset-key (kbd "C-x C-z"))            ; stop accidentally suspending emacs
 (global-unset-key (kbd "C-z"))                ; stop accidentally suspending emacs (other binding)
 
-(global-set-key (kbd "C-x C-z") 'grep-find)   ; something more useful
-(global-set-key (kbd "C-z") 'consult-ripgrep) ; something more useful
+(global-set-key (kbd "C-z") 'grep-find)   ; something more useful
 
 (global-set-key (kbd "C-c c") 'compile)
 (global-set-key (kbd "C-c r") 'recompile)
+
+(global-set-key (kbd "M-o") 'other-window)
 
 ;; Act on region if active, otherwise on line
 (global-set-key (kbd "M-D") 'duplicate-dwim)
@@ -447,11 +448,24 @@ Some nice additional completing-read stuff
 #+begin_src emacs-lisp
 (use-package consult
   :bind
-  ("C-x C-S-F" . consult-fd)
   ("C-S-Y"     . consult-yank-from-kill-ring)
-  ("C-c e"     . consult-compile-error)
-  ("C-S-S"     . consult-line)
-  ("M-g i"     . consult-imenu))
+  ;; M-s `search-map'
+  ("M-s d"     . consult-fd)
+  ("M-s l"     . consult-line)
+  ("M-s L"     . consult-line-multi)
+  ("M-s r"     . consult-ripgrep)
+  ("M-s u"     . consult-focus-lines)
+  ("M-s k"     . consult-keep-lines)
+  ;; M-g `goto-map'
+  ("M-g g"     . consult-goto-line)
+  ("M-g M-g"   . consult-goto-line)
+  ("M-g e"     . consult-compile-error)
+  ("M-g f"     . consult-flymake)
+  ("M-g o"     . consult-outline)
+  ("M-g m"     . consult-mark)
+  ("M-g k"     . consult-global-mark)
+  ("M-g i"     . consult-imenu)
+  ("M-g I"     . consult-imenu-multi))
 #+end_src
 
 ** PDF Tools
@@ -648,7 +662,7 @@ The most important thing tbh.
   :bind
   ("<f12>" . modus-themes-toggle))
 
-(modus-themes-select 'modus-operandi)
+(modus-themes-select 'modus-vivendi-tinted)
 #+end_src
 
 ** Diminish
@@ -666,7 +680,7 @@ Switching and moving windows
 
 #+begin_src emacs-lisp
 (use-package ace-window
-  :bind (("M-o" . ace-window) ("M-O" . ace-swap-window))
+  :bind (("M-O" . ace-swap-window))
   :custom
   (aw-scope 'frame))
 
