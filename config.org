@@ -116,12 +116,12 @@ Some sensible defaults
       echo-keystrokes 0.01)
 
 (setq read-buffer-completion-ignore-case t
-      read-file-name-completion-ignore-case t)
+      read-file-name-completion-ignore-case t
+      completion-ignore-case t)
 
 (setq comint-prompt-read-only t)
 
-(setq scroll-conservatively 101
-      scroll-margin 3)
+(setq scroll-conservatively 101)
 (pixel-scroll-precision-mode 1)
 
 (setq display-line-numbers-type 'relative
@@ -159,10 +159,9 @@ Make programming-modes a little nicer with line numbers and current line highlig
 Make manpages look a little better
 
 #+begin_src emacs-lisp
-(require 'man)
-(global-set-key (kbd "C-c m") 'man)
-(set-face-attribute 'Man-overstrike nil :inherit font-lock-type-face :bold t)
-(set-face-attribute 'Man-underline nil :inherit font-lock-keyword-face :underline t)
+(use-package man
+  :ensure nil
+  :bind ("C-c m" . 'man))
 #+end_src
 
 ** Ibuffer
@@ -204,10 +203,16 @@ Buffer switching and management
 Make dired recognize other buffers as copy/move targets and also list human-readable filesizes
 
 #+begin_src emacs-lisp
-(setq dired-dwim-target 1)
-(setq dired-listing-switches "-alh")
-(setq dired-kill-when-opening-new-dired-buffer t)
-(setq dired-auto-revert-buffer t)
+(use-package dired
+  :ensure nil
+  :custom
+  (dired-dwim-target- 1)
+  (dired-listing-switches "-alh")
+  (dired-kill-when-opening-new-dired-buffer t)
+  (dired-auto-revert-buffer t)
+  :config
+  ;; Make `dired-do-shell-command' suggest zathura by default for pdf files instead of xpdf
+  (add-to-list 'dired-guess-shell-alist-user '("\\.pdf\\'" "zathura")))
 #+end_src
 
 ** Proced
@@ -306,6 +311,15 @@ Colorize strings like #a7c080
 (use-package rainbow-mode
   :config (rainbow-mode)
   :diminish rainbow-mode)
+#+end_src
+
+*** hl-todo
+Highlight keywords like TODO and FIXME in comments in source code
+
+#+begin_src emacs-lisp
+(use-package hl-todo
+  :bind ("M-s t" . hl-todo-occur)
+  :hook (prog-mode . hl-todo-mode))
 #+end_src
 
 *** Which-key
@@ -555,8 +569,8 @@ Corfu for in-buffer completion
 (use-package corfu
   :custom
   (corfu-cycle t)
-  ;; (corfu-auto t)
-  ;; (corfu-auto-prefix 0)
+  (corfu-auto t)
+  (corfu-auto-prefix 3)
   ;; (corfu-auto-delay 0.5)
   (corfu-separator ?\s)             ;; Orderless field separator
   (corfu-popupinfo-mode t)
@@ -587,7 +601,7 @@ Corfu for in-buffer completion
 (use-package emacs
   :init
   ;; TAB cycle if there are only few candidates
-  (setq completion-cycle-threshold 3)
+  ;; (setq completion-cycle-threshold nil)
 
   ;; Enable indentation+completion using the TAB key.
   ;; `completion-at-point' is often bound to M-TAB.
@@ -763,8 +777,8 @@ General tree-sitter setup
 #+begin_src emacs-lisp
 (setq treesit-font-lock-level 4)
 
-;; (add-to-list 'auto-mode-alist '("\\.yaml\\'" . yaml-ts-mode))
-;; (add-to-list 'org-src-lang-modes '("yaml" . yaml-ts))
+(add-to-list 'auto-mode-alist '("\\.yaml\\'" . yaml-ts-mode))
+(add-to-list 'org-src-lang-modes '("yaml" . yaml-ts))
 ;; (add-to-list 'auto-mode-alist '("\\.json\\'" . json-ts-mode))
 ;; (add-to-list 'org-src-lang-modes '("json" . json-ts))
 
@@ -817,7 +831,7 @@ Language server stuff
                     "--pch-storage=memory"
                     "--header-insertion=never"
                     "--header-insertion-decorators=0")))
-  :hook ((c-ts-mode c++-ts-mode LaTeX-mode) . eglot-ensure))
+  :hook (LaTeX-mode . eglot-ensure))
 #+end_src
 
 ** C and C++
@@ -862,6 +876,26 @@ The one and only
   :diminish)
 #+end_src
 
+** OCaml
+Setup merlin etc
+#+begin_src emacs-lisp
+(let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
+  (when (and opam-share (file-directory-p opam-share))
+    (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))
+    (autoload 'merlin-mode "merlin" nil t nil)
+    (add-hook 'tuareg-mode-hook 'merlin-mode t)
+    (add-hook 'caml-mode-hook 'merlin-mode t)
+    (setq merlin-command 'opam)))
+#+end_src
+
+** Z3
+SMT solving aaaa
+
+#+begin_src emacs-lisp
+(use-package z3-mode
+  :mode "\\.smt\\'")
+#+end_src
+
 ** COMMENT Agda
 Load this after the ghc path is set
 
@@ -870,20 +904,19 @@ Load this after the ghc path is set
              (shell-command-to-string "agda-mode locate")))
 #+end_src
 
-** Python
-Snek
-
-#+begin_src emacs-lisp
-(add-to-list 'major-mode-remap-alist
-             '(python-mode . python-ts-mode))
-#+end_src
-
 ** Clojure
 I guess?
 
 #+begin_src emacs-lisp
 (use-package cider
   :hook (clojure-mode . cider-mode))
+#+end_src
+
+** Python
+Support for virtual environments
+
+#+begin_src emacs-lisp
+(use-package pyvenv)
 #+end_src
 
 ** Lua
@@ -959,8 +992,10 @@ Also requires auctex
 
 * Custom Functions
 Various cringe
-** Todo comments
-Prompt for a string and insert a command with that string
+** COMMENT Todo comments
+Prompt for a string and insert a command with that string.
+
+~hl-todo~ seems to have something similar called ~hl-todo-occur~
 
 #+begin_src emacs-lisp
 (setq darius/comment-keyword-list
