@@ -100,11 +100,11 @@ Some sensible defaults
 (global-set-key (kbd "M-l") 'downcase-dwim)
 (global-set-key (kbd "M-c") 'capitalize-dwim)
 
-(global-set-key (kbd "M-n")   'flymake-goto-next-error)
-(global-set-key (kbd "M-p")   'flymake-goto-prev-error)
+(global-set-key (kbd "M-n") 'flymake-goto-next-error)
+(global-set-key (kbd "M-p") 'flymake-goto-prev-error)
 
-(global-set-key (kbd "M-N")   'next-error)
-(global-set-key (kbd "M-P")   'previous-error)
+(global-set-key (kbd "M-N") 'next-error)
+(global-set-key (kbd "M-P") 'previous-error)
 
 (global-unset-key (kbd "C-<wheel-up>"))
 (global-unset-key (kbd "C-<wheel-down>"))
@@ -211,8 +211,9 @@ Make dired recognize other buffers as copy/move targets and also list human-read
   (dired-kill-when-opening-new-dired-buffer t)
   (dired-auto-revert-buffer t)
   :config
-  ;; Make `dired-do-shell-command' suggest zathura by default for pdf files instead of xpdf
-  (add-to-list 'dired-guess-shell-alist-user '("\\.pdf\\'" "zathura")))
+  ;; Make `dired-do-shell-command' suggest better defaults for some filetypes
+  (add-to-list 'dired-guess-shell-alist-user '("\\.pdf\\'" "zathura"))
+  (add-to-list 'dired-guess-shell-alist-user '("\\.mp4\\'" "mpv")))
 #+end_src
 
 ** Proced
@@ -843,13 +844,28 @@ Language server stuff
 ;;              '(c-or-c++-mode . c-or-c++-ts-mode))
 #+end_src
 
-** COMMENT Rust
+** Rust
 Funny orange crab
 
 #+begin_src emacs-lisp
 (let ((cargo-path (expand-file-name "~/.cargo/bin")))
   (setenv "PATH" (concat cargo-path ":" (getenv "PATH")))
   (add-to-list 'exec-path cargo-path))
+
+(use-package rust-mode
+  :config
+  (add-to-list 'eglot-server-programs
+               '((rust-mode) .
+                 ("rust-analyzer" :initializationOptions (:check (:command "clippy"))))))
+
+;; TODO Improved `rust-mode', is this worth keeping around?
+(use-package rustic
+  :custom
+  (rustic-lsp-client 'eglot)
+  :config
+  (add-to-list 'eglot-server-programs
+               '((rustic-mode) .
+                 ("rust-analyzer" :initializationOptions (:check (:command "clippy"))))))
 #+end_src
 
 ** Haskell
@@ -896,7 +912,7 @@ SMT solving aaaa
   :mode "\\.smt\\'")
 #+end_src
 
-** COMMENT Agda
+** Agda
 Load this after the ghc path is set
 
 #+begin_src emacs-lisp

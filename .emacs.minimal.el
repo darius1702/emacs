@@ -1,5 +1,9 @@
 (menu-bar-mode 0)
 (setq tab-bar-show 1)
+(when (display-graphic-p)
+  (progn
+    (tool-bar-mode 0)
+    (scroll-bar-mode 0)))
 
 (fido-mode)
 
