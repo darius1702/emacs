@@ -620,6 +620,15 @@ Set up vertico, orderless and savehist and tweak some emacs completion defaults
 (use-package vertico
   :init (vertico-mode))
 
+(use-package vertico-directory
+  :after vertico
+  :ensure nil
+  :bind (:map vertico-map
+              ("DEL" . vertico-directory-delete-char)
+              ("C-DEL" . vertico-directory-up)
+              ("M-DEL" . vertico-directory-delete-word))
+  :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
+
 (use-package orderless
   :init
   ;; Configure a custom style dispatcher (see the Consult wiki)
@@ -1022,33 +1031,4 @@ Prompt for a string and insert a command with that string.
   (interactive)
   (let ((keyword (completing-read "Occur keyword: " darius/comment-keyword-list)))
     (occur keyword)))
-#+end_src
-
-** Notify-send
-Send a notification using ~notify-send~
-
-#+begin_src emacs-lisp
-(defun darius/notify-send (msg)
-  (shell-command (format "notify-send %s" msg) nil nil))
-#+end_src
-
-** COMMENT Scroll half pages
-C-v and M-v scrolling entire pages is kind of disorienting
-
-#+begin_src emacs-lisp
-(defun darius/scroll-up (amount)
-  (interactive)
-  (scroll-up-command
-   (floor
-    (- (window-height)
-       next-screen-context-lines)
-    (/ 1 amount))))
-
-(defun darius/scroll-down (amount)
-  (interactive)
-  (scroll-down-command
-   (floor
-    (- (window-height)
-       next-screen-context-lines)
-    (/ 1 amount))))
 #+end_src
