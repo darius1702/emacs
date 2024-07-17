@@ -778,6 +778,30 @@ Eldoc in a popup frame
   :bind ("C-c k" . #'eldoc-box-help-at-point))
 #+end_src
 
+** Ellama
+LLM Actions
+
+#+begin_src emacs-lisp
+(use-package llm)
+
+(use-package ellama
+  :after llm
+  :config
+  (setopt ellama-keymap-prefix "C-c e")
+  (require 'llm-ollama)
+  (setopt ellama-provider
+	  (make-llm-ollama
+	   :chat-model "llama3:latest"
+       :embedding-model "nomic-embed-text"))
+  ;; Also use the model to name the chat buffers
+  (setopt ellama-naming-provider
+	  (make-llm-ollama
+	   :chat-model "llama3:latest"
+	   :embedding-model "nomic-embed-text"
+	   :default-chat-non-standard-params '(("stop" . ("\n")))))
+  (setopt ellama-naming-scheme 'ellama-generate-name-by-llm))
+#+end_src
+
 * Languages
 Programming language specific stuff
 
