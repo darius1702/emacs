@@ -230,7 +230,7 @@ Interact with running processes
   (proced-format 'custom)
   :config
   (add-to-list 'proced-format-alist
-               '(custom user pid ppid sess tree pcpu pmem rss start time state (args comm))))
+               '(custom user pid tree pcpu rss start time (args comm))))
 #+end_src
 
 ** Default Applications
@@ -271,9 +271,6 @@ Basic ~package.el~ config
 (package-initialize)
 (unless package-archive-contents
   (package-refresh-contents))
-(unless (package-installed-p 'use-package)
-  (package-install 'use-package))
-(require 'use-package)
 (setq use-package-always-ensure t)
 (setq package-native-compile t)         ; this will just be ignored if native-comp isn't available
 #+end_src
@@ -419,7 +416,8 @@ Set timers
 Sudoedit files a little nicer than the built-in /sudoedit::
 
 #+begin_src emacs-lisp
-(use-package sudo-edit)
+(use-package sudo-edit
+  :defer t)
 #+end_src
 
 *** Casual Calc
@@ -437,7 +435,9 @@ Some git tools
 Very nice git interface
 
 #+begin_src emacs-lisp
-(use-package magit)
+(use-package magit
+  :defer t
+  :bind ("C-x g" . magit-status))
 #+end_src
 
 *** Git-Gutter
@@ -489,7 +489,7 @@ Some improvements over DocView
 #+begin_src emacs-lisp
 (use-package pdf-tools
   :init
-  (pdf-tools-install)
+  (pdf-loader-install)
   :config
   (setq-default pdf-view-display-size 'fit-page)
   (add-to-list 'revert-without-query ".pdf")
@@ -572,41 +572,23 @@ Corfu for in-buffer completion
   (corfu-cycle t)
   (corfu-auto t)
   (corfu-auto-prefix 3)
-  ;; (corfu-auto-delay 0.5)
-  (corfu-separator ?\s)             ;; Orderless field separator
+  (corfu-separator ?\s)
+  (corfu-preview-current t)
   (corfu-popupinfo-mode t)
-  ;; (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
-  ;; (corfu-quit-no-match nil)      ;; Never quit, even if there is no match
-  ;; (corfu-preview-current nil)    ;; Disable current candidate preview
-  ;; (corfu-preselect 'prompt)      ;; Preselect the prompt
-  ;; (corfu-on-exact-match nil)     ;; Configure handling of exact matches
-  ;; (corfu-scroll-margin 5)        ;; Use scroll margin
+  (corfu-popupinfo-delay '(nil . 0.0))
+  (global-corfu-minibuffers t)
 
   :bind
   (:map corfu-map
-        ("RET" . nil))
+        ("RET" . nil)
+        ([remap next-line] . next-line)
+        ([remap previous-line] . previous-line))
 
   :init (global-corfu-mode))
 
-;; Enable corfu in minibuffer for M-: etc
-(defun corfu-enable-in-minibuffer ()
-  "Enable Corfu in the minibuffer."
-  (when (local-variable-p 'completion-at-point-functions)
-    ;; (setq-local corfu-auto nil) ;; Enable/disable auto completion
-    (setq-local corfu-echo-delay nil ;; Disable automatic echo and popup
-                corfu-popupinfo-delay nil)
-    (corfu-mode 1)))
-(add-hook 'minibuffer-setup-hook #'corfu-enable-in-minibuffer)
-
-;; A few more useful configurations...
-(use-package emacs
-  :init
-  ;; TAB cycle if there are only few candidates
-  ;; (setq completion-cycle-threshold nil)
-
-  ;; Enable indentation+completion using the TAB key.
-  ;; `completion-at-point' is often bound to M-TAB.
-  (setq tab-always-indent 'complete))
+;; Enable indentation+completion using the TAB key.
+;; `completion-at-point' is often bound to M-TAB.
+(setq tab-always-indent 'complete)
 
 (use-package cape
   :init
@@ -687,6 +669,7 @@ The most important thing tbh.
           ,@modus-themes-preset-overrides-faint))
   :bind ("<f12>" . modus-themes-toggle))
 
+;; Looks weird in terminal
 (modus-themes-select 'modus-vivendi)
 #+end_src
 
@@ -786,6 +769,7 @@ LLM Actions
 (use-package llm)
 
 (use-package ellama
+  :defer t
   :after llm
   :config
   (setopt ellama-keymap-prefix "C-c e")
@@ -865,11 +849,6 @@ Funny orange crab
   (add-to-list 'exec-path cargo-path))
 
 (use-package rust-mode)
-
-;; TODO Improved `rust-mode', is this worth keeping around?
-(use-package rustic
-  :custom
-  (rustic-lsp-client 'eglot))
 #+end_src
 
 ** Haskell
