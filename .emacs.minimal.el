@@ -4,8 +4,16 @@
   (progn
     (tool-bar-mode 0)
     (scroll-bar-mode 0)))
+(setq visible-cursor nil) ; no blinking cursor in terminal
 
-(fido-mode)
+(ido-mode)
+
+(setq completions-format 'one-column)
+(setq completion-show-help nil)
+(setq completion-auto-help t)
+(setq completion-auto-select 'second-tab)
+(setq completions-detailed t)
+(setq completion-show-inline-help nil)
 
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 (setq ibuffer-expert t)
