@@ -137,14 +137,19 @@ Some sensible defaults
 
 (setq ispell-dictionary "en_US"
       ispell-program-name "hunspell"
-      isearch-wrap-pause 'no-ding)
+      isearch-wrap-pause 'no-ding
+      isearch-lazy-count t)
+
+(setq compilation-max-output-line-length 800)
 
 (setq tab-bar-show 1)                   ; only show tab bar on frames with more than one tab
 (column-number-mode t)
 (show-paren-mode t)
 (setq show-paren-when-point-inside-paren t)
+(setq global-auto-revert-non-file-buffers t)
 (global-visual-line-mode t)
 (electric-pair-mode t)
+
 #+end_src
 
 ** Prog-mode setup
@@ -243,6 +248,20 @@ This is probably he wrong way to do it?
         (directory . emacs)
         ("\\.mm\\'" . default)
         ("\\.x?html?\\'" . default)))
+#+end_src
+
+** Ediff
+Diff files
+
+#+begin_src emacs-lisp
+(use-package ediff
+  :ensure nil
+  :custom
+  (ediff-keep-variants nil)
+  (ediff-make-buffers-readonly-at-startup t)
+  (ediff-show-clashes-only t)
+  (ediff-split-window-function 'split-window-horizontally)
+  (ediff-window-setup-function 'ediff-setup-windows-plain))
 #+end_src
 
 ** Font setup
@@ -424,7 +443,7 @@ Sudoedit files a little nicer than the built-in /sudoedit::
 Make calc a lot easier to work with
 
 #+begin_src emacs-lisp
-(use-package casual
+(use-package casual-calc
   :bind (:map calc-mode-map ("C-o" .  #'casual-calc-tmenu)))
 #+end_src
 
@@ -573,7 +592,8 @@ Corfu for in-buffer completion
   (corfu-auto t)
   (corfu-auto-prefix 3)
   (corfu-separator ?\s)
-  (corfu-preview-current t)
+  (corfu-preview-current 'insert)
+  (corfu-on-exact-match nil)
   (corfu-popupinfo-mode t)
   (corfu-popupinfo-delay '(nil . 0.0))
   (global-corfu-minibuffers t)
@@ -613,10 +633,7 @@ Set up vertico, orderless and savehist and tweak some emacs completion defaults
 
 (use-package orderless
   :init
-  ;; Configure a custom style dispatcher (see the Consult wiki)
-  ;; (setq orderless-style-dispatchers '(+orderless-consult-dispatch orderless-affix-dispatch)
-  ;;       orderless-component-separator #'orderless-escapable-split-on-space)
-  (setq completion-styles '(substring orderless basic)
+    (setq completion-styles '(substring orderless basic)
 	completion-category-defaults nil
 	completion-category-overrides '((file (styles partial-completion)))))
 
@@ -653,23 +670,25 @@ The most important thing tbh.
   :custom
   (modus-themes-bold-constructs t)
   (modus-themes-prompts '(bold))
-  (modus-themes-to-toggle '(modus-operandi modus-vivendi))
+  (modus-themes-to-toggle '(modus-operandi-tinted modus-vivendi))
   (modus-themes-headings
    '((1 . (1.2))
      (2 . (1.15))
      (3 . (1.1))))
   :config ; Have to do it in config because otherwise emacs doesn't load the preset-overrides for some reason
-  (setq modus-themes-common-palette-overrides
+  (setq modus-operandi-tinted-palette-overrides
+        `((border-mode-line-active unspecified)
+          (border-mode-line-inactive unspecified)
+          (fg-region unspecified)
+          (fringe unspecified)))
+  (setq modus-vivendi-palette-overrides
         `((border-mode-line-active unspecified)
           (border-mode-line-inactive unspecified)
           (fg-region unspecified)
           (fringe unspecified)
-          (bg-line-number bg-main)
-          (bg-line-number-active bg-inactive)
           ,@modus-themes-preset-overrides-faint))
-  :bind ("<f12>" . modus-themes-toggle))
+:bind ("<f12>" . modus-themes-toggle))
 
-;; Looks weird in terminal
 (modus-themes-select 'modus-vivendi)
 #+end_src
 
@@ -903,7 +922,7 @@ Load this after the ghc path is set
              (shell-command-to-string "agda-mode locate")))
 #+end_src
 
-** Clojure
+** COMMENT Clojure
 I guess?
 
 #+begin_src emacs-lisp
@@ -918,7 +937,7 @@ Support for virtual environments
 (use-package pyvenv)
 #+end_src
 
-** Lua
+** COMMENT Lua
 🇧🇷
 
 #+begin_src emacs-lisp

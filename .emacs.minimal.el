@@ -6,7 +6,12 @@
     (scroll-bar-mode 0)))
 (setq visible-cursor nil) ; no blinking cursor in terminal
 
-(ido-mode)
+(unless (display-graphic-p)
+  (xterm-mouse-mode))
+
+(fido-mode)
+
+(load-theme 'modus-vivendi t)
 
 (setq completions-format 'one-column)
 (setq completion-show-help nil)
