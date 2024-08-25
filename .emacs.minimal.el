@@ -9,6 +9,12 @@
 (unless (display-graphic-p)
   (xterm-mouse-mode))
 
+;; make transparency work in the terminal
+(defun on-after-init ()
+  (unless (display-graphic-p (selected-frame))
+    (set-face-background 'default "unspecified-bg" (selected-frame))))
+(add-hook 'window-setup-hook 'on-after-init)
+
 (fido-mode)
 
 (load-theme 'modus-vivendi t)

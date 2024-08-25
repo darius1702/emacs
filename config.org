@@ -149,7 +149,6 @@ Some sensible defaults
 (setq global-auto-revert-non-file-buffers t)
 (global-visual-line-mode t)
 (electric-pair-mode t)
-
 #+end_src
 
 ** Prog-mode setup
@@ -180,7 +179,7 @@ Buffer switching and management
       (quote (("default"
                ("Code" (or (derived-mode . prog-mode) (mode . ess-mode)
                            (mode . compilation-mode)))
-               ("LaTeX" (mode . latex-mode))
+               ("LaTeX" (filename . "\\.tex$"))
                ("Dired" (mode . dired-mode))
                ("Org" (mode . org-mode))
                ("Pdf" (mode . pdf-view-mode))
@@ -262,6 +261,14 @@ Diff files
   (ediff-show-clashes-only t)
   (ediff-split-window-function 'split-window-horizontally)
   (ediff-window-setup-function 'ediff-setup-windows-plain))
+#+end_src
+
+** Transparency
+Make the frame background transparent
+Requires a compositor on X11
+
+#+begin_src emacs-lisp
+(add-to-list 'default-frame-alist '(alpha-background . 60))
 #+end_src
 
 ** Font setup
