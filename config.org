@@ -268,18 +268,28 @@ Make the frame background transparent
 Requires a compositor on X11
 
 #+begin_src emacs-lisp
-(add-to-list 'default-frame-alist '(alpha-background . 60))
+(add-to-list 'default-frame-alist '(alpha-background . 50))
+
+(defun darius/toggle-frame-alpha (arg)
+  "Toggles the frame between 50% and 100% opacity. If an argument in [2..100] is passed, set the frame opacity to that number"
+  (interactive "p")
+  (let ((current-alpha (frame-parameter nil 'alpha-background)))
+    (if (and (> arg 1) (<= arg 100))
+        (set-frame-parameter nil 'alpha-background arg)
+      (set-frame-parameter nil 'alpha-background (if (= 100 current-alpha) 50 100)))))
+
+(global-set-key (kbd "<f11>") 'darius/toggle-frame-alpha)
 #+end_src
 
 ** Font setup
 Need to set it in an extra hook to make it work in emacsclient frames.
 
 #+begin_src emacs-lisp
-(setq darius/fixed-pitch-font "JetBrainsMonoNL NFM")
-(setq darius/variable-pitch-font darius/fixed-pitch-font)
+(setq darius/fixed-pitch-font "JetBrains MonoNL NFM")
+(setq darius/variable-pitch-font "IBM Plex Sans")
 
 (defun darius/set-up-fonts ()
-  (set-face-attribute 'default nil :font darius/fixed-pitch-font :height 130)
+  (set-face-attribute 'default nil :font darius/fixed-pitch-font :height 110)
   (set-face-attribute 'variable-pitch nil :font  darius/variable-pitch-font :weight 'regular :height 1.0)
   (set-face-attribute 'fixed-pitch nil :font darius/fixed-pitch-font :height 1.0))
 
@@ -524,7 +534,8 @@ Some improvements over DocView
               ("j" . pdf-view-next-line-or-next-page)
               ("k" . pdf-view-previous-line-or-previous-page)
               ("C-=" . pdf-view-enlarge)
-              ("C--" . pdf-view-shrink)))
+              ("C--" . pdf-view-shrink)
+              ("M-g g" . pdf-view-goto-page)))
 
 (add-hook 'pdf-view-mode-hook #'(lambda () (interactive) (display-line-numbers-mode -1)))
 (add-hook 'doc-view-mode-hook #'(lambda () (progn
@@ -675,23 +686,24 @@ The most important thing tbh.
 #+begin_src emacs-lisp
 (use-package modus-themes
   :custom
+  (modus-themes-mixed-fonts t)
   (modus-themes-bold-constructs t)
   (modus-themes-prompts '(bold))
-  (modus-themes-to-toggle '(modus-operandi-tinted modus-vivendi))
+  (modus-themes-to-toggle '(modus-operandi modus-vivendi))
   (modus-themes-headings
    '((1 . (1.2))
      (2 . (1.15))
      (3 . (1.1))))
   :config ; Have to do it in config because otherwise emacs doesn't load the preset-overrides for some reason
-  (setq modus-operandi-tinted-palette-overrides
-        `((border-mode-line-active unspecified)
-          (border-mode-line-inactive unspecified)
-          (fg-region unspecified)
+  (setq modus-operandi-palette-overrides
+        `((fg-region unspecified)
           (fringe unspecified)))
   (setq modus-vivendi-palette-overrides
         `((border-mode-line-active unspecified)
           (border-mode-line-inactive unspecified)
           (fg-region unspecified)
+          (fg-paren-match magenta-intense)
+          (bg-paren-match unspecified)
           (fringe unspecified)
           ,@modus-themes-preset-overrides-faint))
 :bind ("<f12>" . modus-themes-toggle))
@@ -812,7 +824,6 @@ LLM Actions
 	   :default-chat-non-standard-params '(("stop" . ("\n")))))
   (setopt ellama-naming-scheme 'ellama-generate-name-by-llm))
 #+end_src
-
 * Languages
 Programming language specific stuff
 ** Treesitter
@@ -990,6 +1001,8 @@ Also requires auctex
   (LaTeX-mode . hl-line-mode)
   (LaTeX-mode . darius/LaTeX-mode-setup)
   (LaTeX-mode . turn-on-reftex))
+
+(add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
 
 (use-package citar
   :custom
