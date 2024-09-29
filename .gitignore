@@ -30,6 +30,8 @@ nov-places
 /.org-id-locations
 /.mc-lists.el
 .recentf
+recentf
 /speed-type
 /request/
 /ellama-sessions/
+.emacs.desktop

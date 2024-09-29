@@ -15,8 +15,6 @@
     (set-face-background 'default "unspecified-bg" (selected-frame))))
 (add-hook 'window-setup-hook 'on-after-init)
 
-(fido-mode)
-
 (load-theme 'modus-vivendi t)
 
 (setq completions-format 'one-column)
