@@ -85,7 +85,7 @@ Some sensible defaults
 (global-unset-key (kbd "C-x C-z"))            ; stop accidentally suspending emacs
 (global-unset-key (kbd "C-z"))                ; stop accidentally suspending emacs (other binding)
 
-(global-set-key (kbd "C-z") 'grep-find)   ; something more useful
+(global-set-key (kbd "C-z") 'find-grep)       ; something more useful
 
 (global-set-key (kbd "C-c c") 'compile)
 (global-set-key (kbd "C-c r") 'recompile)
@@ -130,6 +130,7 @@ Some sensible defaults
 (setq text-scale-mode-step 1.05)
 
 (setq-default indent-tabs-mode nil)
+(setq-default tab-width 4)
 (add-to-list 'write-file-functions 'delete-trailing-whitespace)
 
 (setq sentence-end-double-space nil
@@ -137,8 +138,12 @@ Some sensible defaults
 
 (setq ispell-dictionary "en_US"
       ispell-program-name "hunspell"
-      isearch-wrap-pause 'no-ding
-      isearch-lazy-count t)
+      ispell-alternate-dictionary "/home/darius/my.dict") ;; TODO this still seems to be broken but at least the error is gone
+
+(setq isearch-wrap-pause 'no-ding
+      isearch-lazy-count t
+      lazy-count-prefix-format "(%s/%s) "
+      search-whitespace-regexp ".*?")
 
 (setq compilation-max-output-line-length 800)
 
@@ -149,6 +154,10 @@ Some sensible defaults
 (setq global-auto-revert-non-file-buffers t)
 (global-visual-line-mode t)
 (electric-pair-mode t)
+
+(setq whitespace-style '(face tabs spaces trailing space-before-tab newline indentation empty space-after-tab space-mark tab-mark))
+
+(setq read-process-output-max (* 1024 1024 4))
 #+end_src
 
 ** Prog-mode setup
@@ -268,7 +277,7 @@ Make the frame background transparent
 Requires a compositor on X11
 
 #+begin_src emacs-lisp
-(add-to-list 'default-frame-alist '(alpha-background . 50))
+(add-to-list 'default-frame-alist '(alpha-background . 60))
 
 (defun darius/toggle-frame-alpha (arg)
   "Toggles the frame between 50% and 100% opacity. If an argument in [2..100] is passed, set the frame opacity to that number"
@@ -276,9 +285,15 @@ Requires a compositor on X11
   (let ((current-alpha (frame-parameter nil 'alpha-background)))
     (if (and (> arg 1) (<= arg 100))
         (set-frame-parameter nil 'alpha-background arg)
-      (set-frame-parameter nil 'alpha-background (if (= 100 current-alpha) 50 100)))))
+      (set-frame-parameter nil 'alpha-background (if (= 100 current-alpha) 60 100)))))
 
 (global-set-key (kbd "<f11>") 'darius/toggle-frame-alpha)
+
+;; Make transparency work in terminal client frames
+(defun on-after-init ()
+  (unless (display-graphic-p (selected-frame))
+    (set-face-background 'default "unspecified-bg" (selected-frame))))
+(add-hook 'window-setup-hook 'on-after-init)
 #+end_src
 
 ** Font setup
@@ -286,7 +301,7 @@ Need to set it in an extra hook to make it work in emacsclient frames.
 
 #+begin_src emacs-lisp
 (setq darius/fixed-pitch-font "JetBrains MonoNL NFM")
-(setq darius/variable-pitch-font "IBM Plex Sans")
+(setq darius/variable-pitch-font darius/fixed-pitch-font)
 
 (defun darius/set-up-fonts ()
   (set-face-attribute 'default nil :font darius/fixed-pitch-font :height 110)
@@ -533,6 +548,7 @@ Some improvements over DocView
   :bind (:map pdf-view-mode-map
               ("j" . pdf-view-next-line-or-next-page)
               ("k" . pdf-view-previous-line-or-previous-page)
+              ("C" . pdf-view-center-in-window)
               ("C-=" . pdf-view-enlarge)
               ("C--" . pdf-view-shrink)
               ("M-g g" . pdf-view-goto-page)))
@@ -598,6 +614,18 @@ Some org-mode tweaks
 
 ;; Fix weird internal link behavior
 (with-eval-after-load 'org-ctags (setq org-open-link-functions nil))
+#+end_src
+
+** Spell checking
+Ispell is slow
+
+#+begin_src emacs-lisp
+(use-package jinx
+  :config
+  (dolist (hook '(text-mode-hook LaTex-mode-hook))
+    (add-hook hook #'jinx-mode))
+  :bind (("M-$" . jinx-correct)
+         ("C-M-$" . jinx-languages)))
 #+end_src
 
 ** Completion at point
@@ -833,6 +861,7 @@ Automatically install tree-sitter grammars and enable the major modes
 (setq treesit-font-lock-level 3)        ; 4 is a little much
 
 (use-package treesit-auto
+  :after emacs ;; idk if this is really necessary
   :custom
   (treesit-auto-install 'prompt)
   :config
@@ -914,6 +943,7 @@ The one and only
 
 ** OCaml
 Setup merlin etc
+
 #+begin_src emacs-lisp
 (let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
   (when (and opam-share (file-directory-p opam-share))
@@ -921,7 +951,12 @@ Setup merlin etc
     (autoload 'merlin-mode "merlin" nil t nil)
     (add-hook 'tuareg-mode-hook 'merlin-mode t)
     (add-hook 'caml-mode-hook 'merlin-mode t)
-    (setq merlin-command 'opam)))
+    (setq merlin-command 'opam)
+    (require 'ocp-indent)))
+
+(let ((opam-bin-path (ignore-errors (car (process-lines "opam" "var" "bin")))))
+  (setenv "PATH" (concat opam-bin-path ":" (getenv "PATH")))
+  (add-to-list 'exec-path opam-bin-path))
 #+end_src
 
 ** Z3
@@ -932,7 +967,14 @@ SMT solving aaaa
   :mode "\\.smt\\'")
 #+end_src
 
-** Agda
+** Proof General
+Coqqq
+
+#+begin_src emacs-lisp
+(use-package proof-general)
+#+end_src
+
+** COMMENT Agda
 Load this after the ghc path is set
 
 #+begin_src emacs-lisp
@@ -997,7 +1039,6 @@ Also requires auctex
   (setq-default TeX-master 'shared)
   (setq-default TeX-command-extra-options "--shell-escape")
   :hook
-  (LaTeX-mode . turn-on-flyspell)
   (LaTeX-mode . hl-line-mode)
   (LaTeX-mode . darius/LaTeX-mode-setup)
   (LaTeX-mode . turn-on-reftex))
