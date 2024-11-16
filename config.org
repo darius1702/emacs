@@ -110,6 +110,9 @@ Some sensible defaults
 (global-unset-key (kbd "C-<wheel-down>"))
 (global-unset-key (kbd "<pinch>"))
 
+(xterm-mouse-mode 1)       ; make the mouse wheel scroll the buffer
+(setq visible-cursor nil)  ; disable blinking cursor in terminal
+
 (run-with-idle-timer 2 t (lambda () (garbage-collect)))
 
 (setq suggest-key-bindings nil
@@ -216,6 +219,13 @@ Buffer switching and management
 Make dired recognize other buffers as copy/move targets and also list human-readable filesizes
 
 #+begin_src emacs-lisp
+(defun darius/dired-create-directory ()
+  "Wrapper around `dired-create-directory' with no minibuffer completion."
+  (interactive)
+  (let ((search-term
+          (read-from-minibuffer "Make directory: ")))
+    (dired-create-directory search-term)))
+
 (use-package dired
   :ensure nil
   :custom
@@ -223,6 +233,7 @@ Make dired recognize other buffers as copy/move targets and also list human-read
   (dired-listing-switches "-alh")
   (dired-kill-when-opening-new-dired-buffer t)
   (dired-auto-revert-buffer t)
+  :bind (:map dired-mode-map ("+" . darius/dired-create-directory))
   :config
   ;; Make `dired-do-shell-command' suggest better defaults for some filetypes
   (add-to-list 'dired-guess-shell-alist-user '("\\.pdf\\'" "zathura"))
@@ -277,7 +288,7 @@ Make the frame background transparent
 Requires a compositor on X11
 
 #+begin_src emacs-lisp
-(add-to-list 'default-frame-alist '(alpha-background . 60))
+;; (add-to-list 'default-frame-alist '(alpha-background . 80))
 
 (defun darius/toggle-frame-alpha (arg)
   "Toggles the frame between 50% and 100% opacity. If an argument in [2..100] is passed, set the frame opacity to that number"
@@ -285,7 +296,7 @@ Requires a compositor on X11
   (let ((current-alpha (frame-parameter nil 'alpha-background)))
     (if (and (> arg 1) (<= arg 100))
         (set-frame-parameter nil 'alpha-background arg)
-      (set-frame-parameter nil 'alpha-background (if (= 100 current-alpha) 60 100)))))
+      (set-frame-parameter nil 'alpha-background (if (= 100 current-alpha) 80 100)))))
 
 (global-set-key (kbd "<f11>") 'darius/toggle-frame-alpha)
 
@@ -300,11 +311,13 @@ Requires a compositor on X11
 Need to set it in an extra hook to make it work in emacsclient frames.
 
 #+begin_src emacs-lisp
-(setq darius/fixed-pitch-font "JetBrains MonoNL NFM")
-(setq darius/variable-pitch-font darius/fixed-pitch-font)
+;; (setq darius/fixed-pitch-font "JetBrains MonoNL NFM")
+(setq darius/fixed-pitch-font "Iosevka Comfy")
+;; (setq darius/variable-pitch-font darius/fixed-pitch-font)
+(setq darius/variable-pitch-font "Iosevka Comfy Duo")
 
 (defun darius/set-up-fonts ()
-  (set-face-attribute 'default nil :font darius/fixed-pitch-font :height 110)
+  (set-face-attribute 'default nil :font darius/fixed-pitch-font :height 130)
   (set-face-attribute 'variable-pitch nil :font  darius/variable-pitch-font :weight 'regular :height 1.0)
   (set-face-attribute 'fixed-pitch nil :font darius/fixed-pitch-font :height 1.0))
 
@@ -336,6 +349,20 @@ Load  ~.editorconfig~ files
 (use-package editorconfig
   :diminish
   :config (editorconfig-mode 1))
+#+end_src
+
+*** Envrc
+Load ~.envrc~ files from ~direnv~
+
+#+begin_src emacs-lisp
+(let ((nix-bin-path "/home/darius/.nix-profile/bin/"))
+  (use-package envrc
+    :init
+    (add-to-list 'exec-path nix-bin-path)
+    (setenv "PATH" (concat nix-bin-path ":" (getenv "PATH")))
+    ;; :bind (:map envrc-mode-map ("C-c e" . envrc-command-map))
+    :custom (envrc-none-lighter nil)
+    :hook (after-init . envrc-global-mode)))
 #+end_src
 
 *** Ibuffer-vc
@@ -377,14 +404,6 @@ Highlight keywords like TODO and FIXME in comments in source code
 (use-package which-key
   :init (which-key-mode)
   :diminish which-key-mode)
-#+end_src
-
-*** Expand-region
-
-#+begin_src emacs-lisp
-(use-package expand-region
-  :bind (("M-[" . er/expand-region)
-         ("C-(" . er/mark-outside-pairs)))
 #+end_src
 
 *** Multiple cursors
@@ -625,7 +644,9 @@ Ispell is slow
   (dolist (hook '(text-mode-hook LaTex-mode-hook))
     (add-hook hook #'jinx-mode))
   :bind (("M-$" . jinx-correct)
-         ("C-M-$" . jinx-languages)))
+         ("C-M-$" . jinx-languages))
+  :custom
+  (add-hook 'org-mode-hook #'(lambda () (jinx-mode 0))))
 #+end_src
 
 ** Completion at point
@@ -725,6 +746,8 @@ The most important thing tbh.
   :config ; Have to do it in config because otherwise emacs doesn't load the preset-overrides for some reason
   (setq modus-operandi-palette-overrides
         `((fg-region unspecified)
+          (bg-mode-line-active bg-dim)
+          (bg-mode-line-inactive bg-main)
           (fringe unspecified)))
   (setq modus-vivendi-palette-overrides
         `((border-mode-line-active unspecified)
@@ -852,6 +875,7 @@ LLM Actions
 	   :default-chat-non-standard-params '(("stop" . ("\n")))))
   (setopt ellama-naming-scheme 'ellama-generate-name-by-llm))
 #+end_src
+
 * Languages
 Programming language specific stuff
 ** Treesitter

@@ -5,6 +5,7 @@
     (tool-bar-mode 0)
     (scroll-bar-mode 0)))
 (setq visible-cursor nil) ; no blinking cursor in terminal
+(setq use-short-answers t)
 
 (unless (display-graphic-p)
   (xterm-mouse-mode))
