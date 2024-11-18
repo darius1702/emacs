@@ -503,14 +503,6 @@ Sudoedit files a little nicer than the built-in /sudoedit::
   :defer t)
 #+end_src
 
-*** Casual Calc
-Make calc a lot easier to work with
-
-#+begin_src emacs-lisp
-(use-package casual-calc
-  :bind (:map calc-mode-map ("C-o" .  #'casual-calc-tmenu)))
-#+end_src
-
 ** Git
 Some git tools
 
@@ -803,50 +795,6 @@ Switching and moving windows
 (global-set-key (kbd "M-L") 'windmove-right)
 #+end_src
 
-** COMMENT Evil mode
-Noooo
-
-#+begin_src emacs-lisp :tangle early-init.el
-(setq evil-want-keybinding nil)
-(setq evil-want-C-u-scroll t)
-#+end_src
-
-
-#+begin_src emacs-lisp
-(use-package evil
-  :config
-  (evil-set-undo-system 'undo-redo)
-  (setq evil-mode-line-format nil)
-  (dolist (mode '(dired-mode image-mode vterm-mode nov-mode pdf-annot-list-mode xref--xref-buffer-mode))
-    (evil-set-initial-state mode 'emacs))
-  (evil-mode 1))
-
-(use-package evil-commentary
-  :after evil
-  :diminish
-  :config (evil-commentary-mode))
-
-(use-package evil-surround
-  :config (global-evil-surround-mode))
-
-(with-eval-after-load 'evil-maps
-  (define-key evil-motion-state-map (kbd "RET") nil)
-  (define-key evil-motion-state-map (kbd "TAB") nil)
-  (define-key evil-motion-state-map (kbd "C-.") 'embark-act)
-  (define-key evil-normal-state-map (kbd "C-.") 'embark-act)
-  (define-key evil-normal-state-map (kbd "C-n") nil)
-  (define-key evil-normal-state-map (kbd "C-p") nil)
-  (define-key evil-insert-state-map (kbd "C-n") nil)
-  (define-key evil-insert-state-map (kbd "C-p") nil)
-  (define-key evil-normal-state-map (kbd "M-.") 'xref-find-definitions)
-  (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state))
-
-(use-package evil-escape
-  :custom (evil-escape-key-sequence "jk")
-  :config (evil-escape-mode)
-  :diminish)
-#+end_src
-
 ** Avy
 Jumping around
 
@@ -979,12 +927,14 @@ The one and only
 #+end_src
 
 ** OCaml
-Setup merlin etc
+Assumes the ~merlin~, ~dune~, and ~tuareg~ packages are installed in the current opam switch
 
 #+begin_src emacs-lisp
 (let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
   (when (and opam-share (file-directory-p opam-share))
     (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))
+    (load "tuareg-site-file")
+    (load "dune")
     (autoload 'merlin-mode "merlin" nil t nil)
     (add-hook 'tuareg-mode-hook 'merlin-mode t)
     (add-hook 'caml-mode-hook 'merlin-mode t)

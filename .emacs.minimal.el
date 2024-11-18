@@ -1,3 +1,4 @@
+(setq inhibit-splash-screen t)
 (menu-bar-mode 0)
 (setq tab-bar-show 1)
 (when (display-graphic-p)
@@ -18,12 +19,12 @@
 
 (load-theme 'modus-vivendi t)
 
-(setq completions-format 'one-column)
-(setq completion-show-help nil)
-(setq completion-auto-help t)
-(setq completion-auto-select 'second-tab)
-(setq completions-detailed t)
-(setq completion-show-inline-help nil)
+(setq completions-format 'one-column
+      completion-show-help nil
+      completion-auto-help t
+      completion-auto-select 'second-tab
+      completions-detailed t
+      completion-show-inline-help nil)
 
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 (setq ibuffer-expert t)
@@ -80,6 +81,11 @@
 
 (setq sentence-end-double-space nil
       sentence-end "[.\",;!?*:'] ")
+
+(setq isearch-wrap-pause 'no-ding
+      isearch-lazy-count t
+      lazy-count-prefix-format "(%s/%s) "
+      search-whitespace-regexp ".*?")
 
 (setq indent-tabs-mode nil)
 
