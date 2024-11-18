@@ -311,10 +311,8 @@ Requires a compositor on X11
 Need to set it in an extra hook to make it work in emacsclient frames.
 
 #+begin_src emacs-lisp
-;; (setq darius/fixed-pitch-font "JetBrains MonoNL NFM")
-(setq darius/fixed-pitch-font "Iosevka Comfy")
-;; (setq darius/variable-pitch-font darius/fixed-pitch-font)
-(setq darius/variable-pitch-font "Iosevka Comfy Duo")
+(setq darius/fixed-pitch-font "JetBrains MonoNL NFM")
+(setq darius/variable-pitch-font darius/fixed-pitch-font)
 
 (defun darius/set-up-fonts ()
   (set-face-attribute 'default nil :font darius/fixed-pitch-font :height 130)
@@ -323,6 +321,21 @@ Need to set it in an extra hook to make it work in emacsclient frames.
 
 (add-hook 'after-init-hook 'darius/set-up-fonts)
 (add-hook 'server-after-make-frame-hook 'darius/set-up-fonts)
+#+end_src
+
+** Eshell
+Emacs shell aliases
+
+#+begin_src sh :tangle eshell/alias
+alias ff find-file $1
+alias d dired $1
+
+alias la ls -A
+alias ll ls -lh
+alias lla ls -lhA
+alias l ls
+
+alias gs magit-status
 #+end_src
 
 * Packages

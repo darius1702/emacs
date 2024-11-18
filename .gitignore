@@ -1,8 +1,7 @@
 custom.el
 init.el
 early-init.el
-eshell/history
-eshell/lastdir
+eshell
 auto-save-list
 elpa
 ido.last
@@ -35,3 +34,4 @@ recentf
 /request/
 /ellama-sessions/
 .emacs.desktop
+ielm-history.eld
