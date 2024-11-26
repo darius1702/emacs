@@ -150,6 +150,9 @@ Some sensible defaults
 
 (setq compilation-max-output-line-length 800)
 
+(require 'ansi-color)
+(add-hook 'compilation-filter-hook 'ansi-color-compilation-filter) ; fix colors in compilation output
+
 (setq tab-bar-show 1)                   ; only show tab bar on frames with more than one tab
 (column-number-mode t)
 (show-paren-mode t)
@@ -311,7 +314,7 @@ Requires a compositor on X11
 Need to set it in an extra hook to make it work in emacsclient frames.
 
 #+begin_src emacs-lisp
-(setq darius/fixed-pitch-font "JetBrains MonoNL NFM")
+(setq darius/fixed-pitch-font "Iosevka NF")
 (setq darius/variable-pitch-font darius/fixed-pitch-font)
 
 (defun darius/set-up-fonts ()
@@ -944,6 +947,9 @@ Assumes the ~merlin~, ~dune~, and ~tuareg~ packages are installed in the current
 (let ((opam-bin-path (ignore-errors (car (process-lines "opam" "var" "bin")))))
   (setenv "PATH" (concat opam-bin-path ":" (getenv "PATH")))
   (add-to-list 'exec-path opam-bin-path))
+
+(use-package opam-switch-mode
+  :hook ((coq-mode tuareg-mode) . opam-switch-mode))
 #+end_src
 
 ** Z3
@@ -958,7 +964,8 @@ SMT solving aaaa
 Coqqq
 
 #+begin_src emacs-lisp
-(use-package proof-general)
+(use-package proof-general
+  :hook (coq-mode . prettify-symbols-mode))
 #+end_src
 
 ** COMMENT Agda

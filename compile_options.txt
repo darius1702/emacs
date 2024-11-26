@@ -1,0 +1,1 @@
+./configure --with-tree-sitter --with-pgtk --with-imagemagick --with-native-compilation=aot --without-compress-install --disable-gc-mark-trace --enable-link-time-optimization 'CFLAGS=-O3 -march=native -mtune=native'
