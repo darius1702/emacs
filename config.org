@@ -85,7 +85,8 @@ Some sensible defaults
 (global-unset-key (kbd "C-x C-z"))            ; stop accidentally suspending emacs
 (global-unset-key (kbd "C-z"))                ; stop accidentally suspending emacs (other binding)
 
-(global-set-key (kbd "C-z") 'find-grep)       ; something more useful
+(global-set-key (kbd "C-x C-z") 'find-grep)       ; something more useful
+(global-set-key (kbd "C-z") 'hl-line-mode)
 
 (global-set-key (kbd "C-c c") 'compile)
 (global-set-key (kbd "C-c r") 'recompile)
@@ -117,6 +118,8 @@ Some sensible defaults
 
 (setq suggest-key-bindings nil
       echo-keystrokes 0.01)
+(which-key-mode)
+(setq which-key-lighter nil)            ; diminish
 
 (setq read-buffer-completion-ignore-case t
       read-file-name-completion-ignore-case t
@@ -162,6 +165,8 @@ Some sensible defaults
 (electric-pair-mode t)
 
 (setq whitespace-style '(face tabs spaces trailing space-before-tab newline indentation empty space-after-tab space-mark tab-mark))
+
+(setq require-final-newline t)
 
 (setq read-process-output-max (* 1024 1024 4))
 #+end_src
@@ -301,8 +306,6 @@ Requires a compositor on X11
         (set-frame-parameter nil 'alpha-background arg)
       (set-frame-parameter nil 'alpha-background (if (= 100 current-alpha) 80 100)))))
 
-(global-set-key (kbd "<f11>") 'darius/toggle-frame-alpha)
-
 ;; Make transparency work in terminal client frames
 (defun on-after-init ()
   (unless (display-graphic-p (selected-frame))
@@ -319,8 +322,8 @@ Need to set it in an extra hook to make it work in emacsclient frames.
 
 (defun darius/set-up-fonts ()
   (set-face-attribute 'default nil :font darius/fixed-pitch-font :height 130)
-  (set-face-attribute 'variable-pitch nil :font  darius/variable-pitch-font :weight 'regular :height 1.0)
-  (set-face-attribute 'fixed-pitch nil :font darius/fixed-pitch-font :height 1.0))
+  (set-face-attribute 'variable-pitch nil :font  darius/variable-pitch-font :height 1.0 :weight 'regular)
+  (set-face-attribute 'fixed-pitch nil :font darius/fixed-pitch-font :height 1.0 :weight 'regular))
 
 (add-hook 'after-init-hook 'darius/set-up-fonts)
 (add-hook 'server-after-make-frame-hook 'darius/set-up-fonts)
@@ -414,14 +417,6 @@ Highlight keywords like TODO and FIXME in comments in source code
   :hook (prog-mode . hl-todo-mode))
 #+end_src
 
-*** Which-key
-
-#+begin_src emacs-lisp
-(use-package which-key
-  :init (which-key-mode)
-  :diminish which-key-mode)
-#+end_src
-
 *** Multiple cursors
 Easily place multiple cursors for edits
 
@@ -506,6 +501,16 @@ Sudoedit files a little nicer than the built-in /sudoedit::
   :defer t)
 #+end_src
 
+*** Diminish
+Get rid of some clutter in the modeline
+Doesn't work properly if it's not all the way at the end for some reason
+
+#+begin_src emacs-lisp
+(use-package diminish
+  :diminish visual-line-mode
+  :diminish auto-revert-mode)
+#+end_src
+
 ** Git
 Some git tools
 
@@ -518,21 +523,14 @@ Very nice git interface
   :bind ("C-x g" . magit-status))
 #+end_src
 
-*** Git-Gutter
-Git status in the gutter
+*** Diff Hl
+Show uncommitted changes in the gutter
 
 #+begin_src emacs-lisp
-(use-package git-gutter
-  :diminish
-  :init
-  (setq
-   git-gutter:update-interval 0
-   git-gutter:modified-sign "│"
-   git-gutter:added-sign "│"
-   git-gutter:deleted-sign "│")
-  :config
-  (set-face-foreground 'git-gutter:modified "#7fbbb3")
-  :hook (prog-mode . git-gutter-mode))
+(use-package diff-hl
+  :hook
+  (prog-mode . diff-hl-mode)
+  (magit-post-refresh . diff-hl-magit-post-refresh))
 #+end_src
 
 ** Consult
@@ -573,8 +571,6 @@ Some improvements over DocView
   (add-to-list 'revert-without-query ".pdf")
   (setq pdf-annot-default-annotation-properties '((t (label . "Darius Schefer")) (text (icon . "Comment"))))
   :bind (:map pdf-view-mode-map
-              ("j" . pdf-view-next-line-or-next-page)
-              ("k" . pdf-view-previous-line-or-previous-page)
               ("C" . pdf-view-center-in-window)
               ("C-=" . pdf-view-enlarge)
               ("C--" . pdf-view-shrink)
@@ -746,7 +742,7 @@ The most important thing tbh.
   (modus-themes-mixed-fonts t)
   (modus-themes-bold-constructs t)
   (modus-themes-prompts '(bold))
-  (modus-themes-to-toggle '(modus-operandi modus-vivendi))
+  (modus-themes-to-toggle '(modus-vivendi modus-operandi))
   (modus-themes-headings
    '((1 . (1.2))
      (2 . (1.15))
@@ -765,19 +761,18 @@ The most important thing tbh.
           (bg-paren-match unspecified)
           (fringe unspecified)
           ,@modus-themes-preset-overrides-faint))
-:bind ("<f12>" . modus-themes-toggle))
+  :bind ("<f12>" . modus-themes-toggle))
 
 (modus-themes-select 'modus-vivendi)
-#+end_src
 
-** Diminish
-Get rid of some clutter in the modeline
-Doesn't work properly if it's not all the way at the end for some reason
-
-#+begin_src emacs-lisp
-(use-package diminish
-  :diminish visual-line-mode
-  :diminish auto-revert-mode)
+(use-package standard-themes
+  :custom
+  standard-themes-bold-constructs t
+  standard-themes-disable-other-themes t
+  standard-themes-mixed-fonts t
+  standard-themes-prompts '(bold)
+  standard-themes-to-toggle '(standard-light standard-dark)
+  :bind ("<f11>" . standard-themes-toggle))
 #+end_src
 
 ** Windows and Frames
@@ -881,7 +876,7 @@ Language server stuff
                     "--completion-style=detailed"
                     "--pch-storage=memory"
                     "--header-insertion=never"
-                    "--header-insertion-decorators=0")))
+                    "--header-insertion-decorators=0"))) ; I hope this does what I want it to
   :hook (LaTeX-mode . eglot-ensure))
 #+end_src
 
@@ -1001,12 +996,12 @@ Support for virtual environments
   (lua-indent-nested-block-content-align nil))
 #+end_src
 
-** COMMENT Nix
+** Nix
 ❄
 
 #+begin_src emacs-lisp
-(use-package nix-ts-mode)
-(add-to-list 'auto-mode-alist '("\\.nix\\'" . nix-ts-mode))
+(use-package nix-ts-mode
+  :mode ("\\.nix\\'" . nix-ts-mode))
 #+end_src
 
 ** LaTeX and Citar
