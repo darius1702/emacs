@@ -86,7 +86,6 @@ Some sensible defaults
 (global-unset-key (kbd "C-z"))                ; stop accidentally suspending emacs (other binding)
 
 (global-set-key (kbd "C-x C-z") 'find-grep)       ; something more useful
-(global-set-key (kbd "C-z") 'hl-line-mode)
 
 (global-set-key (kbd "C-c c") 'compile)
 (global-set-key (kbd "C-c r") 'recompile)
@@ -111,6 +110,8 @@ Some sensible defaults
 (global-unset-key (kbd "C-<wheel-down>"))
 (global-unset-key (kbd "<pinch>"))
 
+(add-to-list 'load-path (file-name-concat user-emacs-directory "external"))
+
 (xterm-mouse-mode 1)       ; make the mouse wheel scroll the buffer
 (setq visible-cursor nil)  ; disable blinking cursor in terminal
 
@@ -127,7 +128,7 @@ Some sensible defaults
 
 (setq comint-prompt-read-only t)
 
-(setq scroll-conservatively 101)
+(setq scroll-conservatively 5)
 (pixel-scroll-precision-mode 1)
 
 (setq display-line-numbers-type 'relative
@@ -499,6 +500,14 @@ Sudoedit files a little nicer than the built-in /sudoedit::
 #+begin_src emacs-lisp
 (use-package sudo-edit
   :defer t)
+#+end_src
+
+*** Hide mode line
+Hide the mode line via a key press
+
+#+begin_src emacs-lisp
+(use-package hide-mode-line
+  :bind ("C-z" . hide-mode-line-mode))
 #+end_src
 
 *** Diminish
@@ -880,6 +889,16 @@ Language server stuff
   :hook (LaTeX-mode . eglot-ensure))
 #+end_src
 
+** Hyprlang
+Hyprland ecosystem config language
+Uses the builtin treesit
+Get the [[https://github.com/tree-sitter-grammars/tree-sitter-hyprlang][language grammar here]]
+
+#+begin_src emacs-lisp
+(use-package hyprlang-ts-mode
+  :custom (hyprlang-ts-mode-indent-offset 4))
+#+end_src
+
 ** C and C++
 
 #+begin_src emacs-lisp
@@ -928,20 +947,17 @@ The one and only
 Assumes the ~merlin~, ~dune~, and ~tuareg~ packages are installed in the current opam switch
 
 #+begin_src emacs-lisp
-(let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
-  (when (and opam-share (file-directory-p opam-share))
-    (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))
-    (load "tuareg-site-file")
-    (load "dune")
-    (autoload 'merlin-mode "merlin" nil t nil)
-    (add-hook 'tuareg-mode-hook 'merlin-mode t)
-    (add-hook 'caml-mode-hook 'merlin-mode t)
-    (setq merlin-command 'opam)
-    (require 'ocp-indent)))
-
 (let ((opam-bin-path (ignore-errors (car (process-lines "opam" "var" "bin")))))
   (setenv "PATH" (concat opam-bin-path ":" (getenv "PATH")))
   (add-to-list 'exec-path opam-bin-path))
+
+(use-package tuareg)
+(use-package dune)
+
+(use-package merlin
+  :config
+  (add-hook 'tuareg-mode-hook #'merlin-mode)
+  (add-hook 'caml-mode-hook #'merlin-mode))
 
 (use-package opam-switch-mode
   :hook ((coq-mode tuareg-mode) . opam-switch-mode))
@@ -1056,6 +1072,16 @@ Also requires auctex
 (use-package cdlatex
   :custom (cdlatex-takeover-parenthesis nil)
   :hook (LaTeX-mode . turn-on-cdlatex))
+#+end_src
+
+** SAIL
+Sail architecture definition language
+See [[https://github.com/rems-project/sail][GitHub]]
+Requires ~sail-mode.el~ somewhere in the load-path
+
+#+begin_src emacs-lisp
+(require 'sail-mode)
+(add-hook 'sail-mode-hook #'font-lock-update) ; Syntax doesn't update on its own for some reason
 #+end_src
 
 * Custom Functions
