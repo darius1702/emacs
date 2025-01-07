@@ -139,6 +139,7 @@ Some sensible defaults
 (setq-default indent-tabs-mode nil)
 (setq-default tab-width 4)
 (add-to-list 'write-file-functions 'delete-trailing-whitespace)
+(editorconfig-mode t)
 
 (setq sentence-end-double-space nil
       sentence-end "[.\",;!?*:'] ")
@@ -318,7 +319,7 @@ Requires a compositor on X11
 Need to set it in an extra hook to make it work in emacsclient frames.
 
 #+begin_src emacs-lisp
-(setq darius/fixed-pitch-font "Iosevka NF")
+(setq darius/fixed-pitch-font "ZedMono NFM")
 (setq darius/variable-pitch-font darius/fixed-pitch-font)
 
 (defun darius/set-up-fonts ()
@@ -361,15 +362,6 @@ Basic ~package.el~ config
 
 ** Useful random stuff
 Some packages that don't require much configuration
-
-*** Editorconfig
-Load  ~.editorconfig~ files
-
-#+begin_src emacs-lisp
-(use-package editorconfig
-  :diminish
-  :config (editorconfig-mode 1))
-#+end_src
 
 *** Envrc
 Load ~.envrc~ files from ~direnv~
@@ -690,6 +682,11 @@ Corfu for in-buffer completion
 ;; `completion-at-point' is often bound to M-TAB.
 (setq tab-always-indent 'complete)
 
+(use-package completion-preview
+  :config
+  (global-completion-preview-mode t)
+  :diminish)
+
 (use-package cape
   :init
   (add-to-list 'completion-at-point-functions #'cape-file))
@@ -780,7 +777,7 @@ The most important thing tbh.
   standard-themes-disable-other-themes t
   standard-themes-mixed-fonts t
   standard-themes-prompts '(bold)
-  standard-themes-to-toggle '(standard-light standard-dark)
+  standard-themes-to-toggle '(standard-dark standard-light)
   :bind ("<f11>" . standard-themes-toggle))
 #+end_src
 
