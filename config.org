@@ -130,6 +130,7 @@ Some sensible defaults
 
 (setq scroll-conservatively 5)
 (pixel-scroll-precision-mode 1)
+(setq pixel-scroll-precision-interpolate-mice nil)
 
 (setq display-line-numbers-type 'relative
       display-line-numbers-width 3
@@ -163,7 +164,6 @@ Some sensible defaults
 (show-paren-mode t)
 (setq show-paren-when-point-inside-paren t)
 (setq global-auto-revert-non-file-buffers t)
-(global-visual-line-mode t)
 (electric-pair-mode t)
 
 (setq whitespace-style '(face tabs spaces trailing space-before-tab newline indentation empty space-after-tab space-mark tab-mark))
@@ -319,7 +319,7 @@ Requires a compositor on X11
 Need to set it in an extra hook to make it work in emacsclient frames.
 
 #+begin_src emacs-lisp
-(setq darius/fixed-pitch-font "ZedMono NFM")
+(setq darius/fixed-pitch-font "ZedMono NFP")
 (setq darius/variable-pitch-font darius/fixed-pitch-font)
 
 (defun darius/set-up-fonts ()
@@ -492,14 +492,6 @@ Sudoedit files a little nicer than the built-in /sudoedit::
 #+begin_src emacs-lisp
 (use-package sudo-edit
   :defer t)
-#+end_src
-
-*** Hide mode line
-Hide the mode line via a key press
-
-#+begin_src emacs-lisp
-(use-package hide-mode-line
-  :bind ("C-z" . hide-mode-line-mode))
 #+end_src
 
 *** Diminish
