@@ -516,14 +516,19 @@ Very nice git interface
   :bind ("C-x g" . magit-status))
 #+end_src
 
-*** Diff Hl
-Show uncommitted changes in the gutter
+*** Diff-hl
+Show uncommitted changes in the fringe
 
 #+begin_src emacs-lisp
 (use-package diff-hl
   :hook
-  (prog-mode . diff-hl-mode)
-  (magit-post-refresh . diff-hl-magit-post-refresh))
+  (magit-post-refresh . diff-hl-magit-post-refresh)
+  :config
+  (global-diff-hl-mode)
+  :bind
+  ("C-c v n" . diff-hl-next-hunk)
+  ("C-c v p" . diff-hl-previous-hunk)
+  ("C-c v s" . diff-hl-show-hunk))
 #+end_src
 
 ** Consult
@@ -735,42 +740,52 @@ Set up vertico, orderless and savehist and tweak some emacs completion defaults
 The most important thing tbh.
 
 #+begin_src emacs-lisp
-(use-package modus-themes
-  :custom
-  (modus-themes-mixed-fonts t)
-  (modus-themes-bold-constructs t)
-  (modus-themes-prompts '(bold))
-  (modus-themes-to-toggle '(modus-vivendi modus-operandi))
-  (modus-themes-headings
-   '((1 . (1.2))
-     (2 . (1.15))
-     (3 . (1.1))))
-  :config ; Have to do it in config because otherwise emacs doesn't load the preset-overrides for some reason
-  (setq modus-operandi-palette-overrides
-        `((fg-region unspecified)
-          (bg-mode-line-active bg-dim)
-          (bg-mode-line-inactive bg-main)
-          (fringe unspecified)))
-  (setq modus-vivendi-palette-overrides
-        `((border-mode-line-active unspecified)
-          (border-mode-line-inactive unspecified)
-          (fg-region unspecified)
-          (fg-paren-match magenta-intense)
-          (bg-paren-match unspecified)
-          (fringe unspecified)
-          ,@modus-themes-preset-overrides-faint))
-  :bind ("<f12>" . modus-themes-toggle))
+;; (use-package modus-themes
+;;   :custom
+;;   (modus-themes-mixed-fonts t)
+;;   (modus-themes-bold-constructs t)
+;;   (modus-themes-prompts '(bold))
+;;   (modus-themes-to-toggle '(modus-vivendi modus-operandi))
+;;   (modus-themes-headings
+;;    '((1 . (1.2))
+;;      (2 . (1.15))
+;;      (3 . (1.1))))
+;;   :config ; Have to do it in config because otherwise emacs doesn't load the preset-overrides for some reason
+;;   (setq modus-operandi-palette-overrides
+;;         `((fg-region unspecified)
+;;           (bg-mode-line-active bg-dim)
+;;           (bg-mode-line-inactive bg-main)
+;;           (fringe unspecified)))
+;;   (setq modus-vivendi-palette-overrides
+;;         `((border-mode-line-active unspecified)
+;;           (border-mode-line-inactive unspecified)
+;;           (fg-region unspecified)
+;;           (fg-paren-match magenta-intense)
+;;           (bg-paren-match unspecified)
+;;           (fringe unspecified)
+;;           ,@modus-themes-preset-overrides-faint))
+;;   :bind ("<f12>" . modus-themes-toggle))
 
-(modus-themes-select 'modus-vivendi)
+;; ; (modus-themes-select 'modus-vivendi)
 
-(use-package standard-themes
-  :custom
-  standard-themes-bold-constructs t
-  standard-themes-disable-other-themes t
-  standard-themes-mixed-fonts t
-  standard-themes-prompts '(bold)
-  standard-themes-to-toggle '(standard-dark standard-light)
-  :bind ("<f11>" . standard-themes-toggle))
+;; (use-package standard-themes
+;;   :custom
+;;   standard-themes-bold-constructs t
+;;   standard-themes-disable-other-themes t
+;;   standard-themes-mixed-fonts t
+;;   standard-themes-prompts '(bold)
+;;   standard-themes-to-toggle '(standard-dark standard-light)
+;;   :bind ("<f11>" . standard-themes-toggle))
+
+(use-package catppuccin-theme
+  :config
+  (setq catppuccin-flavor 'mocha)
+  (catppuccin-set-color 'base "#000000")
+  (catppuccin-set-color 'surface0 "#121216")
+  (catppuccin-set-color 'surface1 "#202127")
+  (catppuccin-set-color 'surface2 "#252532")
+  (catppuccin-reload)
+  (set-face-attribute 'line-number nil :foreground (catppuccin-color 'overlay0)))
 #+end_src
 
 ** Windows and Frames
@@ -839,7 +854,8 @@ Programming language specific stuff
 Automatically install tree-sitter grammars and enable the major modes
 
 #+begin_src emacs-lisp
-(setq treesit-font-lock-level 3)        ; 4 is a little much
+;; (setq treesit-font-lock-level 3)        ; 4 is a little much
+(setq treesit-font-lock-level 4)           ; 4 works well with catppuccin
 
 (use-package treesit-auto
   :after emacs ;; idk if this is really necessary
