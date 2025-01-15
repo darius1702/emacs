@@ -3,6 +3,10 @@
 #+PROPERTY: header-args:emacs-lisp :tangle init.el :mkdirp yes
 #+STARTUP: show2levels
 
+
+I usually build my emacs with the following flags
+~./configure --with-native-compilation=aot --with-tree-sitter --with-x-toolkit=lucid --with-imagemagick --without-compress-install --disable-gc-mark-trace --enable-link-time-optimization 'CFLAGS=-O3 -march=native -mtune=native'~
+
 * Early init
 ** No premature redisplay
 Prevent some flickering on startup
@@ -494,16 +498,6 @@ Sudoedit files a little nicer than the built-in /sudoedit::
   :defer t)
 #+end_src
 
-*** Diminish
-Get rid of some clutter in the modeline
-Doesn't work properly if it's not all the way at the end for some reason
-
-#+begin_src emacs-lisp
-(use-package diminish
-  :diminish visual-line-mode
-  :diminish auto-revert-mode)
-#+end_src
-
 *** Expand region
 Expand the region
 
@@ -511,7 +505,6 @@ Expand the region
 (use-package expand-region
   :bind ("C-z" . er/expand-region))
 #+end_src
-
 
 ** Git
 Some git tools
@@ -648,6 +641,7 @@ Some org-mode tweaks
 (with-eval-after-load 'org-ctags (setq org-open-link-functions nil))
 
 (use-package org-latex-preview
+  :after org-mode                       ; this is org-mode, not org with the custom build for latex preview
   :ensure nil
   :config
   (setq org-latex-preview-live t)
@@ -866,6 +860,18 @@ LLM Actions
 	   :default-chat-non-standard-params '(("stop" . ("\n")))))
   (setopt ellama-naming-scheme 'ellama-generate-name-by-llm))
 #+end_src
+
+** Diminish
+Get rid of some clutter in the modeline
+Doesn't work properly if it's not all the way at the end for some reason
+
+#+begin_src emacs-lisp
+(use-package diminish
+  :diminish visual-line-mode
+  :diminish auto-revert-mode
+  :diminish org-cdlatex-mode)
+#+end_src
+
 
 * Languages
 Programming language specific stuff
