@@ -323,9 +323,9 @@ Need to set it in an extra hook to make it work in emacsclient frames.
 (setq darius/variable-pitch-font darius/fixed-pitch-font)
 
 (defun darius/set-up-fonts ()
-  (set-face-attribute 'default nil :font darius/fixed-pitch-font :height 130)
-  (set-face-attribute 'variable-pitch nil :font  darius/variable-pitch-font :height 1.0 :weight 'regular)
-  (set-face-attribute 'fixed-pitch nil :font darius/fixed-pitch-font :height 1.0 :weight 'regular))
+  (set-face-attribute 'default nil :font darius/fixed-pitch-font :height 130 :weight 'regular :width 'regular)
+  (set-face-attribute 'variable-pitch nil :font darius/variable-pitch-font :height 1.0 :weight 'regular :width 'regular)
+  (set-face-attribute 'fixed-pitch nil :font darius/fixed-pitch-font :height 1.0 :weight 'regular :width 'regular))
 
 (add-hook 'after-init-hook 'darius/set-up-fonts)
 (add-hook 'server-after-make-frame-hook 'darius/set-up-fonts)
@@ -504,6 +504,15 @@ Doesn't work properly if it's not all the way at the end for some reason
   :diminish auto-revert-mode)
 #+end_src
 
+*** Expand region
+Expand the region
+
+#+begin_src emacs-lisp
+(use-package expand-region
+  :bind ("C-z" . er/expand-region))
+#+end_src
+
+
 ** Git
 Some git tools
 
@@ -601,6 +610,7 @@ Some org-mode tweaks
   (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file))
 
 (use-package org
+  :load-path "~/.emacs.d/elpa/org-mode/lisp/"
   :config
   (darius/org-setup)
   (setq org-src-preserve-indentation nil
@@ -608,6 +618,7 @@ Some org-mode tweaks
 
 ;; For some reason there is an error if I set this using use-package's :hook inside the org block
 (add-hook 'org-mode-hook 'org-indent-mode)
+(add-hook 'org-mode-hook 'turn-on-org-cdlatex)
 
 ;; Timer
 (setq darius/timer-running nil)
@@ -635,6 +646,14 @@ Some org-mode tweaks
 
 ;; Fix weird internal link behavior
 (with-eval-after-load 'org-ctags (setq org-open-link-functions nil))
+
+(use-package org-latex-preview
+  :ensure nil
+  :config
+  (setq org-latex-preview-live t)
+  (plist-put org-latex-preview-appearance-options :page-width 1.0)
+  (plist-put org-latex-preview-appearance-options :scale 2.5)
+  (add-hook 'org-mode-hook 'org-latex-preview-auto-mode))
 #+end_src
 
 ** Spell checking
