@@ -4,8 +4,13 @@
 #+STARTUP: show2levels
 
 
-I usually build my emacs with the following flags
-~./configure --with-native-compilation=aot --with-tree-sitter --with-x-toolkit=lucid --with-imagemagick --without-compress-install --disable-gc-mark-trace --enable-link-time-optimization 'CFLAGS=-O3 -march=native -mtune=native'~
+* Build flags
+Nativecomp, pgtk, tree-sitter, ...
+
+#+begin_src sh
+./configure --with-native-compilation=aot --with-tree-sitter --with-pgtk --with-imagemagick --without-compress-install --disable-gc-mark-trace --enable-link-time-optimization 'CFLAGS=-O3 -march=native'
+#+end_src
+
 
 * Early init
 ** No premature redisplay
@@ -133,6 +138,7 @@ Some sensible defaults
 (setq comint-prompt-read-only t)
 
 (setq scroll-conservatively 5)
+(setq scroll-margin 1)
 (pixel-scroll-precision-mode 1)
 (setq pixel-scroll-precision-interpolate-mice nil)
 
@@ -146,12 +152,14 @@ Some sensible defaults
 (add-to-list 'write-file-functions 'delete-trailing-whitespace)
 (editorconfig-mode t)
 
+(setq save-interprogram-paste-before-kill t) ; save clipboard to kill ring before overwriting it
+
 (setq sentence-end-double-space nil
       sentence-end "[.\",;!?*:'] ")
 
 (setq ispell-dictionary "en_US"
       ispell-program-name "hunspell"
-      ispell-alternate-dictionary "/home/darius/my.dict") ;; TODO this still seems to be broken but at least the error is gone
+      ispell-alternate-dictionary "/usr/share/dict/words") ;; TODO this needs extra/words on arch
 
 (setq isearch-wrap-pause 'no-ding
       isearch-lazy-count t
@@ -297,34 +305,12 @@ Diff files
   (ediff-window-setup-function 'ediff-setup-windows-plain))
 #+end_src
 
-** Transparency
-Make the frame background transparent
-Requires a compositor on X11
-
-#+begin_src emacs-lisp
-;; (add-to-list 'default-frame-alist '(alpha-background . 80))
-
-(defun darius/toggle-frame-alpha (arg)
-  "Toggles the frame between 50% and 100% opacity. If an argument in [2..100] is passed, set the frame opacity to that number"
-  (interactive "p")
-  (let ((current-alpha (frame-parameter nil 'alpha-background)))
-    (if (and (> arg 1) (<= arg 100))
-        (set-frame-parameter nil 'alpha-background arg)
-      (set-frame-parameter nil 'alpha-background (if (= 100 current-alpha) 80 100)))))
-
-;; Make transparency work in terminal client frames
-(defun on-after-init ()
-  (unless (display-graphic-p (selected-frame))
-    (set-face-background 'default "unspecified-bg" (selected-frame))))
-(add-hook 'window-setup-hook 'on-after-init)
-#+end_src
-
 ** Font setup
 Need to set it in an extra hook to make it work in emacsclient frames.
 
 #+begin_src emacs-lisp
-(setq darius/fixed-pitch-font "ZedMono NFP")
-(setq darius/variable-pitch-font darius/fixed-pitch-font)
+(setq darius/fixed-pitch-font "ZedMono NFP"
+      darius/variable-pitch-font darius/fixed-pitch-font)
 
 (defun darius/set-up-fonts ()
   (set-face-attribute 'default nil :font darius/fixed-pitch-font :height 130 :weight 'regular :width 'regular)
@@ -504,6 +490,19 @@ Expand the region
 #+begin_src emacs-lisp
 (use-package expand-region
   :bind ("C-z" . er/expand-region))
+#+end_src
+
+*** Doom modeline
+Make the modeline a little prettier
+
+#+begin_src emacs-lisp
+(use-package doom-modeline
+  :init (doom-modeline-mode 1)
+  :custom
+  (doom-modeline-height 26)
+  (doom-modeline-bar-width 4)
+  (doom-modeline-minor-modes t)
+  (doom-modeline-icon nil))
 #+end_src
 
 ** Git
@@ -692,11 +691,6 @@ Corfu for in-buffer completion
 ;; `completion-at-point' is often bound to M-TAB.
 (setq tab-always-indent 'complete)
 
-(use-package completion-preview
-  :config
-  (global-completion-preview-mode t)
-  :diminish)
-
 (use-package cape
   :init
   (add-to-list 'completion-at-point-functions #'cape-file))
@@ -753,42 +747,39 @@ Set up vertico, orderless and savehist and tweak some emacs completion defaults
 The most important thing tbh.
 
 #+begin_src emacs-lisp
-;; (use-package modus-themes
-;;   :custom
-;;   (modus-themes-mixed-fonts t)
-;;   (modus-themes-bold-constructs t)
-;;   (modus-themes-prompts '(bold))
-;;   (modus-themes-to-toggle '(modus-vivendi modus-operandi))
-;;   (modus-themes-headings
-;;    '((1 . (1.2))
-;;      (2 . (1.15))
-;;      (3 . (1.1))))
-;;   :config ; Have to do it in config because otherwise emacs doesn't load the preset-overrides for some reason
-;;   (setq modus-operandi-palette-overrides
-;;         `((fg-region unspecified)
-;;           (bg-mode-line-active bg-dim)
-;;           (bg-mode-line-inactive bg-main)
-;;           (fringe unspecified)))
-;;   (setq modus-vivendi-palette-overrides
-;;         `((border-mode-line-active unspecified)
-;;           (border-mode-line-inactive unspecified)
-;;           (fg-region unspecified)
-;;           (fg-paren-match magenta-intense)
-;;           (bg-paren-match unspecified)
-;;           (fringe unspecified)
-;;           ,@modus-themes-preset-overrides-faint))
-;;   :bind ("<f12>" . modus-themes-toggle))
+(use-package modus-themes
+  :custom
+  (modus-themes-mixed-fonts t)
+  (modus-themes-bold-constructs t)
+  (modus-themes-prompts '(bold))
+  (modus-themes-to-toggle '(modus-vivendi modus-operandi))
+  (modus-themes-headings
+   '((1 . (1.2))
+     (2 . (1.15))
+     (3 . (1.1))))
+  :config ; Have to do it in config because otherwise emacs doesn't load the preset-overrides for some reason
+  (setq modus-operandi-palette-overrides
+        `((fg-region unspecified)
+          (bg-mode-line-active bg-dim)
+          (bg-mode-line-inactive bg-main)
+          (fringe unspecified)))
+  (setq modus-vivendi-palette-overrides
+        `((border-mode-line-active unspecified)
+          (border-mode-line-inactive unspecified)
+          (fg-region unspecified)
+          (fg-paren-match magenta-intense)
+          (bg-paren-match unspecified)
+          (fringe unspecified)
+          ,@modus-themes-preset-overrides-faint)))
 
-;; ; (modus-themes-select 'modus-vivendi)
+(use-package standard-themes
+  :custom
+  standard-themes-bold-constructs t
+  standard-themes-disable-other-themes t
+  standard-themes-mixed-fonts t
+  standard-themes-prompts '(bold)
+  standard-themes-to-toggle '(standard-dark standard-light))
 
-;; (use-package standard-themes
-;;   :custom
-;;   standard-themes-bold-constructs t
-;;   standard-themes-disable-other-themes t
-;;   standard-themes-mixed-fonts t
-;;   standard-themes-prompts '(bold)
-;;   standard-themes-to-toggle '(standard-dark standard-light)
-;;   :bind ("<f11>" . standard-themes-toggle))
 
 (use-package catppuccin-theme
   :config
@@ -798,7 +789,14 @@ The most important thing tbh.
   (catppuccin-set-color 'surface1 "#202127")
   (catppuccin-set-color 'surface2 "#252532")
   (catppuccin-reload)
+  (add-to-list 'default-frame-alist '(alpha-background . 95))
   (set-face-attribute 'line-number nil :foreground (catppuccin-color 'overlay0)))
+
+;; Fix transparency in terminal windows
+(defun on-after-init ()
+  (unless (display-graphic-p (selected-frame))
+    (set-face-background 'default "unspecified-bg" (selected-frame))))
+(add-hook 'window-setup-hook 'on-after-init)
 #+end_src
 
 ** Windows and Frames
@@ -991,6 +989,17 @@ Assumes the ~merlin~, ~dune~, and ~tuareg~ packages are installed in the current
 
 (use-package opam-switch-mode
   :hook ((coq-mode tuareg-mode) . opam-switch-mode))
+#+end_src
+
+** Zig
+🦎
+
+#+begin_src emacs-lisp
+(let ((zig-path (expand-file-name "/opt/zig/")))
+  (setenv "PATH" (concat zig-path ":" (getenv "PATH")))
+  (add-to-list 'exec-path zig-path))
+
+(use-package zig-mode)
 #+end_src
 
 ** Z3
