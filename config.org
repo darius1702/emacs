@@ -109,6 +109,8 @@ Some sensible defaults
 (global-set-key (kbd "M-l") 'downcase-dwim)
 (global-set-key (kbd "M-c") 'capitalize-dwim)
 
+(setq kill-region-dwim 'emacs-word)     ; make C-w delete a word backwards when no region is active
+
 (global-set-key (kbd "M-n") 'flymake-goto-next-error)
 (global-set-key (kbd "M-p") 'flymake-goto-prev-error)
 
@@ -190,7 +192,7 @@ Make programming-modes a little nicer with line numbers and current line highlig
 
 #+begin_src emacs-lisp
 (add-hook 'prog-mode-hook 'display-line-numbers-mode)
-(add-hook 'prog-mode-hook 'hl-line-mode)
+;; (add-hook 'prog-mode-hook 'hl-line-mode)
 #+end_src
 
 ** Man pages
@@ -309,13 +311,15 @@ Diff files
 Need to set it in an extra hook to make it work in emacsclient frames.
 
 #+begin_src emacs-lisp
-(setq darius/fixed-pitch-font "ZedMono NFP"
-      darius/variable-pitch-font darius/fixed-pitch-font)
+(setq darius/fixed-pitch-font "Iosevka NFP"
+      darius/variable-pitch-font "Iosevka Aile")
 
 (defun darius/set-up-fonts ()
-  (set-face-attribute 'default nil :font darius/fixed-pitch-font :height 130 :weight 'regular :width 'regular)
-  (set-face-attribute 'variable-pitch nil :font darius/variable-pitch-font :height 1.0 :weight 'regular :width 'regular)
-  (set-face-attribute 'fixed-pitch nil :font darius/fixed-pitch-font :height 1.0 :weight 'regular :width 'regular))
+  "Load face attributes for fixed and variable-pitch fonts"
+  (interactive)
+  (set-face-attribute 'default nil :font darius/fixed-pitch-font :height 130 :weight 'semilight)
+  (set-face-attribute 'variable-pitch nil :font darius/variable-pitch-font :height 1.0 :weight 'semilight)
+  (set-face-attribute 'fixed-pitch nil :font darius/fixed-pitch-font :height 1.0 :weight 'semilight))
 
 (add-hook 'after-init-hook 'darius/set-up-fonts)
 (add-hook 'server-after-make-frame-hook 'darius/set-up-fonts)
@@ -772,25 +776,35 @@ The most important thing tbh.
           (fringe unspecified)
           ,@modus-themes-preset-overrides-faint)))
 
-(use-package standard-themes
+(use-package ef-themes
   :custom
-  standard-themes-bold-constructs t
-  standard-themes-disable-other-themes t
-  standard-themes-mixed-fonts t
-  standard-themes-prompts '(bold)
-  standard-themes-to-toggle '(standard-dark standard-light))
+  (ef-themes-mixed-fonts t)
+  (ef-themes-headings
+   '((0 semilight variable-pitch 1.3)
+     (1 semilight variable-pitch 1.4)
+     (2 semilight variable-pitch 1.2)
+     (3 semilight variable-pitch 1.1)
+     (agenda-date semilight 1.2)
+     (t semilight variable-pitch)))
+  :hook (ef-themes-post-load . darius/ef-theme-setup))
 
+(defun darius/ef-theme-setup ()
+  "Less bold and no italics"
+  (set-face-attribute 'bold nil :weight 'medium)
+  (set-face-attribute 'italic nil :slant 'normal))
 
-(use-package catppuccin-theme
-  :config
-  (setq catppuccin-flavor 'mocha)
-  (catppuccin-set-color 'base "#000000")
-  (catppuccin-set-color 'surface0 "#121216")
-  (catppuccin-set-color 'surface1 "#202127")
-  (catppuccin-set-color 'surface2 "#252532")
-  (catppuccin-reload)
-  (add-to-list 'default-frame-alist '(alpha-background . 95))
-  (set-face-attribute 'line-number nil :foreground (catppuccin-color 'overlay0)))
+(ef-themes-select 'ef-dream)
+(add-to-list 'default-frame-alist '(alpha-background . 95))
+
+;; (use-package catppuccin-theme
+;;   :config
+;;   (setq catppuccin-flavor 'mocha)
+;;   (catppuccin-set-color 'base "#000000")
+;;   (catppuccin-set-color 'surface0 "#121216")
+;;   (catppuccin-set-color 'surface1 "#202127")
+;;   (catppuccin-set-color 'surface2 "#252532")
+;;   (catppuccin-reload)
+;;   (set-face-attribute 'line-number nil :foreground (catppuccin-color 'overlay0)))
 
 ;; Fix transparency in terminal windows
 (defun on-after-init ()
@@ -808,8 +822,7 @@ Switching and moving windows
   :custom
   (aw-scope 'frame))
 
-(use-package transpose-frame
-  :bind ("C-M-o" . transpose-frame))
+(global-set-key (kbd "C-M-o") 'transpose-window-layout)
 
 (global-set-key (kbd "M-H") 'windmove-left)
 (global-set-key (kbd "M-J") 'windmove-down)
@@ -869,7 +882,6 @@ Doesn't work properly if it's not all the way at the end for some reason
   :diminish auto-revert-mode
   :diminish org-cdlatex-mode)
 #+end_src
-
 
 * Languages
 Programming language specific stuff
