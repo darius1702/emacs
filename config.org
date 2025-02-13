@@ -89,6 +89,9 @@ Disble all annoying auto-generated files and make ~custom-set-variables~ go to t
 ** Better editing experience
 Some sensible defaults
 
+*** Keybinds
+Unbind some defaults and replace others with the dwim variant
+
 #+begin_src emacs-lisp
 (global-unset-key (kbd "C-x C-c"))            ; stop accidentally quitting emacs
 (global-unset-key (kbd "C-x C-z"))            ; stop accidentally suspending emacs
@@ -100,6 +103,9 @@ Some sensible defaults
 (global-set-key (kbd "C-c r") 'recompile)
 
 (global-set-key (kbd "M-o") 'other-window)
+(global-set-key (kbd "C-M-o") 'transpose-window-layout)
+
+(global-set-key (kbd "C-<tab>") 'mode-line-other-buffer)
 
 ;; Act on region if active, otherwise on line
 (global-set-key (kbd "M-D") 'duplicate-dwim)
@@ -108,8 +114,6 @@ Some sensible defaults
 (global-set-key (kbd "M-u") 'upcase-dwim)
 (global-set-key (kbd "M-l") 'downcase-dwim)
 (global-set-key (kbd "M-c") 'capitalize-dwim)
-
-(setq kill-region-dwim 'emacs-word)     ; make C-w delete a word backwards when no region is active
 
 (global-set-key (kbd "M-n") 'flymake-goto-next-error)
 (global-set-key (kbd "M-p") 'flymake-goto-prev-error)
@@ -120,6 +124,13 @@ Some sensible defaults
 (global-unset-key (kbd "C-<wheel-up>"))
 (global-unset-key (kbd "C-<wheel-down>"))
 (global-unset-key (kbd "<pinch>"))
+#+end_src
+
+*** Misc
+Other settings
+
+#+begin_src emacs-lisp
+(setq kill-region-dwim 'emacs-word)     ; make C-w delete a word backwards when no region is active
 
 (add-to-list 'load-path (file-name-concat user-emacs-directory "external"))
 
@@ -127,6 +138,8 @@ Some sensible defaults
 (setq visible-cursor nil)  ; disable blinking cursor in terminal
 
 (run-with-idle-timer 2 t (lambda () (garbage-collect)))
+
+(setq confirm-kill-emacs 'yes-or-no-p)  ; just in case
 
 (setq suggest-key-bindings nil
       echo-keystrokes 0.01)
@@ -602,6 +615,7 @@ Some org-mode tweaks
   (setq calendar-date-style 'european)
   (setq calendar-week-start-day 1)
   (setq org-imenu-depth 7)
+  (setq org-hide-emphasis-markers t)    ; I will probably regret this?
   (setq org-M-RET-may-split-line '((default . nil)))
   (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file))
 
@@ -796,16 +810,6 @@ The most important thing tbh.
 (ef-themes-select 'ef-dream)
 (add-to-list 'default-frame-alist '(alpha-background . 95))
 
-;; (use-package catppuccin-theme
-;;   :config
-;;   (setq catppuccin-flavor 'mocha)
-;;   (catppuccin-set-color 'base "#000000")
-;;   (catppuccin-set-color 'surface0 "#121216")
-;;   (catppuccin-set-color 'surface1 "#202127")
-;;   (catppuccin-set-color 'surface2 "#252532")
-;;   (catppuccin-reload)
-;;   (set-face-attribute 'line-number nil :foreground (catppuccin-color 'overlay0)))
-
 ;; Fix transparency in terminal windows
 (defun on-after-init ()
   (unless (display-graphic-p (selected-frame))
@@ -821,8 +825,6 @@ Switching and moving windows
   :bind (("M-O" . ace-swap-window))
   :custom
   (aw-scope 'frame))
-
-(global-set-key (kbd "C-M-o") 'transpose-window-layout)
 
 (global-set-key (kbd "M-H") 'windmove-left)
 (global-set-key (kbd "M-J") 'windmove-down)
@@ -890,7 +892,7 @@ Automatically install tree-sitter grammars and enable the major modes
 
 #+begin_src emacs-lisp
 ;; (setq treesit-font-lock-level 3)        ; 4 is a little much
-(setq treesit-font-lock-level 4)           ; 4 works well with catppuccin
+(setq treesit-font-lock-level 4)
 
 (use-package treesit-auto
   :after emacs ;; idk if this is really necessary
