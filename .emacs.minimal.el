@@ -1,3 +1,6 @@
+;; -*- lexical-binding: t; -*-
+;; This config requires emacs >= 31 for transpose-window-layout
+
 (setq inhibit-splash-screen t)
 (menu-bar-mode 0)
 (setq tab-bar-show 1)
@@ -58,6 +61,7 @@
 (setq backup-by-copying t)
 
 (global-set-key (kbd "M-o") 'other-window)
+(global-set-key (kbd "C-M-o") 'window-layout-transpose)
 
 (global-set-key (kbd "C-c c") 'compile)
 (global-set-key (kbd "C-c r") 'recompile)

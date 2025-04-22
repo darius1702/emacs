@@ -105,7 +105,7 @@ Unbind some defaults and replace others with the dwim variant
 (global-set-key (kbd "C-c r") 'recompile)
 
 (global-set-key (kbd "M-o") 'other-window)
-(global-set-key (kbd "C-M-o") 'transpose-window-layout)
+(global-set-key (kbd "C-M-o") 'window-layout-transpose)
 
 (global-set-key (kbd "C-<tab>") 'mode-line-other-buffer)
 
@@ -224,35 +224,35 @@ Make manpages look a little better
 Buffer switching and management
 
 #+begin_src emacs-lisp
-(global-set-key (kbd "C-x C-b") 'ibuffer)
-(setq ibuffer-expert t)
-(setq ibuffer-display-summary nil)
-(setq ibuffer-saved-filter-groups
-      (quote (("default"
-               ("Code" (or (derived-mode . prog-mode) (mode . ess-mode)
-                           (mode . compilation-mode)))
-               ("LaTeX" (filename . "\\.tex$"))
-               ("Dired" (mode . dired-mode))
-               ("Org" (mode . org-mode))
-               ("Pdf" (mode . pdf-view-mode))
-               ("Help" (or (mode . help-mode) (mode . Man-mode)))
-               ("Git" (name . "^magit"))
-               ("Misc" (name . "^\\**.*\\*$"))))))
-
-(setq ibuffer-formats
-      '((mark modified read-only vc-status-mini " "
-              (name 18 18 :left :elide)
-              " "
-              (size 9 -1 :right)
-              " "
-              (mode 16 16 :left :elide)
-              " "
-              (vc-status 16 16 :left))))
-
-(add-hook 'ibuffer-mode-hook
-          (lambda ()
-            (ibuffer-switch-to-saved-filter-groups "default")
-            (ibuffer-auto-mode t)))
+(use-package ibuffer
+  :bind (("C-x C-b" . ibuffer)
+         (:map ibuffer-mode-map ("M-o" . other-window)))
+  :hook (ibuffer-mode . (lambda ()
+                          (ibuffer-switch-to-saved-filter-groups "default")
+                          (ibuffer-auto-mode t)))
+  :custom
+  (ibuffer-expert t)
+  (ibuffer-display-summary nil)
+  (ibuffer-saved-filter-groups
+   (quote (("default"
+            ("Code" (or (derived-mode . prog-mode) (mode . ess-mode)
+                        (mode . compilation-mode)))
+            ("LaTeX" (filename . "\\.tex$"))
+            ("Dired" (mode . dired-mode))
+            ("Org" (mode . org-mode))
+            ("Pdf" (mode . pdf-view-mode))
+            ("Help" (or (mode . help-mode) (mode . Man-mode)))
+            ("Git" (name . "^magit"))
+            ("Misc" (name . "^\\**.*\\*$"))))))
+  (ibuffer-formats
+   '((mark modified read-only vc-status-mini " "
+           (name 18 18 :left :elide)
+           " "
+           (size 9 -1 :right)
+           " "
+           (mode 16 16 :left :elide)
+           " "
+           (vc-status 16 16 :left)))))
 #+end_src
 
 ** Dired
@@ -263,7 +263,7 @@ Make dired recognize other buffers as copy/move targets and also list human-read
   "Wrapper around `dired-create-directory' with no minibuffer completion."
   (interactive)
   (let ((search-term
-          (read-from-minibuffer "Make directory: ")))
+         (read-from-minibuffer "Make directory: ")))
     (dired-create-directory search-term)))
 
 (use-package dired
@@ -330,11 +330,11 @@ Need to set it in an extra hook to make it work in emacsclient frames.
 (defun darius/set-up-fonts ()
   "Load face attributes for fixed and variable-pitch fonts"
   (interactive)
-  (let ((darius/fixed-pitch-font "Iosevka NFP")
+  (let ((darius/fixed-pitch-font "Hasklug Nerd Font")
         (darius/variable-pitch-font "Iosevka Aile"))
-    (set-face-attribute 'default nil :font darius/fixed-pitch-font :height 130 :weight 'semilight)
+    (set-face-attribute 'default nil :font darius/fixed-pitch-font :height 130 :weight 'regular)
     (set-face-attribute 'variable-pitch nil :font darius/variable-pitch-font :height 1.0 :weight 'semilight)
-    (set-face-attribute 'fixed-pitch nil :font darius/fixed-pitch-font :height 1.0 :weight 'semilight)))
+    (set-face-attribute 'fixed-pitch nil :font darius/fixed-pitch-font :height 1.0 :weight 'regular)))
 
 (add-hook 'after-init-hook 'darius/set-up-fonts)
 (add-hook 'server-after-make-frame-hook 'darius/set-up-fonts)
@@ -573,6 +573,13 @@ Some nice additional completing-read stuff
 
 #+begin_src emacs-lisp
 (use-package consult
+  :config
+  (defun darius/consult-ripgrep-hidden ()
+    "Call rg with additional --hidden flag"
+    (interactive)
+    (let* ((consult-ripgrep-args (s-concat consult-ripgrep-args " --hidden")))
+      (call-interactively 'consult-ripgrep)))
+
   :bind
   ("C-S-Y"     . consult-yank-from-kill-ring)
   ;; M-s `search-map'
@@ -580,6 +587,7 @@ Some nice additional completing-read stuff
   ("M-s l"     . consult-line)
   ("M-s L"     . consult-line-multi)
   ("M-s r"     . consult-ripgrep)
+  ("M-s R"     . darius/consult-ripgrep-hidden)
   ("M-s u"     . consult-focus-lines)
   ("M-s k"     . consult-keep-lines)
   ;; M-g `goto-map'
@@ -609,6 +617,11 @@ Some improvements over DocView
               ("C" . pdf-view-center-in-window)
               ("C-=" . pdf-view-enlarge)
               ("C--" . pdf-view-shrink)
+              ;; this also makes scroll-other-window work for PDFView buffers
+              ([remap scroll-up-command] . pdf-view-scroll-up-or-next-page)
+              ([remap scroll-down-command] . pdf-view-scroll-down-or-previous-page)
+              ("<mouse-8>" . pdf-view-scroll-down-or-previous-page)
+              ("<mouse-9>" . pdf-view-scroll-up-or-next-page)
               ("M-g g" . pdf-view-goto-page)))
 
 (add-hook 'pdf-view-mode-hook #'(lambda () (interactive) (display-line-numbers-mode -1)))
@@ -732,7 +745,8 @@ Corfu for in-buffer completion
 
 (use-package cape
   :init
-  (add-to-list 'completion-at-point-functions #'cape-file))
+  (add-hook 'completion-at-point-functions #'cape-dabbrev)
+  (add-hook 'completion-at-point-functions #'cape-file))
 #+end_src
 
 ** Minibuffer completion
@@ -753,9 +767,9 @@ Set up vertico, orderless and savehist and tweak some emacs completion defaults
 
 (use-package orderless
   :init
-    (setq completion-styles '(substring orderless basic)
-	completion-category-defaults nil
-	completion-category-overrides '((file (styles partial-completion)))))
+  (setq completion-styles '(substring orderless basic)
+	    completion-category-defaults nil
+	    completion-category-overrides '((file (styles partial-completion)))))
 
 (use-package emacs
   :init
@@ -763,16 +777,16 @@ Set up vertico, orderless and savehist and tweak some emacs completion defaults
   ;; We display [CRM<separator>], e.g., [CRM,] if the separator is a comma.
   (defun crm-indicator (args)
     (cons (format "[CRM%s] %s"
-		  (replace-regexp-in-string
-		   "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
-		   crm-separator)
-		  (car args))
-	  (cdr args)))
+		          (replace-regexp-in-string
+		           "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
+		           crm-separator)
+		          (car args))
+	      (cdr args)))
   (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
 
   ;; Do not allow the cursor in the minibuffer prompt
   (setq minibuffer-prompt-properties
-	'(read-only t cursor-intangible t face minibuffer-prompt))
+	    '(read-only t cursor-intangible t face minibuffer-prompt))
   (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
   ;; Enable recursive minibuffers
@@ -786,6 +800,26 @@ Set up vertico, orderless and savehist and tweak some emacs completion defaults
 The most important thing tbh.
 
 #+begin_src emacs-lisp
+(add-to-list 'default-frame-alist '(alpha-background . 95)) ; a little transparency
+
+(defun darius/fix-terminal-transparency ()
+  "Fix transparency in terminal windows"
+  (unless (display-graphic-p (selected-frame))
+    (set-face-background 'default "unspecified-bg" (selected-frame))))
+(add-hook 'window-setup-hook 'darius/fix-terminal-transparency)
+
+(defun darius/ir-black-theme ()
+  (interactive)
+  (use-package ir-black-theme
+    :config
+    (mapc 'disable-theme custom-enabled-themes)
+    (load-theme 'ir-black t)
+    (set-face-attribute 'mode-line-inactive nil :foreground "grey65")
+    (set-face-attribute 'org-block nil :foreground "white")
+    (set-face-attribute 'org-block nil :background "grey6")
+    (set-face-attribute 'org-block-begin-line nil :background "grey8")
+    (set-face-attribute 'org-block-end-line nil :background "grey8")))
+
 (use-package modus-themes
   :custom
   (modus-themes-mixed-fonts t)
@@ -831,26 +865,16 @@ The most important thing tbh.
   (set-face-attribute 'bold nil :weight 'medium)
   (set-face-attribute 'italic nil :slant 'normal))
 
-;; (ef-themes-select 'ef-dream)
+(ef-themes-select 'ef-dream)
 
-(use-package catppuccin-theme
-  :config
-  (setq catppuccin-flavor 'mocha)
-  (catppuccin-set-color 'base "#000000")
-  (catppuccin-set-color 'surface0 "#121216")
-  (catppuccin-set-color 'surface1 "#202127")
-  (catppuccin-set-color 'surface2 "#252532")
-  (catppuccin-reload)
+(defun darius/catppuccin-theme-setup ()
+  (interactive)
+  (mapc #'disable-theme custom-enabled-themes)
+  (catppuccin-load-flavor 'latte)
   (set-face-attribute 'line-number nil :foreground (catppuccin-color 'overlay0))
   (set-face-attribute 'org-block nil :foreground (catppuccin-color 'text)))
 
-(add-to-list 'default-frame-alist '(alpha-background . 95)) ; a little transparency
-
-(defun darius/fix-terminal-transparency ()
-  "Fix transparency in terminal windows"
-  (unless (display-graphic-p (selected-frame))
-    (set-face-background 'default "unspecified-bg" (selected-frame))))
-(add-hook 'window-setup-hook 'darius/fix-terminal-transparency)
+(use-package catppuccin-theme)
 #+end_src
 
 ** Windows and Frames
@@ -898,15 +922,15 @@ LLM Actions
   (setopt ellama-keymap-prefix "C-c e")
   (require 'llm-ollama)
   (setopt ellama-provider
-	  (make-llm-ollama
-	   :chat-model "llama3.1:latest"
-       :embedding-model "nomic-embed-text"))
+	      (make-llm-ollama
+	       :chat-model "llama3.1:latest"
+           :embedding-model "nomic-embed-text"))
   ;; Also use the model to name the chat buffers
   (setopt ellama-naming-provider
-	  (make-llm-ollama
-	   :chat-model "llama3.1:latest"
-	   :embedding-model "nomic-embed-text"
-	   :default-chat-non-standard-params '(("stop" . ("\n")))))
+	      (make-llm-ollama
+	       :chat-model "llama3.1:latest"
+	       :embedding-model "nomic-embed-text"
+	       :default-chat-non-standard-params '(("stop" . ("\n")))))
   (setopt ellama-naming-scheme 'ellama-generate-name-by-llm))
 #+end_src
 
@@ -1002,6 +1026,7 @@ The one and only
 
 #+begin_src emacs-lisp
 (use-package haskell-mode
+  :after haskell-interactive-mode
   :init
   (setq flymake-allowed-file-name-masks '())
   :config
@@ -1011,9 +1036,22 @@ The one and only
   (let ((my-cabal-path (expand-file-name "~/.cabal/bin")))
     (setenv "PATH" (concat my-cabal-path ":" (getenv "PATH")))
     (add-to-list 'exec-path my-cabal-path))
+
+  (require 'inf-haskell)                ; TODO there probably is a better way to do this than requiring it here
+  (defun darius/haskell-interactive-beginning-of-line ()
+    "Skip the interactive haskell prompt at the beginning of the line"
+    (interactive)
+    (let* ((line (thing-at-point 'line t))
+           (pos (string-match haskell-prompt-regexp line))
+           (end (if pos (match-end 0) 0)))
+      (beginning-of-line)
+      (forward-char end)))
+
   :bind (:map haskell-mode-map
               ("M-n" . 'haskell-goto-next-error)
-              ("M-p" . 'haskell-goto-prev-error)))
+              ("M-p" . 'haskell-goto-prev-error)
+              :map haskell-interactive-mode-map
+              ("C-a" . 'darius/haskell-interactive-beginning-of-line)))
 
 (use-package hindent
   :after haskell-mode
@@ -1161,6 +1199,22 @@ Also requires auctex
 (use-package cdlatex
   :custom (cdlatex-takeover-parenthesis nil)
   :hook (LaTeX-mode . turn-on-cdlatex))
+#+end_src
+
+** Typst
+The cooler LaTeX?
+
+#+begin_src emacs-lisp
+(use-package typst-ts-mode
+  :after eglot
+  :config
+  ;; typst-ts-mode downloads the latest stable build of tinymist (https://myriad-dreamin.github.io/tinymist/frontend/emacs.html)
+  ;; so use that if it's available
+  (add-to-list 'eglot-server-programs
+               `((typst-ts-mode) .
+                 ,(eglot-alternatives
+                   `(,typst-ts-lsp-download-path
+                     "tinymist")))))
 #+end_src
 
 ** SAIL
