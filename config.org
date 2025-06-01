@@ -187,6 +187,7 @@ Other settings
       search-whitespace-regexp ".*?")
 
 (setq compilation-max-output-line-length 800)
+(setq compilation-scroll-output t)
 
 (require 'ansi-color)
 (add-hook 'compilation-filter-hook 'ansi-color-compilation-filter) ; fix colors in compilation output
@@ -278,8 +279,11 @@ Make dired recognize other buffers as copy/move targets and also list human-read
   (dired-auto-revert-buffer t)
   :bind
   ("M-g b". dired-jump)
+  ("<mouse-8>" . dired-jump) ;; back button
+
   (:map dired-mode-map
         ("+" . darius/dired-create-directory)
+        ("<mouse-2>" . dired-mouse-find-file)
         ("b" . dired-jump))
   :config
   ;; Make `dired-do-shell-command' suggest better defaults for some filetypes
@@ -332,20 +336,34 @@ Diff files
 
 ** Font setup
 Need to set it in an extra hook to make it work in emacsclient frames.
+Font setup moved to [[*Fontaine][Fontaine]].
 
 #+begin_src emacs-lisp
-(defun darius/set-up-fonts ()
-  "Load face attributes for fixed and variable-pitch fonts"
-  (interactive)
-  ;; (let ((darius/fixed-pitch-font "Hasklug Nerd Font")
-  (let ((darius/fixed-pitch-font "Iosevka NFP")
-        (darius/variable-pitch-font "Iosevka Aile"))
-    (set-face-attribute 'default nil :font darius/fixed-pitch-font :height 130 :weight 'regular)
-    (set-face-attribute 'variable-pitch nil :font darius/variable-pitch-font :height 1.0 :weight 'semilight)
-    (set-face-attribute 'fixed-pitch nil :font darius/fixed-pitch-font :height 1.0 :weight 'regular)))
+;; (defun darius/set-up-fonts ()
+;;   "Load face attributes for fixed and variable-pitch fonts"
+;;   (interactive)
+;;   (let ((darius/fixed-pitch-font "Iosevka NFP")
+;;         (darius/variable-pitch-font "Iosevka Aile"))
+;;     (set-face-attribute 'default nil :font darius/fixed-pitch-font :height 130 :weight 'regular)
+;;     (set-face-attribute 'variable-pitch nil :font darius/variable-pitch-font :height 1.0 :weight 'semilight)
+;;     (set-face-attribute 'fixed-pitch nil :font darius/fixed-pitch-font :height 1.0 :weight 'regular)))
 
-(add-hook 'after-init-hook 'darius/set-up-fonts)
-(add-hook 'server-after-make-frame-hook 'darius/set-up-fonts)
+;; (add-hook 'after-init-hook 'darius/set-up-fonts)
+;; (add-hook 'server-after-make-frame-hook 'darius/set-up-fonts)
+(defun darius/org-heading-setup ()
+  "Set font and font size for org headings, load this with org"
+  (let* ((headline '(:inherit variable-pitch)))
+  (custom-theme-set-faces
+   'user
+   `(org-level-8 ((t (,@headline))))
+   `(org-level-7 ((t (,@headline))))
+   `(org-level-6 ((t (,@headline))))
+   `(org-level-5 ((t (,@headline))))
+   `(org-level-4 ((t (,@headline :height 1.05))))
+   `(org-level-3 ((t (,@headline :height 1.1))))
+   `(org-level-2 ((t (,@headline :height 1.15))))
+   `(org-level-1 ((t (,@headline :height 1.2))))
+   `(org-document-title ((t (,@headline :height 1.2 :underline nil)))))))
 #+end_src
 
 ** Eshell
@@ -518,7 +536,7 @@ Expand the region
 
 #+begin_src emacs-lisp
 (use-package expand-region
-  :bind ("C-z" . er/expand-region))
+  :bind ("M-j" . er/expand-region))
 #+end_src
 
 *** EAT
@@ -564,6 +582,38 @@ top of the screen
         scroll-margin 0)
   :config
   (ultra-scroll-mode 1))
+#+end_src
+
+*** Fontaine
+Font presets
+
+#+begin_src emacs-lisp
+(use-package fontaine
+  :custom
+  (fontaine-presets
+   '((regular
+      :default-family "Iosevka NFP"
+      :default-weight regular
+      :default-height 130
+      :fixed-pitch-weight nil ; falls back to :default-weight
+      :variable-pitch-family "Iosevka Aile"
+      :variable-pitch-weight semilight
+      :bold-family nil
+      :italic-family nil)
+     (large
+      :inherit regular
+      :default-height 200)
+     (present
+      :inherit regular
+      :default-family "JetBrainsMonoNL NFP"
+      :default-height 250)))
+  :config
+  (defun darius/reapply-fontaine ()
+    (fontaine-set-preset (or (fontaine-restore-latest-preset) 'present)))
+  (darius/reapply-fontaine)
+  (fontaine-mode 1)
+  (define-key global-map (kbd "C-c f") #'fontaine-set-preset)
+  (add-hook 'server-mode-hook 'darius/reapply-fontaine))
 #+end_src
 
 ** Git
@@ -682,6 +732,7 @@ Some org-mode tweaks
   :load-path "~/.emacs.d/elpa/org-mode/lisp/"
   :config
   (darius/org-setup)
+  (darius/org-heading-setup)
   (setq org-src-preserve-indentation nil
         org-edit-src-content-indentation 0))
 
@@ -833,59 +884,13 @@ Set up vertico, orderless and savehist and tweak some emacs completion defaults
 The most important thing tbh.
 
 #+begin_src emacs-lisp
-(add-to-list 'default-frame-alist '(alpha-background . 95)) ; a little transparency
+(add-to-list 'default-frame-alist '(alpha-background . 98)) ; a little transparency
 
 (defun darius/fix-terminal-transparency ()
   "Fix transparency in terminal windows"
   (unless (display-graphic-p (selected-frame))
     (set-face-background 'default "unspecified-bg" (selected-frame))))
 (add-hook 'window-setup-hook 'darius/fix-terminal-transparency)
-
-(use-package modus-themes
-  :custom
-  (modus-themes-mixed-fonts t)
-  (modus-themes-bold-constructs t)
-  (modus-themes-prompts '(bold))
-  (modus-themes-to-toggle '(modus-vivendi modus-operandi))
-  (modus-themes-headings
-   '((0 semilight variable-pitch 1.3)
-     (1 semilight variable-pitch 1.4)
-     (2 semilight variable-pitch 1.2)
-     (3 semilight variable-pitch 1.1)
-     (agenda-date semilight 1.2)
-     (t semilight variable-pitch)))
-  :config ; Have to do it in config because otherwise emacs doesn't load the preset-overrides for some reason
-  (setq modus-operandi-palette-overrides
-        `((fg-region unspecified)
-          (bg-mode-line-active bg-dim)
-          (bg-mode-line-inactive bg-main)
-          (fringe unspecified)))
-  (setq modus-vivendi-palette-overrides
-        `((border-mode-line-active unspecified)
-          (border-mode-line-inactive unspecified)
-          (fg-region unspecified)
-          (fg-paren-match magenta-intense)
-          (bg-paren-match unspecified)
-          (fringe unspecified)
-          ,@modus-themes-preset-overrides-faint))
-  :hook (modus-themes-post-load . darius/ef-theme-setup))
-
-(use-package ef-themes
-  :custom
-  (ef-themes-mixed-fonts t)
-  (ef-themes-headings
-   '((0 semilight variable-pitch 1.3)
-     (1 semilight variable-pitch 1.4)
-     (2 semilight variable-pitch 1.2)
-     (3 semilight variable-pitch 1.1)
-     (agenda-date semilight 1.2)
-     (t semilight variable-pitch)))
-  :hook (ef-themes-post-load . darius/ef-theme-setup))
-
-(defun darius/ef-theme-setup ()
-  "Less bold and no italics, also works for modus themes"
-  (set-face-attribute 'bold nil :weight 'medium)
-  (set-face-attribute 'italic nil :slant 'normal))
 
 (defun darius/catppuccin-setup-light ()
   (interactive)
@@ -929,7 +934,7 @@ Jumping around
 
 #+begin_src emacs-lisp
 (use-package avy
-  :bind ("M-j" . avy-goto-char-timer))
+  :bind ("C-z" . avy-goto-char-timer))
 #+end_src
 
 ** Eldoc-Box
@@ -1007,6 +1012,9 @@ Language server stuff
   (eglot-extend-to-xref t)
   :config
   (fset #'jsonrpc--log-event #'ignore)
+  (add-to-list 'eglot-server-programs
+               `((scala-mode scala-ts-mode)
+                 . ,(alist-get 'scala-mode eglot-server-programs)))
   (add-to-list 'eglot-server-programs
                '((c-mode c++-mode c-ts-mode c++-ts-mode)
                  . ("clangd"
@@ -1089,6 +1097,25 @@ The one and only
   :after haskell-mode
   :hook (haskell-mode . hindent-mode)
   :diminish)
+#+end_src
+
+** Scala
+why
+
+This assumes metals is installed in ~./local/bin/metals-emacs~.
+
+#+begin_src emacs-lisp
+(let ((coursier-bin-path "/home/darius/.local/share/coursier/bin/"))
+  (use-package scala-mode
+    :interpreter ("scala" . scala-mode)
+    :init
+    (add-to-list 'exec-path coursier-bin-path)
+    (setenv "PATH" (concat coursier-bin-path ":" (getenv "PATH")))
+    :bind (:map scala-mode-map
+                ("C-c c" . scala-compile)
+                ("C-c r" . scala-compile))))
+
+(use-package scala-ts-mode)
 #+end_src
 
 ** OCaml
