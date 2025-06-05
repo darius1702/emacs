@@ -193,6 +193,7 @@ Other settings
 (add-hook 'compilation-filter-hook 'ansi-color-compilation-filter) ; fix colors in compilation output
 
 (setq tab-bar-show 1)                   ; only show tab bar on frames with more than one tab
+(setq tab-bar-close-button-show nil)
 (column-number-mode t)
 (show-paren-mode t)
 (setq show-paren-when-point-inside-paren t)
@@ -221,6 +222,9 @@ Make manpages look a little better
 #+begin_src emacs-lisp
 (use-package man
   :ensure nil
+  :config
+  (set-face-attribute 'Man-overstrike nil :inherit font-lock-keyword-face :bold t)
+  (set-face-attribute 'Man-underline nil :inherit font-lock-string-face :underline t)
   :bind ("C-c m" . 'man))
 #+end_src
 
@@ -350,20 +354,7 @@ Font setup moved to [[*Fontaine][Fontaine]].
 
 ;; (add-hook 'after-init-hook 'darius/set-up-fonts)
 ;; (add-hook 'server-after-make-frame-hook 'darius/set-up-fonts)
-(defun darius/org-heading-setup ()
-  "Set font and font size for org headings, load this with org"
-  (let* ((headline '(:inherit variable-pitch)))
-  (custom-theme-set-faces
-   'user
-   `(org-level-8 ((t (,@headline))))
-   `(org-level-7 ((t (,@headline))))
-   `(org-level-6 ((t (,@headline))))
-   `(org-level-5 ((t (,@headline))))
-   `(org-level-4 ((t (,@headline :height 1.05))))
-   `(org-level-3 ((t (,@headline :height 1.1))))
-   `(org-level-2 ((t (,@headline :height 1.15))))
-   `(org-level-1 ((t (,@headline :height 1.2))))
-   `(org-document-title ((t (,@headline :height 1.2 :underline nil)))))))
+
 #+end_src
 
 ** Eshell
@@ -388,9 +379,10 @@ Basic ~package.el~ config
 #+begin_src emacs-lisp
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
-(package-initialize)
-(unless package-archive-contents
-  (package-refresh-contents))
+;; NOTE: apparently this is not needed? I have no idea how package.el works tbh
+;; (package-initialize)
+;; (unless package-archive-contents
+  ;; (package-refresh-contents))
 (setq use-package-always-ensure t)
 (setq package-native-compile t)         ; this will just be ignored if native-comp isn't available
 #+end_src
@@ -709,9 +701,35 @@ Some improvements over DocView
 Some org-mode tweaks
 
 #+begin_src emacs-lisp
+(defun darius/org-heading-setup ()
+  "Set font and font size for org headings. Inheriting from `variable-pitch' breaks colors since org faces inherit some `org-level-x' face by default"
+  (let* ((vp-family (face-attribute 'variable-pitch :family))
+         (vp-weight (face-attribute 'variable-pitch :weight))
+         (base `(:family ,vp-family :weight ,vp-weight)))
+    (custom-theme-set-faces
+     'user
+     `(org-level-8 ((t (,@base))))
+     `(org-level-7 ((t (,@base))))
+     `(org-level-6 ((t (,@base))))
+     `(org-level-5 ((t (,@base))))
+     `(org-level-4 ((t (,@base :height 1.05))))
+     `(org-level-3 ((t (,@base :height 1.1))))
+     `(org-level-2 ((t (,@base :height 1.15))))
+     `(org-level-1 ((t (,@base :height 1.2))))
+     `(org-document-title ((t (,@base :height 1.2 :underline nil)))))))
+
 (defun darius/org-setup ()
   (setq org-directory "~/Notes")
   (setq org-default-notes-file (concat org-directory "/captures.org"))
+  (setq org-capture-templates
+        '(("t" "Todo" entry (file+headline "~/Notes/index.org" "Stuff")
+           "* %?\n  %i\n")
+          ("T" "Todo [with context]" entry (file+headline "~/Notes/index.org" "Stuff")
+           "* %?\n  %i\n  %a\n")
+          ("k" "KITcar" entry (file+headline "~/Notes/kitcar.org" "Stuff")
+           "* %?\n  %i \n%U\n")
+          ("K" "KITcar [with context]" entry (file+headline "~/Notes/kitcar.org" "Stuff")
+           "* %?\n  %i \n%U\n %a\n")))
   (setq org-refile-targets
         '((nil :maxlevel . 3)
           (org-agenda-files :maxlevel . 3)))
@@ -724,6 +742,7 @@ Some org-mode tweaks
   (setq calendar-date-style 'european)
   (setq calendar-week-start-day 1)
   (setq org-imenu-depth 7)
+  (setq org-highlight-latex-and-related '(latex))
   (setq org-hide-emphasis-markers t)    ; I will probably regret this?
   (setq org-M-RET-may-split-line '((default . nil)))
   (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file))
