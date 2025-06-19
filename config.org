@@ -159,6 +159,9 @@ Other settings
 ;; (pixel-scroll-precision-mode 1)
 ;; (setq pixel-scroll-precision-interpolate-mice nil)
 
+;; consult has an xref function
+;; (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
+
 (setq display-line-numbers-type 'relative
       display-line-numbers-width 3
       display-line-numbers-grow-only t)
@@ -186,8 +189,9 @@ Other settings
       lazy-count-prefix-format "(%s/%s) "
       search-whitespace-regexp ".*?")
 
-(setq compilation-max-output-line-length 800)
-(setq compilation-scroll-output t)
+(setq compilation-max-output-line-length 800
+      compilation-scroll-output t
+      compile-command nil)
 
 (require 'ansi-color)
 (add-hook 'compilation-filter-hook 'ansi-color-compilation-filter) ; fix colors in compilation output
@@ -282,7 +286,6 @@ Make dired recognize other buffers as copy/move targets and also list human-read
   (dired-kill-when-opening-new-dired-buffer t)
   (dired-auto-revert-buffer t)
   :bind
-  ("M-g b". dired-jump)
   ("<mouse-8>" . dired-jump) ;; back button
 
   (:map dired-mode-map
@@ -592,9 +595,23 @@ Font presets
       :variable-pitch-weight semilight
       :bold-family nil
       :italic-family nil)
+     (hasklug
+      :inherit regular
+      :default-family "Hasklug Nerd Font Propo")
+     (jetbrains
+      :inherit regular
+      :default-family "JetBrainsMonoNL NFP")
      (large
       :inherit regular
       :default-height 200)
+     (has-large
+      :inherit regular
+      :default-height 200
+      :default-family "Hasklug Nerd Font Propo")
+     (jb-large
+      :inherit regular
+      :default-height 190
+      :default-family "JetBrainsMonoNL NFP")
      (present
       :inherit regular
       :default-family "JetBrainsMonoNL NFP"
@@ -606,6 +623,15 @@ Font presets
   (fontaine-mode 1)
   (define-key global-map (kbd "C-c f") #'fontaine-set-preset)
   (add-hook 'server-mode-hook 'darius/reapply-fontaine))
+#+end_src
+
+*** Dumb Jump
+Jump to definition
+
+#+begin_src emacs-lisp
+(use-package dumb-jump
+  :config
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
 #+end_src
 
 ** Git
@@ -640,6 +666,9 @@ Some nice additional completing-read stuff
 
 #+begin_src emacs-lisp
 (use-package consult
+  :custom
+  (xref-show-definitions-function #'consult-xref)
+  (xref-show-xrefs-function #'consult-xref)
   :config
   (defun darius/consult-ripgrep-hidden ()
     "Call rg with additional --hidden flag"
@@ -660,6 +689,7 @@ Some nice additional completing-read stuff
   ;; M-g `goto-map'
   ("M-g g"     . consult-goto-line)
   ("M-g M-g"   . consult-goto-line)
+  ("M-g b"     . consult-bookmark)
   ("M-g e"     . consult-compile-error)
   ("M-g f"     . consult-flymake)
   ("M-g o"     . consult-outline)
@@ -906,7 +936,7 @@ The most important thing tbh.
 (add-to-list 'default-frame-alist '(alpha-background . 98)) ; a little transparency
 
 (defun darius/fix-terminal-transparency ()
-  "Fix transparency in terminal windows"
+  "Removes theme background color in terminal windows"
   (unless (display-graphic-p (selected-frame))
     (set-face-background 'default "unspecified-bg" (selected-frame))))
 (add-hook 'window-setup-hook 'darius/fix-terminal-transparency)
@@ -931,6 +961,23 @@ The most important thing tbh.
 
 (use-package catppuccin-theme
   :config (darius/catppuccin-setup-dark))
+
+(defun darius/standard-themes-setup-dark ()
+  (interactive)
+  (standard-themes-select 'standard-dark) ;; disables other themes automatically
+  (let* ((bg (face-attribute 'default :background))
+         (bg-light (color-lighten-name bg 8))
+         (bg-lighter (color-lighten-name bg 5)))
+    (set-face-attribute 'org-block nil :background bg-light)
+    (set-face-attribute 'org-block-begin-line nil :foreground "gray50" :extend t :background bg-lighter)
+    (set-face-attribute 'org-block-end-line nil :foreground "gray50" :extend t :background bg-lighter)))
+
+(use-package standard-themes
+  :custom
+  (standard-themes-bold-constructs t)
+  (standard-themes-italic-constructs nil)
+  :config)
+  ;;(darius/standard-themes-setup-dark))
 #+end_src
 
 ** Windows and Frames
