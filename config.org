@@ -122,6 +122,8 @@ Unbind some defaults and replace others with the dwim variant
 (global-set-key (kbd "M-N") 'next-error)
 (global-set-key (kbd "M-P") 'previous-error)
 
+(global-set-key (kbd "M-g b") 'bookmark-jump)
+
 (global-unset-key (kbd "C-<wheel-up>"))
 (global-unset-key (kbd "C-<wheel-down>"))
 (global-unset-key (kbd "<pinch>"))
@@ -689,7 +691,6 @@ Some nice additional completing-read stuff
   ;; M-g `goto-map'
   ("M-g g"     . consult-goto-line)
   ("M-g M-g"   . consult-goto-line)
-  ("M-g b"     . consult-bookmark)
   ("M-g e"     . consult-compile-error)
   ("M-g f"     . consult-flymake)
   ("M-g o"     . consult-outline)
