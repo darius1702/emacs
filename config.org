@@ -593,7 +593,7 @@ Font presets
       :default-weight regular
       :default-height 130
       :fixed-pitch-weight nil ; falls back to :default-weight
-      :variable-pitch-family "Iosevka Aile"
+      :variable-pitch-family "IBM Plex Sans"
       :variable-pitch-weight semilight
       :bold-family nil
       :italic-family nil)
@@ -734,9 +734,7 @@ Some org-mode tweaks
 #+begin_src emacs-lisp
 (defun darius/org-heading-setup ()
   "Set font and font size for org headings. Inheriting from `variable-pitch' breaks colors since org faces inherit some `org-level-x' face by default"
-  (let* ((vp-family (face-attribute 'variable-pitch :family))
-         (vp-weight (face-attribute 'variable-pitch :weight))
-         (base `(:family ,vp-family :weight ,vp-weight)))
+  (let ((base '(:weight regular)))
     (custom-theme-set-faces
      'user
      `(org-level-8 ((t (,@base))))
