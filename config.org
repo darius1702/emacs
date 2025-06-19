@@ -593,7 +593,7 @@ Font presets
       :default-weight regular
       :default-height 130
       :fixed-pitch-weight nil ; falls back to :default-weight
-      :variable-pitch-family "IBM Plex Sans"
+      :variable-pitch-family "Iosevka Aile"
       :variable-pitch-weight semilight
       :bold-family nil
       :italic-family nil)
