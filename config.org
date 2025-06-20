@@ -343,7 +343,7 @@ Diff files
   (ediff-window-setup-function 'ediff-setup-windows-plain))
 #+end_src
 
-** Font setup
+** COMMENT Font setup
 Need to set it in an extra hook to make it work in emacsclient frames.
 Font setup moved to [[*Fontaine][Fontaine]].
 
@@ -359,7 +359,6 @@ Font setup moved to [[*Fontaine][Fontaine]].
 
 ;; (add-hook 'after-init-hook 'darius/set-up-fonts)
 ;; (add-hook 'server-after-make-frame-hook 'darius/set-up-fonts)
-
 #+end_src
 
 ** Eshell
@@ -634,6 +633,23 @@ Jump to definition
 (use-package dumb-jump
   :config
   (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
+#+end_src
+
+*** Eldoc-Box
+Eldoc in a popup frame
+
+#+begin_src emacs-lisp
+(setq eldoc-echo-area-use-multiline-p nil)
+(use-package eldoc-box
+  :bind ("C-c k" . #'eldoc-box-help-at-point))
+#+end_src
+
+*** Avy
+Jumping around
+
+#+begin_src emacs-lisp
+(use-package avy
+  :bind ("C-z" . avy-goto-char-timer))
 #+end_src
 
 ** Git
@@ -978,23 +994,6 @@ Switching and moving windows
 (global-set-key (kbd "M-L") 'windmove-right)
 #+end_src
 
-** Avy
-Jumping around
-
-#+begin_src emacs-lisp
-(use-package avy
-  :bind ("C-z" . avy-goto-char-timer))
-#+end_src
-
-** Eldoc-Box
-Eldoc in a popup frame
-
-#+begin_src emacs-lisp
-(setq eldoc-echo-area-use-multiline-p nil)
-(use-package eldoc-box
-  :bind ("C-c k" . #'eldoc-box-help-at-point))
-#+end_src
-
 ** Diminish
 Get rid of some clutter in the modeline
 Doesn't work properly if it's not all the way at the end for some reason
@@ -1111,7 +1110,8 @@ The one and only
       (beginning-of-line)
       (forward-char end)))
 
-  :bind (:map haskell-mode-map
+  :bind
+  (:map haskell-mode-map
               ("M-n" . 'haskell-goto-next-error)
               ("M-p" . 'haskell-goto-prev-error)
               :map haskell-interactive-mode-map
@@ -1327,6 +1327,7 @@ Prompt for a string and insert a command with that string.
   (let ((keyword (completing-read "Occur keyword: " darius/comment-keyword-list)))
     (occur keyword)))
 #+end_src
+
 ** Zoxide
 Querying the zoxide database for all entries returns them in a sorted order, so we can just pass it to completing read.
 The ~table~ thing makes completing-read keep the original order of the list passed to it.
