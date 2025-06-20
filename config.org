@@ -1368,3 +1368,22 @@ Prompt for a string and insert a command with that string.
   (let ((keyword (completing-read "Occur keyword: " darius/comment-keyword-list)))
     (occur keyword)))
 #+end_src
+** Zoxide
+Querying the zoxide database for all entries returns them in a sorted order, so we can just pass it to completing read.
+The ~table~ thing makes completing-read keep the original order of the list passed to it.
+
+#+begin_src emacs-lisp
+(defun darius/zoxide-find-file ()
+  "Find a file from your zoxide database"
+  (interactive)
+  (let* ((db (shell-command-to-string "zoxide query -l"))
+         (entries (split-string db "\n" t))
+         (table (lambda (string pred action)
+                  (if (eq action 'metadata)
+                      `(metadata (display-sort-function . identity))
+                    (complete-with-action action entries string pred))))
+         (selection (completing-read "Jump: " table nil t)))
+    (find-file selection)))
+
+(global-set-key (kbd "M-g z") 'darius/zoxide-find-file)
+#+end_src
