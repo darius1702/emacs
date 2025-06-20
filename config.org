@@ -732,21 +732,6 @@ Some improvements over DocView
 Some org-mode tweaks
 
 #+begin_src emacs-lisp
-(defun darius/org-heading-setup ()
-  "Set font and font size for org headings. Inheriting from `variable-pitch' breaks colors since org faces inherit some `org-level-x' face by default"
-  (let ((base '(:weight regular)))
-    (custom-theme-set-faces
-     'user
-     `(org-level-8 ((t (,@base))))
-     `(org-level-7 ((t (,@base))))
-     `(org-level-6 ((t (,@base))))
-     `(org-level-5 ((t (,@base))))
-     `(org-level-4 ((t (,@base :height 1.05))))
-     `(org-level-3 ((t (,@base :height 1.1))))
-     `(org-level-2 ((t (,@base :height 1.15))))
-     `(org-level-1 ((t (,@base :height 1.2))))
-     `(org-document-title ((t (,@base :height 1.2 :underline nil)))))))
-
 (defun darius/org-setup ()
   (setq org-directory "~/Notes")
   (setq org-default-notes-file (concat org-directory "/captures.org"))
@@ -780,7 +765,6 @@ Some org-mode tweaks
   :load-path "~/.emacs.d/elpa/org-mode/lisp/"
   :config
   (darius/org-setup)
-  (darius/org-heading-setup)
   (setq org-src-preserve-indentation nil
         org-edit-src-content-indentation 0))
 
@@ -1009,31 +993,6 @@ Eldoc in a popup frame
 (setq eldoc-echo-area-use-multiline-p nil)
 (use-package eldoc-box
   :bind ("C-c k" . #'eldoc-box-help-at-point))
-#+end_src
-
-** Ellama
-LLM Actions
-
-#+begin_src emacs-lisp
-(use-package llm)
-
-(use-package ellama
-  :defer t
-  :after llm
-  :config
-  (setopt ellama-keymap-prefix "C-c e")
-  (require 'llm-ollama)
-  (setopt ellama-provider
-	      (make-llm-ollama
-	       :chat-model "llama3.1:latest"
-           :embedding-model "nomic-embed-text"))
-  ;; Also use the model to name the chat buffers
-  (setopt ellama-naming-provider
-	      (make-llm-ollama
-	       :chat-model "llama3.1:latest"
-	       :embedding-model "nomic-embed-text"
-	       :default-chat-non-standard-params '(("stop" . ("\n")))))
-  (setopt ellama-naming-scheme 'ellama-generate-name-by-llm))
 #+end_src
 
 ** Diminish
