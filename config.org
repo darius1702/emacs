@@ -502,14 +502,6 @@ Prettier csv files
   :hook (csv-mode . csv-align-mode))
 #+end_src
 
-*** Markdown mode
-Syntax highlighting and other stuff for markdown documents
-
-#+begin_src emacs-lisp
-(use-package markdown-mode
-  :mode ("README\\.md\\'" . gfm-mode))
-#+end_src
-
 *** TMR
 Set timers
 
@@ -1005,6 +997,29 @@ Doesn't work properly if it's not all the way at the end for some reason
   :diminish org-cdlatex-mode)
 #+end_src
 
+** Org Presentations
+Simple presentations from org-mode buffers
+
+#+begin_src emacs-lisp
+(use-package visual-fill-column
+  :custom
+  (visual-fill-column-center-text t)
+  (visual-fill-column-width 110))
+
+(use-package org-present
+  :after visual-fill-column
+  :config
+  (defun darius/org-present-start ()
+    (visual-fill-column-mode 1)
+    (read-only-mode 1))
+  (defun darius/org-present-end ()
+    (visual-fill-column-mode 0)
+    (read-only-mode 0))
+  ;; this doesn't work with :hook for some reason
+  :hook ((org-present-mode . darius/org-present-start)
+         (org-present-mode-quit . darius/org-present-end)))
+#+end_src
+
 * Languages
 Programming language specific stuff
 ** Treesitter
@@ -1220,6 +1235,18 @@ Support for virtual environments
   :custom
   (lua-indent-level 2)
   (lua-indent-nested-block-content-align nil))
+#+end_src
+
+** Markdown
+Syntax highlighting and other stuff for markdown documents.
+GFM mode seems to work better than markdown-ts-mode for me.
+
+#+begin_src emacs-lisp
+(use-package markdown-mode
+  :custom (markdown-fontify-code-blocks-natively t)
+  :mode
+  ("README\\.md\\'" . gfm-mode)
+  ("\\.md\\'" . gfm-mode))
 #+end_src
 
 ** Nix
