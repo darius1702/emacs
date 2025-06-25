@@ -748,6 +748,7 @@ Some improvements over DocView
   :config
   (setq-default pdf-view-display-size 'fit-page)
   (add-to-list 'revert-without-query ".pdf")
+  (setq pdf-view-continuous nil) ;; don't auto-switch to the next/previous page when scrolling
   (setq pdf-annot-default-annotation-properties '((t (label . "Darius Schefer")) (text (icon . "Comment"))))
   :bind (:map pdf-view-mode-map
               ("C" . pdf-view-center-in-window)
@@ -1376,6 +1377,22 @@ Requires ~sail-mode.el~ somewhere in the load-path
 #+begin_src emacs-lisp
 (require 'sail-mode)
 (add-hook 'sail-mode-hook #'font-lock-update) ; Syntax doesn't update on its own for some reason
+#+end_src
+
+** Web-mode
+Web stuff
+
+#+begin_src emacs-lisp
+(use-package web-mode
+  :custom
+  (web-mode-auto-close-style 2) ;; auto-close tags on '>'
+  (web-mode-markup-indent-offset 2)
+  (web-mode-css-indent-offset 2)
+  (web-mode-code-indent-offset 2)
+  (web-mode-enable-auto-expanding t)
+  (web-mode-enable-comment-annotation t)
+  :mode (("\\.html\\'" . web-mode)
+         ("\\.css\\'" . web-mode)))
 #+end_src
 
 * Custom Functions
