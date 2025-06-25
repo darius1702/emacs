@@ -124,6 +124,9 @@ Unbind some defaults and replace others with the dwim variant
 
 (global-set-key (kbd "M-g b") 'bookmark-jump)
 
+(global-set-key (kbd "M-g r") 'recentf-open)
+(global-set-key (kbd "M-g R") 'recentf-open-files)
+
 (global-unset-key (kbd "C-<wheel-up>"))
 (global-unset-key (kbd "C-<wheel-down>"))
 (global-unset-key (kbd "<pinch>"))
@@ -137,6 +140,8 @@ Other settings
 
 (add-to-list 'load-path (file-name-concat user-emacs-directory "external"))
 
+(setq highlight-nonselected-windows t)  ; show region in inactive windows
+
 (xterm-mouse-mode 1)       ; make the mouse wheel scroll the buffer
 (setq visible-cursor nil)  ; disable blinking cursor in terminal
 
@@ -145,7 +150,8 @@ Other settings
 (setq confirm-kill-emacs 'yes-or-no-p)  ; just in case
 
 (setq suggest-key-bindings nil
-      echo-keystrokes 0.01)
+      echo-keystrokes 0.01
+      echo-keystrokes-help nil)
 (which-key-mode)
 (setq which-key-lighter nil)            ; diminish
 
@@ -175,9 +181,17 @@ Other settings
 (add-to-list 'write-file-functions 'delete-trailing-whitespace)
 (setq require-final-newline t)
 
+(setq imenu-auto-rescan t)
+
 (editorconfig-mode t)
 
+(recentf-mode t)
+(setq recentf-auto-cleanup 'never
+      recentf-max-menu-items 0
+      recentf-max-saved-items 100)
+
 (setq save-interprogram-paste-before-kill t) ; save clipboard to kill ring before overwriting it
+(setq mouse-yank-at-point t)
 
 (setq sentence-end-double-space nil
       sentence-end "[.\",;!?*:'] ")
@@ -276,9 +290,9 @@ Make dired recognize other buffers as copy/move targets and also list human-read
 (defun darius/dired-create-directory ()
   "Wrapper around `dired-create-directory' with no minibuffer completion."
   (interactive)
-  (let ((search-term
+  (let ((dir
          (read-from-minibuffer "Make directory: ")))
-    (dired-create-directory search-term)))
+    (dired-create-directory dir)))
 
 (use-package dired
   :ensure nil
@@ -374,6 +388,15 @@ alias lla ls -lhA
 alias l ls
 
 alias gs magit-status
+#+end_src
+
+** TRAMP
+Remote editing
+
+#+begin_src emacs-lisp
+(setq remote-file-name-inhibit-locks t
+      tramp-use-scp-direct-remote-copying t
+      remote-file-name-inhibit-auto-save-visited t)
 #+end_src
 
 * Packages
@@ -573,7 +596,7 @@ top of the screen
 #+end_src
 
 *** Fontaine
-Font presets
+Font presets (lots of them because I can't decide)
 
 #+begin_src emacs-lisp
 (use-package fontaine
@@ -594,6 +617,9 @@ Font presets
      (jetbrains
       :inherit regular
       :default-family "JetBrainsMonoNL NFP")
+     (roboto
+      :inherit regular
+      :default-family "RobotoMono Nerd Font Propo")
      (large
       :inherit regular
       :default-height 200)
@@ -601,6 +627,10 @@ Font presets
       :inherit regular
       :default-height 200
       :default-family "Hasklug Nerd Font Propo")
+     (rob-large
+      :inherit regular
+      :default-height 190
+      :default-family "RobotoMono Nerd Font Propo")
      (jb-large
       :inherit regular
       :default-height 190
@@ -770,7 +800,6 @@ Some org-mode tweaks
   (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file))
 
 (use-package org
-  :load-path "~/.emacs.d/elpa/org-mode/lisp/"
   :config
   (darius/org-setup)
   (setq org-src-preserve-indentation nil
@@ -815,6 +844,15 @@ Some org-mode tweaks
   (plist-put org-latex-preview-appearance-options :page-width 1.0)
   (plist-put org-latex-preview-appearance-options :scale 2.5)
   (add-hook 'org-mode-hook 'org-latex-preview-auto-mode))
+
+;; Show emphasis markers like ** and some other things when point is inside them
+(use-package org-appear
+  :custom
+  (org-appear-autoemphasis t)
+  (org-appear-autoentities t)
+  (org-appear-autosubmarkers t)
+  (org-appear-inside-latex t)
+  :hook (org-mode . org-appear-mode))
 #+end_src
 
 ** Spell checking
@@ -857,11 +895,14 @@ Corfu for in-buffer completion
          (consult-completion-in-region beg end table pred)))))
   (add-to-list 'corfu-continue-commands #'corfu-move-to-minibuffer)
 
+  ;; Stop stealing my keybinds you weirdo
   :bind
   (:map corfu-map
         ("RET" . nil)
-        ([remap next-line] . next-line)
-        ([remap previous-line] . previous-line)
+        ([remap move-beginning-of-line] . nil)
+        ([remap move-end-of-line] . nil)
+        ([remap next-line] . nil)
+        ([remap previous-line] . nil)
         ("M-m" . 'corfu-move-to-minibuffer))
 
   :init (global-corfu-mode))
