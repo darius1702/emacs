@@ -161,6 +161,8 @@ Other settings
 
 (setq comint-prompt-read-only t)
 
+(setq bookmark-fringe-mark nil)
+
 ;;; disabled because ultra-scroll
 ;; (setq scroll-conservatively 5)
 ;; (setq scroll-margin 1)
@@ -307,6 +309,7 @@ Make dired recognize other buffers as copy/move targets and also list human-read
   (:map dired-mode-map
         ("+" . darius/dired-create-directory)
         ("<mouse-2>" . dired-mouse-find-file)
+        ("SPC" . dired-jump)
         ("b" . dired-jump))
   :config
   ;; Make `dired-do-shell-command' suggest better defaults for some filetypes
@@ -587,10 +590,10 @@ top of the screen
 
 #+begin_src emacs-lisp
 (use-package ultra-scroll
-  :vc (:url "https://github.com/jdtsmith/ultra-scroll")
+  :vc (:url "https://github.com/jdtsmith/ultra-scroll" :branch "main")
   :init
-  (setq scroll-conservatively 101 ; important!
-        scroll-margin 0)
+  (setq scroll-conservatively 3
+        scroll-margin 0) ; scroll-margin > 0 doesn't work with ultra-scroll yet
   :config
   (ultra-scroll-mode 1))
 #+end_src
@@ -715,6 +718,10 @@ Some nice additional completing-read stuff
     (interactive)
     (let* ((consult-ripgrep-args (s-concat consult-ripgrep-args " --hidden")))
       (call-interactively 'consult-ripgrep)))
+
+  (add-hook 'minibuffer-setup-hook
+            (lambda ()
+              (local-set-key (kbd "M-r") #'consult-history)))
 
   :bind
   ("C-S-Y"     . consult-yank-from-kill-ring)
@@ -876,6 +883,7 @@ Corfu for in-buffer completion
 #+begin_src emacs-lisp
 (use-package corfu
   :custom
+  (corfu-auto-delay 0.1)
   (corfu-cycle t)
   (corfu-auto t)
   (corfu-auto-prefix 3)
@@ -1377,6 +1385,8 @@ Requires ~sail-mode.el~ somewhere in the load-path
 #+begin_src emacs-lisp
 (require 'sail-mode)
 (add-hook 'sail-mode-hook #'font-lock-update) ; Syntax doesn't update on its own for some reason
+(add-hook 'sail-mode-hook #'display-line-numbers-mode)
+(add-hook 'sail-mode-hook #'(lambda () (setq-local tab-width 2)))
 #+end_src
 
 ** Web-mode
