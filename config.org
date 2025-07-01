@@ -515,6 +515,7 @@ Still not 100% sure I get what it does
 
 #+begin_src emacs-lisp
 (use-package embark
+  :custom (embark-mixed-indicator-delay nil)
   :bind ("C-." . embark-act))
 
 (use-package embark-consult)
@@ -617,9 +618,6 @@ Font presets (lots of them because I can't decide)
      (hasklug
       :inherit regular
       :default-family "Hasklug Nerd Font Propo")
-     (jetbrains
-      :inherit regular
-      :default-family "JetBrainsMonoNL NFP")
      (roboto
       :inherit regular
       :default-family "RobotoMono Nerd Font Propo")
@@ -634,13 +632,9 @@ Font presets (lots of them because I can't decide)
       :inherit regular
       :default-height 190
       :default-family "RobotoMono Nerd Font Propo")
-     (jb-large
-      :inherit regular
-      :default-height 190
-      :default-family "JetBrainsMonoNL NFP")
      (present
       :inherit regular
-      :default-family "JetBrainsMonoNL NFP"
+      :default-family "RobotoMono Nerd Font Propo"
       :default-height 250)))
   :config
   (defun darius/reapply-fontaine ()
@@ -667,14 +661,6 @@ Eldoc in a popup frame
 (setq eldoc-echo-area-use-multiline-p nil)
 (use-package eldoc-box
   :bind ("C-c k" . #'eldoc-box-help-at-point))
-#+end_src
-
-*** Avy
-Jumping around
-
-#+begin_src emacs-lisp
-(use-package avy
-  :bind ("C-z" . avy-goto-char-timer))
 #+end_src
 
 ** Git
@@ -757,6 +743,8 @@ Some improvements over DocView
   (add-to-list 'revert-without-query ".pdf")
   (setq pdf-view-continuous nil) ;; don't auto-switch to the next/previous page when scrolling
   (setq pdf-annot-default-annotation-properties '((t (label . "Darius Schefer")) (text (icon . "Comment"))))
+  (setq pdf-view-use-scaling t)
+  (setq pdf-view-resize-factor 1.1)
   :bind (:map pdf-view-mode-map
               ("C" . pdf-view-center-in-window)
               ("C-=" . pdf-view-enlarge)
@@ -805,6 +793,7 @@ Some org-mode tweaks
   (setq org-highlight-latex-and-related '(latex))
   (setq org-hide-emphasis-markers t)    ; I will probably regret this?
   (setq org-M-RET-may-split-line '((default . nil)))
+  (setq org-bookmark-nammes-plist nil) ;; stop org-capture from creating bookmarks
   (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file))
 
 (use-package org
@@ -1311,10 +1300,12 @@ GFM mode seems to work better than markdown-ts-mode for me.
 Work with citations
 Also requires auctex
 
+~citar-open-entry-in-zotero~ relies on the BetterBibTex plugin for Zotero
 #+begin_src emacs-lisp
 (defun darius/LaTeX-mode-setup ()
   (progn
-    (add-to-list 'TeX-view-program-selection '(output-pdf "Zathura"))
+    (setq TeX-view-program-list '(("PDF Tools" TeX-pdf-tools-sync-view)))
+    (add-to-list 'TeX-view-program-selection '(output-pdf "PDF Tools"))
     (add-to-list 'reftex-ref-style-default-list "Hyperref")
     (TeX-source-correlate-mode t)
     (define-key LaTeX-mode-map (kbd "C-c C-r") 'reftex-reference)
@@ -1338,6 +1329,11 @@ Also requires auctex
 (add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
 
 (use-package citar
+  :config
+  (defun darius/open-in-zotero (citekey)
+    "Open a reference item in Zotero."
+    (interactive (list (citar-select-ref)))
+    (citar-open-entry-in-zotero citekey))
   :custom
   (citar-file-open-functions '(("html" . citar-file-open-external) ("pdf" . citar-file-open-external) (t . find-file)))
   (org-cite-global-bibliography '("~/Documents/library.bib"))
@@ -1354,7 +1350,11 @@ Also requires auctex
 (use-package citar-embark
   :after citar embark
   :diminish
-  :config (citar-embark-mode))
+  :custom (citar-at-point-function 'embark-act)
+  :config
+  (citar-embark-mode)
+  (define-key citar-embark-map (kbd "z") #'citar-open-entry-in-zotero)
+  (define-key citar-citation-map (kbd "z") #'citar-open-entry-in-zotero))
 
 (use-package cdlatex
   :custom (cdlatex-takeover-parenthesis nil)
