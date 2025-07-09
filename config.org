@@ -116,11 +116,11 @@ Unbind some defaults and replace others with the dwim variant
 (global-set-key (kbd "M-l") 'downcase-dwim)
 (global-set-key (kbd "M-c") 'capitalize-dwim)
 
-(global-set-key (kbd "M-n") 'flymake-goto-next-error)
-(global-set-key (kbd "M-p") 'flymake-goto-prev-error)
+(global-set-key (kbd "M-n") 'next-error)
+(global-set-key (kbd "M-p") 'previous-error)
 
-(global-set-key (kbd "M-N") 'next-error)
-(global-set-key (kbd "M-P") 'previous-error)
+(global-set-key (kbd "M-N") 'flymake-goto-next-error)
+(global-set-key (kbd "M-P") 'flymake-goto-prev-error)
 
 (global-set-key (kbd "M-g b") 'bookmark-jump)
 
@@ -222,8 +222,10 @@ Other settings
 (setq global-auto-revert-non-file-buffers t)
 (electric-pair-mode t)
 
-(setq enable-recursive-minibuffers t)
+(setq enable-recursive-minibuffers t
+      minibuffer-eldef-shorten-default t)
 (minibuffer-depth-indicate-mode t)
+(minibuffer-electric-default-mode t)
 
 (setq whitespace-style '(face tabs spaces trailing space-before-tab newline indentation empty space-after-tab space-mark tab-mark))
 
@@ -587,7 +589,10 @@ Expand directories in dired
 *** Ultra-scroll
 Doesn't have this one annoying bug that pixel-scroll-precision-mode has that
 makes the page jump backwards when scrolling with the caret all the way at the
-top of the screen
+top of the screen.
+
+For some reason this gives a 'You are not currently on a branch' git error when trying to upgrade,
+no idea why.
 
 #+begin_src emacs-lisp
 (use-package ultra-scroll
@@ -991,23 +996,6 @@ The most important thing tbh.
 
 (use-package catppuccin-theme
   :config (darius/catppuccin-setup-dark))
-
-(defun darius/standard-themes-setup-dark ()
-  (interactive)
-  (standard-themes-select 'standard-dark) ;; disables other themes automatically
-  (let* ((bg (face-attribute 'default :background))
-         (bg-light (color-lighten-name bg 8))
-         (bg-lighter (color-lighten-name bg 5)))
-    (set-face-attribute 'org-block nil :background bg-light)
-    (set-face-attribute 'org-block-begin-line nil :foreground "gray50" :extend t :background bg-lighter)
-    (set-face-attribute 'org-block-end-line nil :foreground "gray50" :extend t :background bg-lighter)))
-
-(use-package standard-themes
-  :custom
-  (standard-themes-bold-constructs t)
-  (standard-themes-italic-constructs nil)
-  :config)
-  ;;(darius/standard-themes-setup-dark))
 #+end_src
 
 ** Windows and Frames
@@ -1227,8 +1215,9 @@ Assumes the ~merlin~, ~dune~, and ~tuareg~ packages are installed in the current
 (use-package zig-mode)
 #+end_src
 
-** Z3
+** COMMENT Z3
 SMT solving aaaa
+For some reason this depends on flycheck which is very cringe
 
 #+begin_src emacs-lisp
 (use-package z3-mode

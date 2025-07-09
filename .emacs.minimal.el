@@ -25,9 +25,14 @@
 (setq completions-format 'one-column
       completion-show-help nil
       completion-auto-help t
-      completion-auto-select 'second-tab
+      completion-auto-select t
       completions-detailed t
       completion-show-inline-help nil)
+
+(setq enable-recursive-minibuffers t
+      minibuffer-eldef-shorten-default t)
+(minibuffer-depth-indicate-mode t)
+(minibuffer-electric-default-mode t)
 
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 (setq ibuffer-expert t)
