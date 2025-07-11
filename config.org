@@ -164,6 +164,8 @@ Other settings
 
 (setopt bookmark-fringe-mark nil)
 
+(setopt vc-follow-symlinks t)
+
 ;;; disabled because ultra-scroll
 ;; (setopt scroll-conservatively 5)
 ;; (setopt scroll-margin 1)
@@ -414,8 +416,6 @@ Basic ~package.el~ config
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 ;; NOTE: apparently this is not needed? I have no idea how package.el works tbh
 ;; (package-initialize)
-;; (unless package-archive-contents
-;; (package-refresh-contents))
 (setopt use-package-always-ensure t)
 (setopt package-native-compile t)         ; this will just be ignored if native-comp isn't available
 #+end_src
@@ -453,7 +453,8 @@ Usful info in the minibuffer
 #+end_src
 
 *** Rainbow-mode
-Colorize strings like #a7c080
+Colorize strings like #a7c080.
+Making the frame background transparent via ~alpha-background~ makes the colors a little transparent as well sadly
 
 #+begin_src emacs-lisp
 (use-package rainbow-mode
@@ -576,7 +577,8 @@ Make the modeline a little prettier
   (doom-modeline-height 26)
   (doom-modeline-bar-width 4)
   (doom-modeline-minor-modes nil) ;; nil is the default but otherwise I forget this exists
-  (doom-modeline-icon nil))
+  (doom-modeline-icon nil)
+  (doom-modeline-buffer-encoding nil))
 #+end_src
 
 *** Dired subtree
