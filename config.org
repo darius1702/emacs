@@ -208,7 +208,8 @@ Other settings
 (setopt isearch-wrap-pause 'no-ding
         isearch-lazy-count t
         lazy-count-prefix-format "(%s/%s) "
-        search-whitespace-regexp ".*?")
+        search-whitespace-regexp ".*?"
+        lazy-highlight-initial-delay 0)
 
 (setopt compilation-max-output-line-length 800
         compilation-scroll-output t
@@ -224,6 +225,8 @@ Other settings
 (setopt show-paren-when-point-inside-paren t)
 (setopt global-auto-revert-non-file-buffers t)
 (electric-pair-mode t)
+
+(setopt apropos-do-all t)               ; make apropos search more extensively
 
 (setopt enable-recursive-minibuffers t
         minibuffer-eldef-shorten-default t)
@@ -632,18 +635,14 @@ Font presets (lots of them because I can't decide)
      (large
       :inherit regular
       :default-height 200)
-     (has-large
+     (hasklug-large
       :inherit regular
       :default-height 200
       :default-family "Hasklug Nerd Font Propo")
-     (rob-large
+     (roboto-large
       :inherit regular
       :default-height 190
-      :default-family "RobotoMono Nerd Font Propo")
-     (present
-      :inherit regular
-      :default-family "RobotoMono Nerd Font Propo"
-      :default-height 250)))
+      :default-family "RobotoMono Nerd Font Propo")))
   :config
   (defun darius/reapply-fontaine ()
     (fontaine-set-preset (or (fontaine-restore-latest-preset) 'present)))
@@ -753,6 +752,10 @@ Some improvements over DocView
   (setopt pdf-annot-default-annotation-properties '((t (label . "Darius Schefer")) (text (icon . "Comment"))))
   (setopt pdf-view-use-scaling t)
   (setopt pdf-view-resize-factor 1.1)
+  (push
+   '(".*\\.pdf$" . (nil (reusable-frames . t)
+                        (inhibit-switch-frame . t)))
+   display-buffer-alist) ;; this allows for example the synctex integration from pdf-tools to reuse a buffer
   :bind (:map pdf-view-mode-map
               ("C" . pdf-view-center-in-window)
               ("C-=" . pdf-view-enlarge)
@@ -979,14 +982,18 @@ The most important thing tbh.
     (set-face-background 'default "unspecified-bg" (selected-frame))))
 (add-hook 'window-setup-hook 'darius/fix-terminal-transparency)
 
+(defvar darius/active-theme 'dark "The currently active colorscheme variant")
+
 (defun darius/catppuccin-setup-light ()
   (interactive)
+  (setq darius/active-theme 'light)
   (mapc #'disable-theme custom-enabled-themes)
   (catppuccin-load-flavor 'latte)
   (darius/catppuccin-face-setup))
 
 (defun darius/catppuccin-setup-dark ()
   (interactive)
+  (setq darius/active-theme 'dark)
   (mapc #'disable-theme custom-enabled-themes)
   (catppuccin-load-flavor 'mocha)
   (darius/catppuccin-face-setup))
@@ -996,6 +1003,15 @@ The most important thing tbh.
   (set-face-attribute 'org-block nil :foreground (catppuccin-color 'text))
   (require 'font-latex) ;; otherwise there is a face not found error
   (set-face-attribute 'font-latex-sectioning-5-face nil :foreground (catppuccin-color 'red)))
+
+(defun darius/toggle-catppuccin-dark-light ()
+  "Switch between the dark and light catppuccin variants"
+  (interactive)
+  (pcase darius/active-theme
+    ('light (darius/catppuccin-setup-dark))
+    ('dark  (darius/catppuccin-setup-light))
+    (_      (message "Garbage value: %s" darius/active-theme))))
+(global-set-key (kbd "<f12>") #'darius/toggle-catppuccin-dark-light)
 
 (use-package catppuccin-theme
   :config (darius/catppuccin-setup-dark))
@@ -1074,10 +1090,12 @@ Language server stuff
 #+begin_src emacs-lisp
 (use-package eglot
   :custom
-  (eglot-events-buffer-size 0)
   (eglot-ignored-server-capabilities '(:documentHighlightProvider))
   (eglot-autoshutdown t)
   (eglot-extend-to-xref t)
+  (eglot-events-buffer-size 0)          ; deprecated?
+  (eglot-events-buffer-config '(:size 0 :format short))
+  (jsonrpc-event-hook nil)
   :config
   (fset #'jsonrpc--log-event #'ignore)
   (add-to-list 'eglot-server-programs
