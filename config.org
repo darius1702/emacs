@@ -804,7 +804,7 @@ Some org-mode tweaks
   (setopt org-highlight-latex-and-related '(latex))
   (setopt org-hide-emphasis-markers t)    ; I will probably regret this?
   (setopt org-M-RET-may-split-line '((default . nil)))
-  (setopt org-bookmark-nammes-plist nil) ;; stop org-capture from creating bookmarks
+  (setopt org-bookmark-names-plist nil) ;; stop org-capture from creating bookmarks
   (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file))
 
 (use-package org
@@ -1450,4 +1450,19 @@ The ~table~ thing makes completing-read keep the original order of the list pass
     (find-file selection)))
 
 (global-set-key (kbd "M-g z") 'darius/zoxide-find-file)
+#+end_src
+
+** Spawn terminal here
+Spawn a terminal in the current directory.
+This is hardcoded to foot because wayland is obviously superior.
+
+#+begin_src emacs-lisp
+(defun darius/spawn-terminal-here ()
+  "Open a terminal (foot) in the current directory"
+  (interactive)
+  (if-let* ((foot-path (executable-find "foot")))
+      (call-process foot-path nil 0 nil "-D" (expand-file-name default-directory))
+    (message "No foot executable found in PATH")))
+
+(global-set-key (kbd "M-g t") 'darius/spawn-terminal-here)
 #+end_src
