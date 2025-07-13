@@ -229,7 +229,7 @@ Other settings
 (setopt apropos-do-all t)               ; make apropos search more extensively
 
 (setopt enable-recursive-minibuffers t
-        minibuffer-eldef-shorten-default t)
+        minibuffer-default-prompt-format " [%s]")
 (minibuffer-depth-indicate-mode t)
 (minibuffer-electric-default-mode t)
 
