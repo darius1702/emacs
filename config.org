@@ -236,6 +236,8 @@ Other settings
 (setopt whitespace-style '(face tabs spaces trailing space-before-tab newline indentation empty space-after-tab space-mark tab-mark))
 
 (setopt read-process-output-max (* 1024 1024 4))
+
+(setopt pgtk-wait-for-event-timeout 0.001) ; apparently this does something good
 #+end_src
 
 ** Prog-mode setup
@@ -617,7 +619,7 @@ Font presets (lots of them because I can't decide)
 (use-package fontaine
   :custom
   (fontaine-presets
-   '((regular
+   '((iosevka
       :default-family "Iosevka NFP"
       :default-weight regular
       :default-height 130
@@ -626,23 +628,23 @@ Font presets (lots of them because I can't decide)
       :variable-pitch-weight semilight
       :bold-family nil
       :italic-family nil)
-     (hasklug
-      :inherit regular
-      :default-family "Hasklug Nerd Font Propo")
-     (roboto
-      :inherit regular
-      :default-family "RobotoMono Nerd Font Propo")
-     (large
-      :inherit regular
+     (adwaita
+      :inherit iosevka
+      :default-family "AdwaitaMono Nerd Font Propo")
+     (sf-mono
+      :inherit iosevka
+      :default-family "SFMono Nerd Font Mono")
+     (iosevka-large
+      :inherit iosevka
       :default-height 200)
-     (hasklug-large
-      :inherit regular
-      :default-height 200
-      :default-family "Hasklug Nerd Font Propo")
-     (roboto-large
-      :inherit regular
-      :default-height 190
-      :default-family "RobotoMono Nerd Font Propo")))
+     (sf-mono-large
+      :inherit iosevka
+      :default-height 195
+      :default-family "SFMono Nerd Font Mono")
+     (adwaita-large
+      :inherit iosevka
+      :default-height 195
+      :default-family "AdwaitaMono Nerd Font Propo")))
   :config
   (defun darius/reapply-fontaine ()
     (fontaine-set-preset (or (fontaine-restore-latest-preset) 'present)))
@@ -1318,6 +1320,7 @@ Also requires auctex
     (add-to-list 'reftex-ref-style-default-list "Hyperref")
     (TeX-source-correlate-mode t)
     (define-key LaTeX-mode-map (kbd "C-c C-r") 'reftex-reference)
+    (define-key LaTeX-mode-map (kbd "C-M-i") 'complete-symbol)
     (font-latex-add-keywords '(("autoref" "*{") ("Autoref" "{")) 'reference)))
 
 (use-package tex
@@ -1335,6 +1338,8 @@ Also requires auctex
   (LaTeX-mode . darius/LaTeX-mode-setup)
   (LaTeX-mode . turn-on-reftex))
 
+;; don't ask why this needs an extra hook, I don't know either
+(add-hook 'LaTeX-mode-hook (lambda () (setq TeX-command-default "LaTeXmk")))
 (add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
 
 (use-package citar
