@@ -20,7 +20,7 @@
     (set-face-background 'default "unspecified-bg" (selected-frame))))
 (add-hook 'window-setup-hook 'on-after-init)
 
-(load-theme 'modus-vivendi t)
+(load-theme 'modus-vivendi-tinted t)
 
 (setq completions-format 'one-column
       completion-show-help nil

@@ -190,6 +190,7 @@ Other settings
 
 (editorconfig-mode t)
 
+(savehist-mode t)
 (recentf-mode t)
 (setopt recentf-auto-cleanup 'never
         recentf-max-menu-items 0
@@ -223,7 +224,9 @@ Other settings
 (column-number-mode t)
 (show-paren-mode t)
 (setopt show-paren-when-point-inside-paren t)
-(setopt global-auto-revert-non-file-buffers t)
+(setopt global-auto-revert-non-file-buffers t
+        auto-revert-avoid-polling t
+        auto-revert-check-vc-info t)
 (electric-pair-mode t)
 
 (setopt apropos-do-all t)               ; make apropos search more extensively
@@ -238,6 +241,8 @@ Other settings
 (setopt read-process-output-max (* 1024 1024 4))
 
 (setopt pgtk-wait-for-event-timeout 0.001) ; apparently this does something good
+
+(setopt switch-to-buffer-obey-display-actions t) ; this too
 #+end_src
 
 ** Prog-mode setup
@@ -636,14 +641,14 @@ Font presets (lots of them because I can't decide)
       :default-family "SFMono Nerd Font Mono")
      (iosevka-large
       :inherit iosevka
-      :default-height 200)
+      :default-height 180)
      (sf-mono-large
       :inherit iosevka
-      :default-height 195
+      :default-height 165
       :default-family "SFMono Nerd Font Mono")
      (adwaita-large
       :inherit iosevka
-      :default-height 195
+      :default-height 165
       :default-family "AdwaitaMono Nerd Font Propo")))
   :config
   (defun darius/reapply-fontaine ()
@@ -929,7 +934,7 @@ Corfu for in-buffer completion
 #+end_src
 
 ** Minibuffer completion
-Set up vertico, orderless and savehist and tweak some emacs completion defaults
+Set up vertico, orderless and tweak some emacs completion defaults
 
 #+begin_src emacs-lisp
 (use-package vertico
@@ -967,9 +972,6 @@ Set up vertico, orderless and savehist and tweak some emacs completion defaults
   (setopt minibuffer-prompt-properties
 	      '(read-only t cursor-intangible t face minibuffer-prompt))
   (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode))
-
-(use-package savehist
-  :init (savehist-mode))
 #+end_src
 
 ** Colorscheme
@@ -1401,6 +1403,33 @@ Requires ~sail-mode.el~ somewhere in the load-path
 (add-hook 'sail-mode-hook #'font-lock-update) ; Syntax doesn't update on its own for some reason
 (add-hook 'sail-mode-hook #'display-line-numbers-mode)
 (add-hook 'sail-mode-hook #'(lambda () (setq-local tab-width 2)))
+#+end_src
+
+** Lean
+I love lean.
+The default lean4 mode depends on lsp-mode, so until they do eglot or none at all, pull in this fork.
+
+#+begin_src emacs-lisp
+(use-package nael
+  :vc (:url "https://codeberg.org/mekeor/nael" :branch "default")
+  :config
+  (defun my-nael-setup ()
+    (interactive)
+    ;; Enable Emacs' built-in `TeX' input-method.  Alternatively, you
+    ;; could install the external `unicode-math-input' package and
+    ;; use the `unicode-math' input-method.
+    (set-input-method "TeX")
+    ;; Enable Emacs' built-in LSP-client Eglot.
+    (eglot-ensure))
+
+  (add-hook 'nael-mode-hook #'my-nael-setup)
+
+  ;; Nael buffer-locally sets `compile-command' to "lake build".
+  (keymap-set nael-mode-map "C-c C-c" #'project-compile)
+
+  ;; Find out how to type the character at point in the current
+  ;; input-method.
+  (keymap-set nael-mode-map "C-c C-k" #'quail-show-key))
 #+end_src
 
 ** Web-mode
