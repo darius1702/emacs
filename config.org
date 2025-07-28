@@ -232,7 +232,8 @@ Other settings
 (setopt apropos-do-all t)               ; make apropos search more extensively
 
 (setopt enable-recursive-minibuffers t
-        minibuffer-default-prompt-format " [%s]")
+        minibuffer-default-prompt-format " [%s]"
+        read-minibuffer-restore-windows nil)
 (minibuffer-depth-indicate-mode t)
 (minibuffer-electric-default-mode t)
 
@@ -314,6 +315,7 @@ Make dired recognize other buffers as copy/move targets and also list human-read
 (use-package dired
   :ensure nil
   :custom
+  (dired-recursive-deletes 'top) ;; this is the default but I'm paranoid
   (dired-dwim-target t)
   (dired-listing-switches "-alh")
   (dired-kill-when-opening-new-dired-buffer t)
@@ -346,7 +348,7 @@ Interact with running processes
   (proced-format 'custom)
   :config
   (add-to-list 'proced-format-alist
-               '(custom user pid tree pcpu rss start time (args comm))))
+               '(custom user pid tree pcpu rss (args comm))))
 #+end_src
 
 ** Default Applications
@@ -477,7 +479,6 @@ Highlight keywords like TODO and FIXME in comments in source code
 
 #+begin_src emacs-lisp
 (use-package hl-todo
-  :bind ("M-s t" . hl-todo-occur)
   :hook (prog-mode . hl-todo-mode))
 #+end_src
 
@@ -588,6 +589,7 @@ Make the modeline a little prettier
   (doom-modeline-bar-width 4)
   (doom-modeline-minor-modes nil) ;; nil is the default but otherwise I forget this exists
   (doom-modeline-icon nil)
+  (doom-modeline-percent-position '(-3 "%o")) ;; proportion of "travel" of the window through buffer
   (doom-modeline-buffer-encoding nil))
 #+end_src
 
@@ -743,6 +745,10 @@ Some nice additional completing-read stuff
   ("M-g k"     . consult-global-mark)
   ("M-g i"     . consult-imenu)
   ("M-g I"     . consult-imenu-multi))
+
+(use-package consult-todo
+  :after consult
+  :bind ("M-s t" . consult-todo-project))
 #+end_src
 
 ** PDF Tools
@@ -988,14 +994,14 @@ The most important thing tbh.
 
 (defvar darius/active-theme 'dark "The currently active colorscheme variant")
 
-(defun darius/catppuccin-setup-light ()
+(defun darius/catppuccin-load-light ()
   (interactive)
   (setq darius/active-theme 'light)
   (mapc #'disable-theme custom-enabled-themes)
   (catppuccin-load-flavor 'latte)
   (darius/catppuccin-face-setup))
 
-(defun darius/catppuccin-setup-dark ()
+(defun darius/catppuccin-load-dark ()
   (interactive)
   (setq darius/active-theme 'dark)
   (mapc #'disable-theme custom-enabled-themes)
@@ -1012,13 +1018,13 @@ The most important thing tbh.
   "Switch between the dark and light catppuccin variants"
   (interactive)
   (pcase darius/active-theme
-    ('light (darius/catppuccin-setup-dark))
-    ('dark  (darius/catppuccin-setup-light))
+    ('light (darius/catppuccin-load-dark))
+    ('dark  (darius/catppuccin-load-light))
     (_      (message "Garbage value: %s" darius/active-theme))))
 (global-set-key (kbd "<f12>") #'darius/toggle-catppuccin-dark-light)
 
 (use-package catppuccin-theme
-  :config (darius/catppuccin-setup-dark))
+  :config (darius/catppuccin-load-dark))
 #+end_src
 
 ** Windows and Frames
