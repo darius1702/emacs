@@ -196,6 +196,9 @@ Other settings
         recentf-max-menu-items 0
         recentf-max-saved-items 100)
 
+(setopt view-read-only t ; read-only buffers in view mode
+        view-inhibit-help-message t)
+
 (setopt save-interprogram-paste-before-kill t) ; save clipboard to kill ring before overwriting it
 (setopt mouse-yank-at-point t)
 
@@ -818,7 +821,9 @@ Some org-mode tweaks
   (setopt org-hide-emphasis-markers t)    ; I will probably regret this?
   (setopt org-M-RET-may-split-line '((default . nil)))
   (setopt org-bookmark-names-plist nil) ;; stop org-capture from creating bookmarks
-  (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file))
+  (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
+  (set-face-attribute 'org-cite-key nil :underline nil)
+  (set-face-attribute 'org-cite nil :underline nil))
 
 (use-package org
   :config
@@ -936,7 +941,8 @@ Corfu for in-buffer completion
 (use-package cape
   :init
   (add-hook 'completion-at-point-functions #'cape-dabbrev)
-  (add-hook 'completion-at-point-functions #'cape-file))
+  (add-hook 'completion-at-point-functions #'cape-file)
+  (add-hook 'completion-at-point-functions #'cape-elisp-block))
 #+end_src
 
 ** Minibuffer completion
@@ -1216,23 +1222,32 @@ This assumes metals is installed in ~./local/bin/metals-emacs~.
 #+end_src
 
 ** OCaml
-Assumes the ~merlin~, ~dune~, and ~tuareg~ packages are installed in the current opam switch
+Neocaml downloads a treesitter grammar for .ml and .mli files automatically.
+Aims to be a bit simpler than tuareg mode and highlighting looks better.
+# Assumes the ~merlin~, ~dune~, and ~tuareg~ packages are installed in the current opam switch.
+
 
 #+begin_src emacs-lisp
 (let ((opam-bin-path (ignore-errors (car (process-lines "opam" "var" "bin")))))
   (setenv "PATH" (concat opam-bin-path ":" (getenv "PATH")))
   (add-to-list 'exec-path opam-bin-path))
 
-(use-package tuareg)
-(use-package dune)
-
-(use-package merlin
+(use-package neocaml
+  :vc (:url "https://github.com/bbatsov/neocaml" :rev :newest)
   :config
-  (add-hook 'tuareg-mode-hook #'merlin-mode)
-  (add-hook 'caml-mode-hook #'merlin-mode))
+  (add-hook 'neocaml-mode-hook #'neocaml-repl-minor-mode))
 
-(use-package opam-switch-mode
-  :hook ((coq-mode tuareg-mode) . opam-switch-mode))
+;; (use-package opam-switch-mode
+  ;; :hook ((coq-mode tuareg-mode) . opam-switch-mode))
+;; (use-package tuareg)
+;; (use-package dune)
+
+;; (use-package merlin
+;;   :config
+;;   (add-hook 'tuareg-mode-hook #'merlin-mode)
+;;   (add-hook 'caml-mode-hook #'merlin-mode))
+
+
 #+end_src
 
 ** Zig
