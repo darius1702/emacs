@@ -137,9 +137,11 @@ Unbind some defaults and replace others with the dwim variant
 Other settings
 
 #+begin_src emacs-lisp
-(setopt kill-region-dwim 'emacs-word)     ; make C-w delete a word backwards when no region is active
+(setq frame-title-format '("%b"))
 
 (add-to-list 'load-path (file-name-concat user-emacs-directory "external"))
+
+(setopt kill-region-dwim 'emacs-word)     ; make C-w delete a word backwards when no region is active
 
 (setopt highlight-nonselected-windows t)  ; show region in inactive windows
 
@@ -150,6 +152,8 @@ Other settings
 
 (setopt confirm-kill-emacs 'yes-or-no-p)  ; just in case
 
+(setopt eldoc-idle-delay 0.3)
+
 (setopt suggest-key-bindings nil
         echo-keystrokes 0.01
         echo-keystrokes-help nil)
@@ -157,7 +161,7 @@ Other settings
 (setopt which-key-lighter "")            ; diminish
 
 (setopt read-buffer-completion-ignore-case t
-        read-file-name-completion-ignore-case nil ;; setting this to t breaks vertico
+        read-file-name-completion-ignore-case t
         completion-ignore-case t)
 
 (setopt comint-prompt-read-only t)
@@ -427,10 +431,7 @@ Remote editing
 Basic ~package.el~ config
 
 #+begin_src emacs-lisp
-(require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
-;; NOTE: apparently this is not needed? I have no idea how package.el works tbh
-;; (package-initialize)
 (setopt use-package-always-ensure t)
 (setopt package-native-compile t)         ; this will just be ignored if native-comp isn't available
 #+end_src
@@ -593,15 +594,8 @@ Make the modeline a little prettier
   (doom-modeline-minor-modes nil) ;; nil is the default but otherwise I forget this exists
   (doom-modeline-icon nil)
   (doom-modeline-percent-position '(-3 "%o")) ;; proportion of "travel" of the window through buffer
+  (doom-modeline-buffer-file-name-style 'file-name-with-project)
   (doom-modeline-buffer-encoding nil))
-#+end_src
-
-*** Dired subtree
-Expand directories in dired
-
-#+begin_src emacs-lisp
-(use-package dired-subtree
-  :bind (:map dired-mode-map (("<TAB>" . 'dired-subtree-toggle))))
 #+end_src
 
 *** Ultra-scroll
@@ -724,9 +718,9 @@ Some nice additional completing-read stuff
     (let* ((consult-ripgrep-args (s-concat consult-ripgrep-args " --hidden")))
       (call-interactively 'consult-ripgrep)))
 
-  (add-hook 'minibuffer-setup-hook
-            (lambda ()
-              (local-set-key (kbd "M-r") #'consult-history)))
+  :hook
+  (minibuffer-setup . (lambda () (local-set-key (kbd "M-r") #'consult-history)))
+  (eshell-mode . (lambda () (keymap-set eshell-prompt-mode-map "M-r" #'consult-history)))
 
   :bind
   ("C-S-Y"     . consult-yank-from-kill-ring)
@@ -1143,13 +1137,13 @@ Get the [[https://github.com/tree-sitter-grammars/tree-sitter-hyprlang][language
   :custom (hyprlang-ts-mode-indent-offset 4))
 #+end_src
 
-** C and C++
+** COMMENT C and C++
 
 #+begin_src emacs-lisp
-;; (add-to-list 'major-mode-remap-alist '(c-mode . c-ts-mode))
-;; (add-to-list 'major-mode-remap-alist '(c++-mode . c++-ts-mode))
-;; (add-to-list 'major-mode-remap-alist
-;;              '(c-or-c++-mode . c-or-c++-ts-mode))
+(add-to-list 'major-mode-remap-alist '(c-mode . c-ts-mode))
+(add-to-list 'major-mode-remap-alist '(c++-mode . c++-ts-mode))
+(add-to-list 'major-mode-remap-alist
+              '(c-or-c++-mode . c-or-c++-ts-mode))
 #+end_src
 
 ** Rust
@@ -1453,7 +1447,7 @@ The default lean4 mode depends on lsp-mode, so until they do eglot or none at al
   (keymap-set nael-mode-map "C-c C-k" #'quail-show-key))
 #+end_src
 
-** Web-mode
+** Web stuff
 Web stuff
 
 #+begin_src emacs-lisp
@@ -1467,6 +1461,15 @@ Web stuff
   (web-mode-enable-comment-annotation t)
   :mode (("\\.html\\'" . web-mode)
          ("\\.css\\'" . web-mode)))
+
+(use-package jtsx
+  :mode (("\\.jsx?\\'" . jtsx-jsx-mode)
+         ("\\.tsx\\'" . jtsx-tsx-mode)
+         ("\\.ts\\'" . jtsx-typescript-mode))
+  :hook ((jtsx-tsx-mode jtsx-jsx-mode) . eglot-ensure))
+
+(use-package biomejs-format
+  :hook ((jtsx-tsx-mode jtsx-jsx-mode) . biomejs-format-mode))
 #+end_src
 
 * Custom Functions
