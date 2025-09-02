@@ -16,6 +16,8 @@ Nativecomp, pgtk, tree-sitter, ...
 Prevent some flickering on startup
 (Doesn't really prevent any flickering)
 
+Instead of using ~inhibit-message~ you can also ~(setopt inhibit-startup-echo-area-message "$username")~.
+
 #+begin_src emacs-lisp :tangle early-init.el
 ;; -*- lexical-binding: t -*-
 (setq-default inhibit-redisplay t
@@ -51,7 +53,7 @@ Adjust some default settings
 #+begin_src emacs-lisp :tangle early-init.el
 (setopt inhibit-startup-message t)
 (setopt native-comp-async-report-warnings-errors nil)
-(setopt initial-scratch-message "")
+(setopt initial-scratch-message nil)
 (setopt server-client-instructions nil)
 (tool-bar-mode 0)
 (menu-bar-mode 0)
@@ -137,7 +139,7 @@ Unbind some defaults and replace others with the dwim variant
 Other settings
 
 #+begin_src emacs-lisp
-(setq frame-title-format '("%b"))
+(setq frame-title-format '("%b")) ; otherwise the window title also has the "GNU Emacs at $hostname" part
 
 (add-to-list 'load-path (file-name-concat user-emacs-directory "external"))
 
@@ -211,7 +213,7 @@ Other settings
 
 (setopt ispell-dictionary "en_US"
         ispell-program-name "hunspell"
-        ispell-alternate-dictionary "/usr/share/dict/words") ;; TODO this needs extra/words on arch
+        ispell-alternate-dictionary "/usr/share/dict/words") ;; NOTE this needs extra/words on arch
 
 (setopt isearch-wrap-pause 'no-ding
         isearch-lazy-count t
@@ -222,8 +224,6 @@ Other settings
 (setopt compilation-max-output-line-length 800
         compilation-scroll-output t
         compile-command "")
-
-(require 'ansi-color)
 (add-hook 'compilation-filter-hook 'ansi-color-compilation-filter) ; fix colors in compilation output
 
 (setopt tab-bar-show 1)                   ; only show tab bar on frames with more than one tab
@@ -238,9 +238,12 @@ Other settings
 
 (setopt apropos-do-all t)               ; make apropos search more extensively
 
+(setopt crm-prompt "[%d (%s)] %p")      ; make `completing-read-multiple' prompt show the separator
+
 (setopt enable-recursive-minibuffers t
         minibuffer-default-prompt-format " [%s]"
-        read-minibuffer-restore-windows nil)
+        read-minibuffer-restore-windows nil
+        minibuffer-prompt-properties '(read-only t cursor-intangible t face minibuffer-prompt))
 (minibuffer-depth-indicate-mode t)
 (minibuffer-electric-default-mode t)
 
@@ -263,6 +266,7 @@ Make programming-modes a little nicer with line numbers and current line highlig
 
 ** Man pages
 Make manpages look a little better
+Some colorschemes probably override the colors
 
 #+begin_src emacs-lisp
 (use-package man
@@ -284,7 +288,7 @@ Buffer switching and management
                           (ibuffer-switch-to-saved-filter-groups "default")
                           (ibuffer-auto-mode t)))
   :custom
-  (ibuffer-expert t)
+  (ibuffer-expert t)                    ; don't prompt for everything
   (ibuffer-display-summary nil)
   (ibuffer-saved-filter-groups
    (quote (("default"
@@ -315,8 +319,7 @@ Make dired recognize other buffers as copy/move targets and also list human-read
 (defun darius/dired-create-directory ()
   "Wrapper around `dired-create-directory' with no minibuffer completion."
   (interactive)
-  (let ((dir
-         (read-from-minibuffer "Make directory: ")))
+  (let ((dir (read-from-minibuffer "Make directory: ")))
     (dired-create-directory dir)))
 
 (use-package dired
@@ -329,7 +332,6 @@ Make dired recognize other buffers as copy/move targets and also list human-read
   (dired-auto-revert-buffer t)
   :bind
   ("<mouse-8>" . dired-jump) ;; back button
-
   (:map dired-mode-map
         ("+" . darius/dired-create-directory)
         ("<mouse-2>" . dired-mouse-find-file)
@@ -342,12 +344,13 @@ Make dired recognize other buffers as copy/move targets and also list human-read
 #+end_src
 
 ** Proced
-Interact with running processes
+Process management
 
 #+begin_src emacs-lisp
 (use-package proced
   :ensure nil
   :commands proced
+  :hook (proced-post-display . (lambda () (toggle-truncate-lines 1)))
   :custom
   (proced-auto-update-flag t)
   (proced-goal-attribute nil)
@@ -356,18 +359,6 @@ Interact with running processes
   :config
   (add-to-list 'proced-format-alist
                '(custom user pid tree pcpu rss (args comm))))
-#+end_src
-
-** Default Applications
-Default programs for opening filetypes
-This is probably he wrong way to do it?
-
-#+begin_src emacs-lisp
-(setopt org-file-apps
-        '((auto-mode . emacs)
-          (directory . emacs)
-          ("\\.mm\\'" . default)
-          ("\\.x?html?\\'" . default)))
 #+end_src
 
 ** Ediff
@@ -468,14 +459,15 @@ Usful info in the minibuffer
   :init (marginalia-mode))
 #+end_src
 
-*** Rainbow-mode
+*** Colorful-mode
 Colorize strings like #a7c080.
 Making the frame background transparent via ~alpha-background~ makes the colors a little transparent as well sadly
 
 #+begin_src emacs-lisp
-(use-package rainbow-mode
-  :config (rainbow-mode)
-  :diminish rainbow-mode)
+(use-package colorful-mode
+  :custom (css-fontify-colors nil)
+  :custom-face (colorful-base ((t :box nil))) ; colors have a box around them by default which looks weird
+  :config (global-colorful-mode))
 #+end_src
 
 *** hl-todo
@@ -718,6 +710,12 @@ Some nice additional completing-read stuff
     (let* ((consult-ripgrep-args (s-concat consult-ripgrep-args " --hidden")))
       (call-interactively 'consult-ripgrep)))
 
+  (defun darius/consult-fd-hidden ()
+    "Call fd with additional --hidden flag"
+    (interactive)
+    (let* ((consult-fd-args (s-concat consult-fd-args " --hidden")))
+      (call-interactively 'consult-fd)))
+
   :hook
   (minibuffer-setup . (lambda () (local-set-key (kbd "M-r") #'consult-history)))
   (eshell-mode . (lambda () (keymap-set eshell-prompt-mode-map "M-r" #'consult-history)))
@@ -726,6 +724,7 @@ Some nice additional completing-read stuff
   ("C-S-Y"     . consult-yank-from-kill-ring)
   ;; M-s `search-map'
   ("M-s d"     . consult-fd)
+  ("M-s D"     . consult-fd-hidden)
   ("M-s l"     . consult-line)
   ("M-s L"     . consult-line-multi)
   ("M-s r"     . consult-ripgrep)
@@ -766,6 +765,7 @@ Some improvements over DocView
    '(".*\\.pdf$" . (nil (reusable-frames . t)
                         (inhibit-switch-frame . t)))
    display-buffer-alist) ;; this allows for example the synctex integration from pdf-tools to reuse a buffer
+  :hook (pdf-view-mode . (lambda () (display-line-numbers-mode -1)))
   :bind (:map pdf-view-mode-map
               ("C" . pdf-view-center-in-window)
               ("C-=" . pdf-view-enlarge)
@@ -776,11 +776,6 @@ Some improvements over DocView
               ("<mouse-8>" . pdf-view-scroll-down-or-previous-page)
               ("<mouse-9>" . pdf-view-scroll-up-or-next-page)
               ("M-g g" . pdf-view-goto-page)))
-
-(add-hook 'pdf-view-mode-hook #'(lambda () (interactive) (display-line-numbers-mode -1)))
-(add-hook 'doc-view-mode-hook #'(lambda () (progn
-                                             (pdf-tools-install)
-                                             (pdf-view-mode))))
 #+end_src
 
 ** Org
@@ -960,24 +955,6 @@ Set up vertico, orderless and tweak some emacs completion defaults
   (setopt completion-styles '(substring orderless basic)
 	      completion-category-defaults nil
 	      completion-category-overrides '((file (styles partial-completion)))))
-
-(use-package emacs
-  :init
-  ;; Add prompt indicator to `completing-read-multiple'.
-  ;; We display [CRM<separator>], e.g., [CRM,] if the separator is a comma.
-  (defun crm-indicator (args)
-    (cons (format "[CRM%s] %s"
-		          (replace-regexp-in-string
-		           "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
-		           crm-separator)
-		          (car args))
-	      (cdr args)))
-  (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
-
-  ;; Do not allow the cursor in the minibuffer prompt
-  (setopt minibuffer-prompt-properties
-	      '(read-only t cursor-intangible t face minibuffer-prompt))
-  (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode))
 #+end_src
 
 ** Colorscheme
@@ -1035,11 +1012,6 @@ Switching and moving windows
   :bind (("M-O" . ace-swap-window))
   :custom
   (aw-scope 'frame))
-
-(global-set-key (kbd "M-H") 'windmove-left)
-(global-set-key (kbd "M-J") 'windmove-down)
-(global-set-key (kbd "M-K") 'windmove-up)
-(global-set-key (kbd "M-L") 'windmove-right)
 #+end_src
 
 ** Diminish
