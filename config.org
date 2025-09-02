@@ -375,24 +375,6 @@ Diff files
   (ediff-window-setup-function 'ediff-setup-windows-plain))
 #+end_src
 
-** COMMENT Font setup
-Need to set it in an extra hook to make it work in emacsclient frames.
-Font setup moved to [[*Fontaine][Fontaine]].
-
-#+begin_src emacs-lisp
-;; (defun darius/set-up-fonts ()
-;;   "Load face attributes for fixed and variable-pitch fonts"
-;;   (interactive)
-;;   (let ((darius/fixed-pitch-font "Iosevka NFP")
-;;         (darius/variable-pitch-font "Iosevka Aile"))
-;;     (set-face-attribute 'default nil :font darius/fixed-pitch-font :height 130 :weight 'regular)
-;;     (set-face-attribute 'variable-pitch nil :font darius/variable-pitch-font :height 1.0 :weight 'semilight)
-;;     (set-face-attribute 'fixed-pitch nil :font darius/fixed-pitch-font :height 1.0 :weight 'regular)))
-
-;; (add-hook 'after-init-hook 'darius/set-up-fonts)
-;; (add-hook 'server-after-make-frame-hook 'darius/set-up-fonts)
-#+end_src
-
 ** Eshell
 Emacs shell aliases
 
