@@ -254,6 +254,11 @@ Other settings
 (setopt pgtk-wait-for-event-timeout 0.001) ; apparently this does something good
 
 (setopt switch-to-buffer-obey-display-actions t) ; this too
+
+(use-package project
+  :ensure nil
+  :config
+  (add-to-list 'project-switch-commands '(project-dired "Dired")))
 #+end_src
 
 ** Prog-mode setup
@@ -399,7 +404,7 @@ Remote editing
         remote-file-name-inhibit-auto-save-visited t)
 #+end_src
 
-* Packages
+* External Packages
 ** Setup
 Basic ~package.el~ config
 
@@ -552,7 +557,15 @@ Emulate a terminal
 
 #+begin_src emacs-lisp
 (use-package eat
-  :bind (:map eat-semi-char-mode-map
+  :custom
+  (eat-kill-buffer-on-exit t)
+  :config
+  (add-to-list 'display-buffer-alist
+      '("\\(?:\\*-eat\\*\\|.*eat.*\\)"
+	 (display-buffer-reuse-mode-window)
+	 (dedicated . t)))
+  :bind
+  (:map eat-semi-char-mode-map
               ("M-o" . other-window)))
 #+end_src
 
@@ -1094,10 +1107,11 @@ Get the [[https://github.com/tree-sitter-grammars/tree-sitter-hyprlang][language
 ** COMMENT C and C++
 
 #+begin_src emacs-lisp
+(setopt c-ts-mode-enable-doxygen t)
 (add-to-list 'major-mode-remap-alist '(c-mode . c-ts-mode))
 (add-to-list 'major-mode-remap-alist '(c++-mode . c++-ts-mode))
 (add-to-list 'major-mode-remap-alist
-              '(c-or-c++-mode . c-or-c++-ts-mode))
+              '(c-or-c++-mode . c-or-c++-ts-mode))\
 #+end_src
 
 ** Rust
@@ -1117,6 +1131,8 @@ The one and only
 #+begin_src emacs-lisp
 (use-package haskell-mode
   :after haskell-interactive-mode
+  :custom
+  (haskell-process-auto-import-loaded-modules t)
   :init
   (setopt flymake-allowed-file-name-masks '())
   :config
@@ -1247,16 +1263,6 @@ Support for virtual environments
 
 #+begin_src emacs-lisp
 (use-package pyvenv)
-#+end_src
-
-** COMMENT Lua
-🇧🇷
-
-#+begin_src emacs-lisp
-(use-package lua-mode
-  :custom
-  (lua-indent-level 2)
-  (lua-indent-nested-block-content-align nil))
 #+end_src
 
 ** Markdown
@@ -1469,12 +1475,13 @@ Spawn a terminal in the current directory.
 This is hardcoded to foot because wayland is obviously superior.
 
 #+begin_src emacs-lisp
-(defun darius/spawn-terminal-here ()
-  "Open a terminal (foot) in the current directory"
-  (interactive)
-  (if-let* ((foot-path (executable-find "foot")))
-      (call-process foot-path nil 0 nil "-D" (expand-file-name default-directory))
-    (message "No foot executable found in PATH")))
+(defun darius/spawn-terminal-here (arg)
+  "Open an *eat* buffer in the current project spawn a terminal window (foot) in the current directory when called with prefix argument"
+  (interactive "P")
+  (if (not arg)
+      (eat-project-other-window)
+      (if-let* ((foot-path (executable-find "foot")))
+        (call-process foot-path nil 0 nil "-D" (expand-file-name default-directory)))))
 
 (global-set-key (kbd "M-g t") 'darius/spawn-terminal-here)
 #+end_src
