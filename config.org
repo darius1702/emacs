@@ -67,32 +67,47 @@ Adjust some default settings
 (undelete-frame-mode t)
 #+end_src
 
-* Basic stuff
-** Annoying files
-Disble all annoying auto-generated files and make ~custom-set-variables~ go to their own file
+* Builtin stuff
+** Setup
+Lexical bindings and set+load custom file
 
 #+begin_src emacs-lisp
 ;; -*- lexical-binding: t -*-
-(make-directory (expand-file-name "tmp/auto-saves/" user-emacs-directory) t)
-(setopt auto-save-list-file-prefix (expand-file-name "tmp/auto-saves/sessions/" user-emacs-directory)
-        auto-save-file-name-transforms `((".*" ,(expand-file-name "tmp/auto-saves/" user-emacs-directory) t))
-        auto-save-no-message t)
-(setopt backup-directory-alist `(("." . ,(expand-file-name "tmp/backups/" user-emacs-directory))))
-(setopt backup-by-copying t)
-
-;; Enable when lockfiles become annoying
-;; (setopt create-lockfiles nil)
-
 (setq custom-file (concat user-emacs-directory "custom.el"))
 (when (file-exists-p custom-file)
   (load custom-file))
 #+end_src
 
-** Better editing experience
-Some sensible defaults
+** Misc
+Tweaks that don't fit the other categories
 
-*** Keybinds
-Unbind some defaults and replace others with the dwim variant
+#+begin_src emacs-lisp
+;; ask before exiting
+(setopt confirm-kill-emacs 'yes-or-no-p)
+
+;; make all the things case insensitive
+(setopt read-buffer-completion-ignore-case t
+        read-file-name-completion-ignore-case t
+        completion-ignore-case t)
+
+;; collect garbage when idle for 2 seconds
+;; I don't like it when gc makes scrolling lag
+(run-with-idle-timer 2 t (lambda () (garbage-collect)))
+
+;; make read-only buffers use `view-mode'
+(setopt view-read-only t
+        view-inhibit-help-message t)
+
+(setopt vc-follow-symlinks t)
+
+(setopt read-process-output-max (* 1024 1024 4))
+
+;; according to someone else's config this does something good
+(setopt pgtk-wait-for-event-timeout 0.001)
+#+end_src
+
+** Default Keybindings
+Unbind some defaults and bind some more keys
 
 #+begin_src emacs-lisp
 (global-unset-key (kbd "C-x C-c"))            ; stop accidentally quitting emacs
@@ -101,189 +116,131 @@ Unbind some defaults and replace others with the dwim variant
 
 (global-set-key (kbd "C-x C-z") 'find-grep)   ; something more useful
 
-(global-set-key (kbd "M-z") 'zap-up-to-char)  ; instead of zap-to-char
-
-(global-set-key (kbd "C-c c") 'compile)
-(global-set-key (kbd "C-c r") 'recompile)
-
 (global-set-key (kbd "M-o") 'other-window)
 (global-set-key (kbd "C-M-o") 'window-layout-transpose)
-
-(global-set-key (kbd "C-<tab>") 'mode-line-other-buffer)
-
-;; Act on region if active, otherwise on line
-(global-set-key (kbd "M-D") 'duplicate-dwim)
-
-;; Act on region if active, otherwise on word
-(global-set-key (kbd "M-u") 'upcase-dwim)
-(global-set-key (kbd "M-l") 'downcase-dwim)
-(global-set-key (kbd "M-c") 'capitalize-dwim)
-
-(global-set-key (kbd "M-n") 'next-error)
-(global-set-key (kbd "M-p") 'previous-error)
-
-(global-set-key (kbd "M-N") 'flymake-goto-next-error)
-(global-set-key (kbd "M-P") 'flymake-goto-prev-error)
-
-(global-set-key (kbd "M-g b") 'bookmark-jump)
-
-(global-set-key (kbd "M-g r") 'recentf-open)
-(global-set-key (kbd "M-g R") 'recentf-open-files)
 
 (global-unset-key (kbd "C-<wheel-up>"))
 (global-unset-key (kbd "C-<wheel-down>"))
 (global-unset-key (kbd "<pinch>"))
 #+end_src
 
-*** Misc
-Other settings
+** User interface
+Change default UI settings
 
 #+begin_src emacs-lisp
-(setq frame-title-format '("%b")) ; otherwise the window title also has the "GNU Emacs at $hostname" part
+;; remove the "GNU Emacs at [hostname]" part
+(setq frame-title-format '("%b"))
 
-(add-to-list 'load-path (file-name-concat user-emacs-directory "external"))
+(column-number-mode t)
 
-(setopt kill-region-dwim 'emacs-word)     ; make C-w delete a word backwards when no region is active
+(use-package paren
+  :custom (show-paren-when-point-inside-paren t)
+  :config (show-paren-mode t))
 
-(setopt highlight-nonselected-windows t)  ; show region in inactive windows
+;; only show tab bar with >1 tabs
+(setopt tab-bar-show 1)
+(setopt tab-bar-close-button-show nil)
 
-(xterm-mouse-mode 1)       ; make the mouse wheel scroll the buffer
-(setopt visible-cursor nil)  ; disable blinking cursor in terminal
+;; show active region in inactive windows
+(setopt highlight-nonselected-windows t)
 
-(run-with-idle-timer 2 t (lambda () (garbage-collect)))
+;; (relative) line numbers
+(use-package display-line-numbers
+  :custom
+  (display-line-numbers-type 'relative)
+  (display-line-numbers-width 3)
+  (display-line-numbers-grow-only t)
+  :hook
+  (prog-mode . display-line-numbers-mode))
 
-(setopt confirm-kill-emacs 'yes-or-no-p)  ; just in case
-
-(setopt eldoc-idle-delay 0.3)
-
-(setopt suggest-key-bindings nil
-        echo-keystrokes 0.01
-        echo-keystrokes-help nil)
-(which-key-mode)
-(setopt which-key-lighter "")            ; diminish
-
-(setopt read-buffer-completion-ignore-case t
-        read-file-name-completion-ignore-case t
-        completion-ignore-case t)
-
-(setopt comint-prompt-read-only t)
-
-(setopt bookmark-fringe-mark nil)
-
-(setopt vc-follow-symlinks t)
-
-;;; disabled because ultra-scroll
-;; (setopt scroll-conservatively 5)
-;; (setopt scroll-margin 1)
-;; (pixel-scroll-precision-mode 1)
-;; (setopt pixel-scroll-precision-interpolate-mice nil)
-
-;; consult has an xref function
-;; (setopt xref-show-definitions-function #'xref-show-definitions-completing-read)
-
-(setopt display-line-numbers-type 'relative
-        display-line-numbers-width 3
-        display-line-numbers-grow-only t)
-(global-visual-line-mode 1)
+;; zoom text in smaller increments
 (setopt text-scale-mode-step 1.05)
+
+;; what to show in `whitespace-mode'
+(setopt whitespace-style '(face tabs spaces trailing
+                                space-before-tab newline
+                                indentation empty space-after-tab
+                                space-mark tab-mark))
+#+end_src
+
+** Editing and Formatting
+Changes to default editing behavior
+
+#+begin_src emacs-lisp
+;; this is `zap-to-char' by default
+(global-set-key (kbd "M-z") 'zap-up-to-char)
+
+;; Act on region if active, otherwise on line/word
+(global-set-key (kbd "M-D") 'duplicate-dwim)
+(global-set-key (kbd "M-u") 'upcase-dwim)
+(global-set-key (kbd "M-l") 'downcase-dwim)
+(global-set-key (kbd "M-c") 'capitalize-dwim)
+
+;; read .editorconfig if present
+(editorconfig-mode t)
 
 (setq-default indent-tabs-mode nil)
 (setq-default tab-width 4)
+
 (add-to-list 'write-file-functions 'delete-trailing-whitespace)
+
 (setopt require-final-newline t)
 
-(setopt imenu-auto-rescan t)
+(global-visual-line-mode 1)
 
-(editorconfig-mode t)
+;; make C-w delete a word backwards when no region is active
+(setopt kill-region-dwim 'emacs-word)
 
-(savehist-mode t)
-(recentf-mode t)
-(setopt recentf-auto-cleanup 'never
-        recentf-max-menu-items 0
-        recentf-max-saved-items 100)
+(electric-pair-mode t)
 
-(setopt view-read-only t ; read-only buffers in view mode
-        view-inhibit-help-message t)
+;; save system clipboard to kill ring before overwriting it
+(setopt save-interprogram-paste-before-kill t)
 
-(setopt save-interprogram-paste-before-kill t) ; save clipboard to kill ring before overwriting it
 (setopt mouse-yank-at-point t)
 
 (setopt sentence-end-double-space nil
         sentence-end "[.\",;!?*:'] ")
+#+end_src
 
-(setopt ispell-dictionary "en_US"
-        ispell-program-name "hunspell"
-        ispell-alternate-dictionary "/usr/share/dict/words") ;; NOTE this needs extra/words on arch
+** Buffers
+Isearch, ibuffer, imenu, ...
 
-(setopt isearch-wrap-pause 'no-ding
-        isearch-lazy-count t
-        lazy-count-prefix-format "(%s/%s) "
-        search-whitespace-regexp ".*?"
-        lazy-highlight-initial-delay 0)
+*** Keybinds and misc
 
-(setopt compilation-max-output-line-length 800
-        compilation-scroll-output t
-        compile-command "")
-(add-hook 'compilation-filter-hook 'ansi-color-compilation-filter) ; fix colors in compilation output
+#+begin_src emacs-lisp
+(global-set-key (kbd "C-;") 'switch-to-buffer)
+(global-set-key (kbd "C-<tab>") 'mode-line-other-buffer)
 
-(setopt tab-bar-show 1)                   ; only show tab bar on frames with more than one tab
-(setopt tab-bar-close-button-show nil)
-(column-number-mode t)
-(show-paren-mode t)
-(setopt show-paren-when-point-inside-paren t)
+(setopt switch-to-buffer-obey-display-actions t)
+
+;; automatically revert buffers that change on disk
 (setopt global-auto-revert-non-file-buffers t
         auto-revert-avoid-polling t
         auto-revert-check-vc-info t)
-(electric-pair-mode t)
-
-(setopt apropos-do-all t)               ; make apropos search more extensively
-
-(setopt crm-prompt "[%d (%s)] %p")      ; make `completing-read-multiple' prompt show the separator
-
-(setopt enable-recursive-minibuffers t
-        minibuffer-default-prompt-format " [%s]"
-        read-minibuffer-restore-windows nil
-        minibuffer-prompt-properties '(read-only t cursor-intangible t face minibuffer-prompt))
-(minibuffer-depth-indicate-mode t)
-(minibuffer-electric-default-mode t)
-
-(setopt whitespace-style '(face tabs spaces trailing space-before-tab newline indentation empty space-after-tab space-mark tab-mark))
-
-(setopt read-process-output-max (* 1024 1024 4))
-
-(setopt pgtk-wait-for-event-timeout 0.001) ; apparently this does something good
-
-(setopt switch-to-buffer-obey-display-actions t) ; this too
-
-(use-package project
-  :ensure nil
-  :config
-  (add-to-list 'project-switch-commands '(project-dired "Dired")))
 #+end_src
 
-** Prog-mode setup
-Make programming-modes a little nicer with line numbers and current line highlighting
+*** Isearch
+Searching within a buffer
+#+begin_src emacs-lisp
+(use-package isearch
+  :custom
+  (isearch-wrap-pause 'no-ding)
+  (isearch-lazy-count t)
+  (lazy-count-prefix-format "(%s/%s) ")
+  (search-whitespace-regexp ".*?")
+  (lazy-highlight-initial-delay 0))
+#+end_src
+
+*** Imenu
+Navigate buffer via headings/definitions/...
 
 #+begin_src emacs-lisp
-(add-hook 'prog-mode-hook 'display-line-numbers-mode)
-;; (add-hook 'prog-mode-hook 'hl-line-mode)
+(use-package imenu
+  :custom (imenu-auto-rescan t))
 #+end_src
 
-** Man pages
-Make manpages look a little better
-Some colorschemes probably override the colors
-
-#+begin_src emacs-lisp
-(use-package man
-  :ensure nil
-  :config
-  (set-face-attribute 'Man-overstrike nil :inherit font-lock-keyword-face :bold t)
-  (set-face-attribute 'Man-underline nil :inherit font-lock-string-face :underline t)
-  :bind ("C-c m" . 'man))
-#+end_src
-
-** Ibuffer
-Buffer switching and management
+*** Ibuffer
+Ibuffer and other buffer things
 
 #+begin_src emacs-lisp
 (use-package ibuffer
@@ -317,8 +274,11 @@ Buffer switching and management
            (vc-status 16 16 :left)))))
 #+end_src
 
-** Dired
-Make dired recognize other buffers as copy/move targets and also list human-readable filesizes
+** File navigation
+File browsing, projects, recent files, bookmarks
+
+*** Dired
+File browsing on crack
 
 #+begin_src emacs-lisp
 (defun darius/dired-create-directory ()
@@ -328,15 +288,15 @@ Make dired recognize other buffers as copy/move targets and also list human-read
     (dired-create-directory dir)))
 
 (use-package dired
-  :ensure nil
   :custom
-  (dired-recursive-deletes 'top) ;; this is the default but I'm paranoid
+  (dired-recursive-deletes 'top) ; this is the default but I'm paranoid
   (dired-dwim-target t)
   (dired-listing-switches "-alh")
   (dired-kill-when-opening-new-dired-buffer t)
   (dired-auto-revert-buffer t)
+  :hook (dired-mode . dired-hide-details-mode)
   :bind
-  ("<mouse-8>" . dired-jump) ;; back button
+  ("<mouse-8>" . dired-jump) ; back button
   (:map dired-mode-map
         ("+" . darius/dired-create-directory)
         ("<mouse-2>" . dired-mouse-find-file)
@@ -348,12 +308,130 @@ Make dired recognize other buffers as copy/move targets and also list human-read
   (add-to-list 'dired-guess-shell-alist-user '("\\.mp4\\'" "mpv")))
 #+end_src
 
+*** Projects
+Keep track of projects and run actions on them
+
+#+begin_src emacs-lisp
+(use-package project
+  :config
+  (add-to-list 'project-switch-commands '(project-dired "Dired")))
+#+end_src
+
+*** Recent files
+Remember recently visited files
+
+#+begin_src emacs-lisp
+(use-package recentf
+  :custom
+  (recentf-auto-cleanup 'never)
+  (recentf-max-menu-items 0)
+  (recentf-max-saved-items 100)
+  :bind
+  ("M-g r" . recentf-open)
+  ("M-g R" . recentf-open-files)
+  :config
+  (recentf-mode))
+#+end_src
+
+*** Bookmarks
+Bookmarks are saved in the ~bookmarks.eld~ file
+
+#+begin_src emacs-lisp
+(global-set-key (kbd "M-g b") 'bookmark-jump)
+
+;; don't show bookmarks in buffers
+(setopt bookmark-fringe-mark nil)
+#+end_src
+
+** Minibuffer things
+Setup minibuffer and ~completing-read~
+
+#+begin_src emacs-lisp
+;; make `completing-read-multiple' prompt show the separator
+(setopt crm-prompt "[%d (%s)] %p")
+
+;; remember minibuffer history
+(savehist-mode t)
+
+(setopt enable-recursive-minibuffers t
+        minibuffer-default-prompt-format " [%s]"
+        read-minibuffer-restore-windows nil
+        minibuffer-prompt-properties '(read-only t cursor-intangible t face minibuffer-prompt))
+
+(minibuffer-electric-default-mode t)
+(minibuffer-depth-indicate-mode t)
+#+end_src
+
+** Compilation and Comint
+Changes to compile and comint buffers
+
+#+begin_src emacs-lisp
+(use-package compile
+  :custom
+  (compilation-max-output-line-length 800)
+  (compilation-scroll-output t)
+  (compile-command "")
+  :hook
+  (compilation-filter . ansi-color-compilation-filter)
+  :bind
+  ("C-c c" . compile)
+  ("C-c r" . recompile)
+  ("M-N" . next-error)
+  ("M-P" . previous-error))
+
+(setopt comint-prompt-read-only t)
+#+end_src
+
+** Help and Docs
+Help popups, linting, documentation, ...
+
+#+begin_src emacs-lisp
+(use-package flymake
+  :bind
+  ("M-n" . flymake-goto-next-error)
+  ("M-p" . flymake-goto-prev-error))
+
+(setopt eldoc-idle-delay 0.3)
+(setopt eldoc-echo-area-use-multiline-p nil)
+
+(setopt suggest-key-bindings nil
+        echo-keystrokes 0.01
+        echo-keystrokes-help nil)
+
+;; make apropos search more extensively
+(setopt apropos-do-all t)
+
+(use-package which-key
+  :custom (which-key-lighter "")
+  :config (which-key-mode))
+
+;; display the current function/heading/... in the modeline
+(use-package which-func
+  :custom
+  (which-func-unknown ":3")
+  (which-func-update-delay 0.1)
+  :config
+  (which-function-mode))
+
+;; spell check
+;; Arch linux provides /usr/share/dict/words in the extra/words package
+(setopt ispell-dictionary "en_US"
+        ispell-program-name "hunspell"
+        ispell-alternate-dictionary "/usr/share/dict/words")
+
+;; manual pages (colorschemes can override the colors)
+(use-package man
+  :config
+  (set-face-attribute 'Man-overstrike nil :inherit font-lock-keyword-face :bold t)
+  (set-face-attribute 'Man-underline nil :inherit font-lock-string-face :underline t)
+  :bind ("C-c m" . 'man))
+#+end_src
+
 ** Proced
 Process management
 
 #+begin_src emacs-lisp
 (use-package proced
-  :ensure nil
   :commands proced
   :hook (proced-post-display . (lambda () (toggle-truncate-lines 1)))
   :custom
@@ -371,13 +449,39 @@ Diff files
 
 #+begin_src emacs-lisp
 (use-package ediff
-  :ensure nil
   :custom
   (ediff-keep-variants nil)
   (ediff-make-buffers-readonly-at-startup t)
   (ediff-show-clashes-only t)
   (ediff-split-window-function 'split-window-horizontally)
   (ediff-window-setup-function 'ediff-setup-windows-plain))
+#+end_src
+
+** Remote Editing
+Remote editing with TRAMP
+
+#+begin_src emacs-lisp
+(setopt remote-file-name-inhibit-locks t
+        tramp-use-scp-direct-remote-copying t
+        remote-file-name-inhibit-auto-save-visited t)
+#+end_src
+
+** Terminal Tweaks
+For running in ~-nw~ mode
+
+#+begin_src emacs-lisp
+;; make the mouse wheel scroll the buffer
+(xterm-mouse-mode 1)
+
+;; disable cursor blinking
+(setopt visible-cursor nil)
+
+(defun darius/disable-terminal-background ()
+  "Removes theme background color in terminal windows"
+  (unless (display-graphic-p (selected-frame))
+   (set-face-attribute 'default nil :background "unspecified-bg" )))
+
+(add-hook 'window-setup-hook 'darius/disable-terminal-background)
 #+end_src
 
 ** Eshell
@@ -395,23 +499,35 @@ alias l ls
 alias gs magit-status
 #+end_src
 
-** TRAMP
-Remote editing
+** Annoying files
+Disble all annoying auto-generated files and make ~custom-set-variables~ go to their own file
 
 #+begin_src emacs-lisp
-(setopt remote-file-name-inhibit-locks t
-        tramp-use-scp-direct-remote-copying t
-        remote-file-name-inhibit-auto-save-visited t)
+(make-directory (expand-file-name "tmp/auto-saves/" user-emacs-directory) t)
+(setopt auto-save-list-file-prefix (expand-file-name "tmp/auto-saves/sessions/" user-emacs-directory)
+        auto-save-file-name-transforms `((".*" ,(expand-file-name "tmp/auto-saves/" user-emacs-directory) t))
+        auto-save-no-message t)
+(setopt backup-directory-alist `(("." . ,(expand-file-name "tmp/backups/" user-emacs-directory))))
+(setopt backup-by-copying t)
+
+;; Enable when lockfiles become annoying
+;; (setopt create-lockfiles nil)
 #+end_src
 
 * External Packages
 ** Setup
-Basic ~package.el~ config
+Load lisp files from ~[user-emacs-directory]/external~
+Configure ~package.el~ and ~use-package~
 
 #+begin_src emacs-lisp
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
-(setopt use-package-always-ensure t)
-(setopt package-native-compile t)         ; this will just be ignored if native-comp isn't available
+(add-to-list 'load-path (file-name-concat user-emacs-directory "external"))
+
+(use-package package
+  :config
+  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t))
+
+;; this will just be ignored if native-comp isn't available
+(setopt package-native-compile t)
 #+end_src
 
 ** Useful random stuff
@@ -423,6 +539,7 @@ Load ~.envrc~ files from ~direnv~
 #+begin_src emacs-lisp
 (let ((nix-bin-path "/home/darius/.nix-profile/bin/"))
   (use-package envrc
+    :ensure t
     :init
     (add-to-list 'exec-path nix-bin-path)
     (setenv "PATH" (concat nix-bin-path ":" (getenv "PATH")))
@@ -435,7 +552,8 @@ Load ~.envrc~ files from ~direnv~
 Version control integration for Ibuffer
 
 #+begin_src emacs-lisp
-(use-package ibuffer-vc)
+(use-package ibuffer-vc
+  :ensure t)
 #+end_src
 
 *** Marginalia
@@ -443,6 +561,7 @@ Usful info in the minibuffer
 
 #+begin_src emacs-lisp
 (use-package marginalia
+  :ensure t
   :init (marginalia-mode))
 #+end_src
 
@@ -452,6 +571,7 @@ Making the frame background transparent via ~alpha-background~ makes the colors 
 
 #+begin_src emacs-lisp
 (use-package colorful-mode
+  :ensure t
   :custom (css-fontify-colors nil)
   :custom-face (colorful-base ((t :box nil))) ; colors have a box around them by default which looks weird
   :config (global-colorful-mode))
@@ -462,6 +582,7 @@ Highlight keywords like TODO and FIXME in comments in source code
 
 #+begin_src emacs-lisp
 (use-package hl-todo
+  :ensure t
   :hook (prog-mode . hl-todo-mode))
 #+end_src
 
@@ -470,6 +591,7 @@ Easily place multiple cursors for edits
 
 #+begin_src emacs-lisp
 (use-package multiple-cursors
+  :ensure t
   :custom ((mc/always-run-for-all t)
            (mc/cmds-to-run-once nil))
 
@@ -486,6 +608,7 @@ Read tldr pages in emacs
 
 #+begin_src emacs-lisp
 (use-package tldr
+  :ensure t
   :bind ("C-c t" . tldr))
 #+end_src
 
@@ -494,6 +617,7 @@ Read epubs in emacs
 
 #+begin_src emacs-lisp
 (use-package nov
+  :ensure t
   :defer t
   :config
   (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode)))
@@ -504,6 +628,7 @@ Grep in pdfs
 
 #+begin_src emacs-lisp
 (use-package pdfgrep
+  :ensure t
   :config (pdfgrep-mode))
 #+end_src
 
@@ -513,10 +638,12 @@ Still not 100% sure I get what it does
 
 #+begin_src emacs-lisp
 (use-package embark
+  :ensure t
   :custom (embark-mixed-indicator-delay nil)
   :bind ("C-." . embark-act))
 
-(use-package embark-consult)
+(use-package embark-consult
+  :ensure t)
 #+end_src
 
 *** CSV-mode
@@ -524,6 +651,7 @@ Prettier csv files
 
 #+begin_src emacs-lisp
 (use-package csv-mode
+  :ensure t
   :hook (csv-mode . csv-align-mode))
 #+end_src
 
@@ -532,6 +660,7 @@ Set timers
 
 #+begin_src emacs-lisp
 (use-package tmr
+  :ensure t
   :custom
   (tmr-sound-file nil))
 #+end_src
@@ -541,6 +670,7 @@ Sudoedit files a little nicer than the built-in /sudoedit::
 
 #+begin_src emacs-lisp
 (use-package sudo-edit
+  :ensure t
   :defer t)
 #+end_src
 
@@ -549,6 +679,7 @@ Expand the region
 
 #+begin_src emacs-lisp
 (use-package expand-region
+  :ensure t
   :bind ("M-j" . er/expand-region))
 #+end_src
 
@@ -557,13 +688,13 @@ Emulate a terminal
 
 #+begin_src emacs-lisp
 (use-package eat
+  :ensure t
   :custom
   (eat-kill-buffer-on-exit t)
   :config
   (add-to-list 'display-buffer-alist
       '("\\(?:\\*-eat\\*\\|.*eat.*\\)"
-	 (display-buffer-reuse-mode-window)
-	 (dedicated . t)))
+      (display-buffer-reuse-mode-window)))
   :bind
   (:map eat-semi-char-mode-map
               ("M-o" . other-window)))
@@ -574,6 +705,7 @@ Make the modeline a little prettier
 
 #+begin_src emacs-lisp
 (use-package doom-modeline
+  :ensure t
   :init (doom-modeline-mode 1)
   :custom
   (doom-modeline-height 26)
@@ -594,7 +726,14 @@ For some reason this gives a 'You are not currently on a branch' git error when 
 no idea why.
 
 #+begin_src emacs-lisp
+;; builtin-version
+;; (setopt scroll-conservatively 5)
+;; (setopt scroll-margin 1)
+;; (pixel-scroll-precision-mode 1)
+;; (setopt pixel-scroll-precision-interpolate-mice nil)
+
 (use-package ultra-scroll
+  :ensure t
   :vc (:url "https://github.com/jdtsmith/ultra-scroll" :branch "main")
   :init
   (setopt scroll-conservatively 3
@@ -608,6 +747,7 @@ Font presets (lots of them because I can't decide)
 
 #+begin_src emacs-lisp
 (use-package fontaine
+  :ensure t
   :custom
   (fontaine-presets
    '((iosevka
@@ -650,6 +790,7 @@ Jump to definition
 
 #+begin_src emacs-lisp
 (use-package dumb-jump
+  :ensure t
   :config
   (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
 #+end_src
@@ -658,8 +799,8 @@ Jump to definition
 Eldoc in a popup frame
 
 #+begin_src emacs-lisp
-(setopt eldoc-echo-area-use-multiline-p nil)
 (use-package eldoc-box
+  :ensure t
   :bind ("C-c k" . #'eldoc-box-help-at-point))
 #+end_src
 
@@ -671,6 +812,7 @@ Very nice git interface
 
 #+begin_src emacs-lisp
 (use-package magit
+  :ensure t
   :defer t
   :bind ("C-x g" . magit-status))
 #+end_src
@@ -680,6 +822,7 @@ Show uncommitted changes in the fringe
 
 #+begin_src emacs-lisp
 (use-package diff-hl
+  :ensure t
   :hook
   (magit-post-refresh . diff-hl-magit-post-refresh)
   :config
@@ -694,7 +837,11 @@ Show uncommitted changes in the fringe
 Some nice additional completing-read stuff
 
 #+begin_src emacs-lisp
+;; builtin-version
+;;(setopt xref-show-definitions-function #'xref-show-definitions-completing-read)
+
 (use-package consult
+  :ensure t
   :custom
   (xref-show-definitions-function #'consult-xref)
   (xref-show-xrefs-function #'consult-xref)
@@ -719,7 +866,7 @@ Some nice additional completing-read stuff
   ("C-S-Y"     . consult-yank-from-kill-ring)
   ;; M-s `search-map'
   ("M-s d"     . consult-fd)
-  ("M-s D"     . consult-fd-hidden)
+  ("M-s D"     . darius/consult-fd-hidden)
   ("M-s l"     . consult-line)
   ("M-s L"     . consult-line-multi)
   ("M-s r"     . consult-ripgrep)
@@ -738,6 +885,7 @@ Some nice additional completing-read stuff
   ("M-g I"     . consult-imenu-multi))
 
 (use-package consult-todo
+  :ensure t
   :after consult
   :bind ("M-s t" . consult-todo-project))
 #+end_src
@@ -747,6 +895,7 @@ Some improvements over DocView
 
 #+begin_src emacs-lisp
 (use-package pdf-tools
+  :ensure t
   :init
   (pdf-loader-install)
   :config
@@ -768,8 +917,11 @@ Some improvements over DocView
               ;; this also makes scroll-other-window work for PDFView buffers
               ([remap scroll-up-command] . pdf-view-scroll-up-or-next-page)
               ([remap scroll-down-command] . pdf-view-scroll-down-or-previous-page)
+              ("<up>" . pdf-view-previous-line-or-previous-page)
+              ("<down>" . pdf-view-next-line-or-next-page)
               ("<mouse-8>" . pdf-view-scroll-down-or-previous-page)
               ("<mouse-9>" . pdf-view-scroll-up-or-next-page)
+              ("t" . pdf-view-themed-minor-mode)
               ("M-g g" . pdf-view-goto-page)))
 #+end_src
 
@@ -810,6 +962,7 @@ Some org-mode tweaks
   (set-face-attribute 'org-cite nil :underline nil))
 
 (use-package org
+  :ensure t
   :config
   (darius/org-setup)
   (setopt org-src-preserve-indentation nil
@@ -857,6 +1010,7 @@ Some org-mode tweaks
 
 ;; Show emphasis markers like ** and some other things when point is inside them
 (use-package org-appear
+  :ensure t
   :custom
   (org-appear-autoemphasis t)
   (org-appear-autoentities t)
@@ -870,6 +1024,7 @@ Ispell is slow
 
 #+begin_src emacs-lisp
 (use-package jinx
+  :ensure t
   :config
   (dolist (hook '(text-mode-hook LaTex-mode-hook))
     (add-hook hook #'jinx-mode))
@@ -884,6 +1039,7 @@ Corfu for in-buffer completion
 
 #+begin_src emacs-lisp
 (use-package corfu
+  :ensure t
   :custom
   (corfu-auto-delay 0.1)
   (corfu-cycle t)
@@ -918,11 +1074,18 @@ Corfu for in-buffer completion
 
   :init (global-corfu-mode))
 
+(use-package nerd-icons-corfu
+  :ensure t
+  :after corfu
+  :config
+  (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))
+
 ;; Enable indentation+completion using the TAB key.
 ;; `completion-at-point' is often bound to M-TAB.
 (setopt tab-always-indent 'complete)
 
 (use-package cape
+  :ensure t
   :init
   (add-hook 'completion-at-point-functions #'cape-dabbrev)
   (add-hook 'completion-at-point-functions #'cape-file)
@@ -934,11 +1097,11 @@ Set up vertico, orderless and tweak some emacs completion defaults
 
 #+begin_src emacs-lisp
 (use-package vertico
+  :ensure t
   :init (vertico-mode))
 
 (use-package vertico-directory
   :after vertico
-  :ensure nil
   :bind (:map vertico-map
               ("DEL" . vertico-directory-delete-char)
               ("C-DEL" . vertico-directory-up)
@@ -946,6 +1109,7 @@ Set up vertico, orderless and tweak some emacs completion defaults
   :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
 
 (use-package orderless
+  :ensure t
   :init
   (setopt completion-styles '(substring orderless basic)
 	      completion-category-defaults nil
@@ -956,47 +1120,63 @@ Set up vertico, orderless and tweak some emacs completion defaults
 The most important thing tbh.
 
 #+begin_src emacs-lisp
-(add-to-list 'default-frame-alist '(alpha-background . 98)) ; a little transparency
-
-(defun darius/fix-terminal-transparency ()
-  "Removes theme background color in terminal windows"
-  (unless (display-graphic-p (selected-frame))
-    (set-face-background 'default "unspecified-bg" (selected-frame))))
-(add-hook 'window-setup-hook 'darius/fix-terminal-transparency)
-
-(defvar darius/active-theme 'dark "The currently active colorscheme variant")
+;; (add-to-list 'default-frame-alist '(alpha-background . 98)) ; a little transparency
 
 (defun darius/catppuccin-load-light ()
   (interactive)
-  (setq darius/active-theme 'light)
   (mapc #'disable-theme custom-enabled-themes)
   (catppuccin-load-flavor 'latte)
   (darius/catppuccin-face-setup))
 
 (defun darius/catppuccin-load-dark ()
   (interactive)
-  (setq darius/active-theme 'dark)
   (mapc #'disable-theme custom-enabled-themes)
   (catppuccin-load-flavor 'mocha)
+  ;; reset to default colors
+  (catppuccin-set-color 'base "#1e1e2e" 'mocha)
+  (catppuccin-set-color 'mantle "#181825" 'mocha)
+  (catppuccin-set-color 'crust "#11111b" 'mocha)
+  (catppuccin-set-color 'surface0 "#313244" 'mocha)
+  (catppuccin-set-color 'surface1 "#45475a" 'mocha)
+  (catppuccin-set-color 'surface2 "#585b70" 'mocha)
+  (catppuccin-reload)
+  (darius/catppuccin-face-setup))
+
+(defun darius/catppuccin-load-darker ()
+  (interactive)
+  (mapc #'disable-theme custom-enabled-themes)
+  (catppuccin-load-flavor 'mocha)
+  (catppuccin-set-color 'base "#1c1c1c" 'mocha)
+  (catppuccin-set-color 'mantle "#161616" 'mocha)
+  (catppuccin-set-color 'crust "#070707" 'mocha)
+  (catppuccin-set-color 'surface0 "#282828" 'mocha)
+  (catppuccin-set-color 'surface1 "#404040" 'mocha)
+  (catppuccin-set-color 'surface2 "#525252" 'mocha)
+  (catppuccin-reload)
   (darius/catppuccin-face-setup))
 
 (defun darius/catppuccin-face-setup ()
+  "Common tweaks for all catppuccin themes"
   (set-face-attribute 'line-number nil :foreground (catppuccin-color 'overlay0))
-  (set-face-attribute 'org-block nil :foreground (catppuccin-color 'text))
-  (require 'font-latex) ;; otherwise there is a face not found error
-  (set-face-attribute 'font-latex-sectioning-5-face nil :foreground (catppuccin-color 'red)))
-
-(defun darius/toggle-catppuccin-dark-light ()
-  "Switch between the dark and light catppuccin variants"
-  (interactive)
-  (pcase darius/active-theme
-    ('light (darius/catppuccin-load-dark))
-    ('dark  (darius/catppuccin-load-light))
-    (_      (message "Garbage value: %s" darius/active-theme))))
-(global-set-key (kbd "<f12>") #'darius/toggle-catppuccin-dark-light)
+  (set-face-attribute 'org-block nil :foreground (catppuccin-color 'text)))
+;;  (require 'font-latex) ;; otherwise there is a face not found error
+;;  (set-face-attribute 'font-latex-sectioning-5-face nil :foreground (catppuccin-color 'red)))
 
 (use-package catppuccin-theme
-  :config (darius/catppuccin-load-dark))
+  :ensure t)
+
+(darius/catppuccin-load-darker)         ; initial theme
+(defun darius/pick-theme ()
+  (interactive)
+  (let* ((themes '(("catppuccin-light"  . darius/catppuccin-load-light)
+                   ("catppuccin-dark"   . darius/catppuccin-load-dark)
+                   ("catppuccin-darker" . darius/catppuccin-load-darker)
+                   ("doom-dark+"        . darius/doom-dark+-setup)))
+         (choice (completing-read "Load theme: " (mapcar #'car themes)))
+         (fn (cdr (assoc choice themes))))
+    (when fn
+      (funcall fn))))
+(global-set-key (kbd "<f12>") #'darius/pick-theme)
 #+end_src
 
 ** Windows and Frames
@@ -1004,6 +1184,7 @@ Switching and moving windows
 
 #+begin_src emacs-lisp
 (use-package ace-window
+  :ensure t
   :bind (("M-O" . ace-swap-window))
   :custom
   (aw-scope 'frame))
@@ -1015,6 +1196,7 @@ Doesn't work properly if it's not all the way at the end for some reason
 
 #+begin_src emacs-lisp
 (use-package diminish
+  :ensure t
   :diminish visual-line-mode
   :diminish auto-revert-mode
   :diminish org-cdlatex-mode)
@@ -1025,11 +1207,13 @@ Simple presentations from org-mode buffers
 
 #+begin_src emacs-lisp
 (use-package visual-fill-column
+  :ensure t
   :custom
   (visual-fill-column-center-text t)
   (visual-fill-column-width 110))
 
 (use-package org-present
+  :ensure t
   :after visual-fill-column
   :config
   (defun darius/org-present-start ()
@@ -1053,6 +1237,7 @@ Automatically install tree-sitter grammars and enable the major modes
 (setopt treesit-font-lock-level 4)
 
 (use-package treesit-auto
+  :ensure t
   :after emacs ;; idk if this is really necessary
   :custom
   (treesit-auto-install 'prompt)
@@ -1101,6 +1286,7 @@ Get the [[https://github.com/tree-sitter-grammars/tree-sitter-hyprlang][language
 
 #+begin_src emacs-lisp
 (use-package hyprlang-ts-mode
+  :ensure t
   :custom (hyprlang-ts-mode-indent-offset 4))
 #+end_src
 
@@ -1122,7 +1308,8 @@ Funny orange crab
   (setenv "PATH" (concat cargo-path ":" (getenv "PATH")))
   (add-to-list 'exec-path cargo-path))
 
-(use-package rust-mode)
+(use-package rust-mode
+  :ensure t)
 #+end_src
 
 ** Haskell
@@ -1130,6 +1317,7 @@ The one and only
 
 #+begin_src emacs-lisp
 (use-package haskell-mode
+  :ensure t
   :after haskell-interactive-mode
   :custom
   (haskell-process-auto-import-loaded-modules t)
@@ -1161,6 +1349,7 @@ The one and only
         ("C-a" . 'darius/haskell-interactive-beginning-of-line)))
 
 (use-package hindent
+  :ensure t
   :after haskell-mode
   :hook (haskell-mode . hindent-mode)
   :diminish)
@@ -1174,6 +1363,7 @@ This assumes metals is installed in ~./local/bin/metals-emacs~.
 #+begin_src emacs-lisp
 (let ((coursier-bin-path "/home/darius/.local/share/coursier/bin/"))
   (use-package scala-mode
+    :ensure t
     :interpreter ("scala" . scala-mode)
     :init
     (add-to-list 'exec-path coursier-bin-path)
@@ -1182,7 +1372,8 @@ This assumes metals is installed in ~./local/bin/metals-emacs~.
                 ("C-c c" . scala-compile)
                 ("C-c r" . scala-compile))))
 
-(use-package scala-ts-mode)
+(use-package scala-ts-mode
+  :ensure t)
 #+end_src
 
 ** OCaml
@@ -1197,21 +1388,10 @@ Aims to be a bit simpler than tuareg mode and highlighting looks better.
   (add-to-list 'exec-path opam-bin-path))
 
 (use-package neocaml
+  :ensure t
   :vc (:url "https://github.com/bbatsov/neocaml" :rev :newest)
   :config
   (add-hook 'neocaml-mode-hook #'neocaml-repl-minor-mode))
-
-;; (use-package opam-switch-mode
-  ;; :hook ((coq-mode tuareg-mode) . opam-switch-mode))
-;; (use-package tuareg)
-;; (use-package dune)
-
-;; (use-package merlin
-;;   :config
-;;   (add-hook 'tuareg-mode-hook #'merlin-mode)
-;;   (add-hook 'caml-mode-hook #'merlin-mode))
-
-
 #+end_src
 
 ** Zig
@@ -1222,16 +1402,18 @@ Aims to be a bit simpler than tuareg mode and highlighting looks better.
   (setenv "PATH" (concat zig-path ":" (getenv "PATH")))
   (add-to-list 'exec-path zig-path))
 
-(use-package zig-mode)
+(use-package zig-mode
+  :ensure t)
 #+end_src
 
-** COMMENT Z3
+** Z3
 SMT solving aaaa
 For some reason this depends on flycheck which is very cringe
 
 #+begin_src emacs-lisp
-(use-package z3-mode
-  :mode "\\.smt\\'")
+(add-to-list 'load-path (file-name-concat user-emacs-directory "/external/z3-mode"))
+
+(require 'z3-mode)
 #+end_src
 
 ** Proof General
@@ -1239,6 +1421,7 @@ Coqqq
 
 #+begin_src emacs-lisp
 (use-package proof-general
+  :ensure t
   :hook (coq-mode . prettify-symbols-mode))
 #+end_src
 
@@ -1255,6 +1438,7 @@ I guess?
 
 #+begin_src emacs-lisp
 (use-package cider
+  :ensure t
   :hook (clojure-mode . cider-mode))
 #+end_src
 
@@ -1262,7 +1446,8 @@ I guess?
 Support for virtual environments
 
 #+begin_src emacs-lisp
-(use-package pyvenv)
+(use-package pyvenv
+  :ensure t)
 #+end_src
 
 ** Markdown
@@ -1271,6 +1456,7 @@ GFM mode seems to work better than markdown-ts-mode for me.
 
 #+begin_src emacs-lisp
 (use-package markdown-mode
+  :ensure t
   :custom (markdown-fontify-code-blocks-natively t)
   :mode
   ("README\\.md\\'" . gfm-mode)
@@ -1282,6 +1468,7 @@ GFM mode seems to work better than markdown-ts-mode for me.
 
 #+begin_src emacs-lisp
 (use-package nix-ts-mode
+  :ensure t
   :mode ("\\.nix\\'" . nix-ts-mode))
 #+end_src
 
@@ -1320,6 +1507,7 @@ Also requires auctex
 (add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
 
 (use-package citar
+  :ensure t
   :config
   (defun darius/open-in-zotero (citekey)
     "Open a reference item in Zotero."
@@ -1339,6 +1527,7 @@ Also requires auctex
   (:map org-mode-map :package org ("C-c b" . #'org-cite-insert)))
 
 (use-package citar-embark
+  :ensure t
   :after citar embark
   :diminish
   :custom (citar-at-point-function 'embark-act)
@@ -1348,6 +1537,7 @@ Also requires auctex
   (define-key citar-citation-map (kbd "z") #'citar-open-entry-in-zotero))
 
 (use-package cdlatex
+  :ensure t
   :custom (cdlatex-takeover-parenthesis nil)
   :hook (LaTeX-mode . turn-on-cdlatex))
 #+end_src
@@ -1357,6 +1547,7 @@ The cooler LaTeX?
 
 #+begin_src emacs-lisp
 (use-package typst-ts-mode
+  :ensure t
   :after eglot
   :config
   ;; typst-ts-mode downloads the latest stable build of tinymist (https://myriad-dreamin.github.io/tinymist/frontend/emacs.html)
@@ -1386,7 +1577,8 @@ The default lean4 mode depends on lsp-mode, so until they do eglot or none at al
 
 #+begin_src emacs-lisp
 (use-package nael
-  :vc (:url "https://codeberg.org/mekeor/nael" :branch "default")
+  :ensure t
+  :vc (:url "https://codeberg.org/mekeor/nael" :branch "release")
   :config
   (defun my-nael-setup ()
     (interactive)
@@ -1412,6 +1604,7 @@ Web stuff
 
 #+begin_src emacs-lisp
 (use-package web-mode
+  :ensure t
   :custom
   (web-mode-auto-close-style 2) ;; auto-close tags on '>'
   (web-mode-markup-indent-offset 2)
@@ -1423,13 +1616,17 @@ Web stuff
          ("\\.css\\'" . web-mode)))
 
 (use-package jtsx
+  :ensure t
   :mode (("\\.jsx?\\'" . jtsx-jsx-mode)
          ("\\.tsx\\'" . jtsx-tsx-mode)
          ("\\.ts\\'" . jtsx-typescript-mode))
   :hook ((jtsx-tsx-mode jtsx-jsx-mode) . eglot-ensure))
 
 (use-package biomejs-format
+  :ensure t
   :hook ((jtsx-tsx-mode jtsx-jsx-mode) . biomejs-format-mode))
+
+(add-to-list 'auto-mode-alist '("\\.jsonc\\'" . json-ts-mode))
 #+end_src
 
 * Custom Functions
@@ -1484,4 +1681,22 @@ This is hardcoded to foot because wayland is obviously superior.
         (call-process foot-path nil 0 nil "-D" (expand-file-name default-directory)))))
 
 (global-set-key (kbd "M-g t") 'darius/spawn-terminal-here)
+#+end_src
+
+** Maybe wrap with asterisk
+Wrap words with * for org mode
+
+#+begin_src emacs-lisp
+(defun darius/maybe-wrap-with-asterisks ()
+  "Wrap region with * and spaces, or insert * and place point in between."
+  (interactive)
+  (when (use-region-p)
+      (let ((beg (region-beginning))
+            (end (region-end)))
+        (goto-char end)
+        (insert "*")
+        (goto-char beg)))
+    (insert "*"))
+
+(define-key org-mode-map (kbd "*") #'darius/maybe-wrap-with-asterisks)
 #+end_src
