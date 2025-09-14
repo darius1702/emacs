@@ -12,21 +12,15 @@ Nativecomp, pgtk, tree-sitter, ...
 
 
 * Early init
-** No premature redisplay
-Prevent some flickering on startup
-(Doesn't really prevent any flickering)
-
-Instead of using ~inhibit-message~ you can also ~(setopt inhibit-startup-echo-area-message "$username")~.
+** No startup message
+The docs say you can ~(setq inhibit-startup-echo-area-message "$username")~ but that doesn't work for me
 
 #+begin_src emacs-lisp :tangle early-init.el
 ;; -*- lexical-binding: t -*-
-(setq-default inhibit-redisplay t
-              inhibit-message t)
+(setq-default inhibit-message t)
 (add-hook 'window-setup-hook
           (lambda ()
-            (setq-default inhibit-redisplay nil
-                          inhibit-message nil)
-            (redisplay)))
+            (setq-default inhibit-message nil)))
 #+end_src
 
 ** Faster startup
@@ -49,6 +43,7 @@ Change some variables until after startup to make emacs load faster
 
 ** Default clutter
 Adjust some default settings
+I don't know why I have this in the early-init but I moved it here at some point
 
 #+begin_src emacs-lisp :tangle early-init.el
 (setopt inhibit-startup-message t)
@@ -129,7 +124,7 @@ Change default UI settings
 
 #+begin_src emacs-lisp
 ;; remove the "GNU Emacs at [hostname]" part
-(setq frame-title-format '("%b"))
+(setopt frame-title-format '("%b"))
 
 (column-number-mode t)
 
@@ -176,6 +171,9 @@ Changes to default editing behavior
 (global-set-key (kbd "M-l") 'downcase-dwim)
 (global-set-key (kbd "M-c") 'capitalize-dwim)
 
+;; indentation+completion with TAB
+(setopt tab-always-indent 'complete)
+
 ;; read .editorconfig if present
 (editorconfig-mode t)
 
@@ -214,9 +212,14 @@ Isearch, ibuffer, imenu, ...
 (setopt switch-to-buffer-obey-display-actions t)
 
 ;; automatically revert buffers that change on disk
-(setopt global-auto-revert-non-file-buffers t
-        auto-revert-avoid-polling t
-        auto-revert-check-vc-info t)
+(use-package autorevert
+  :custom
+  (global-auto-revert-non-file-buffers t)
+  (auto-revert-avoid-polling t)
+  (auto-revert-check-vc-info t)
+  :config
+  (auto-revert-mode)
+  :diminish auto-revert-mode)
 #+end_src
 
 *** Isearch
@@ -408,9 +411,10 @@ Help popups, linting, documentation, ...
 ;; display the current function/heading/... in the modeline
 (use-package which-func
   :custom
-  (which-func-unknown ":3")
   (which-func-update-delay 0.1)
   :config
+  ;; setting this with :custom doesn't work for some reason?
+  (setopt which-func-unknown ":3")
   (which-function-mode))
 
 ;; spell check
@@ -424,7 +428,7 @@ Help popups, linting, documentation, ...
   :config
   (set-face-attribute 'Man-overstrike nil :inherit font-lock-keyword-face :bold t)
   (set-face-attribute 'Man-underline nil :inherit font-lock-string-face :underline t)
-  :bind ("C-c m" . 'man))
+  :bind ("C-c m" . man))
 #+end_src
 
 ** Proced
@@ -618,9 +622,7 @@ Read epubs in emacs
 #+begin_src emacs-lisp
 (use-package nov
   :ensure t
-  :defer t
-  :config
-  (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode)))
+  :mode ("\\.epub\\'" . nov-mode))
 #+end_src
 
 *** PDFgrep mode
@@ -1080,10 +1082,6 @@ Corfu for in-buffer completion
   :config
   (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))
 
-;; Enable indentation+completion using the TAB key.
-;; `completion-at-point' is often bound to M-TAB.
-(setopt tab-always-indent 'complete)
-
 (use-package cape
   :ensure t
   :init
@@ -1122,6 +1120,9 @@ The most important thing tbh.
 #+begin_src emacs-lisp
 ;; (add-to-list 'default-frame-alist '(alpha-background . 98)) ; a little transparency
 
+(use-package catppuccin-theme
+  :ensure t)
+
 (defun darius/catppuccin-load-light ()
   (interactive)
   (mapc #'disable-theme custom-enabled-themes)
@@ -1155,15 +1156,15 @@ The most important thing tbh.
   (catppuccin-reload)
   (darius/catppuccin-face-setup))
 
+;; TODO on first init, `font-latex' is not found
+;; because this is loaded before auctex
+;; but I also don't want to move this further down/auctex up
 (defun darius/catppuccin-face-setup ()
   "Common tweaks for all catppuccin themes"
   (set-face-attribute 'line-number nil :foreground (catppuccin-color 'overlay0))
-  (set-face-attribute 'org-block nil :foreground (catppuccin-color 'text)))
-;;  (require 'font-latex) ;; otherwise there is a face not found error
-;;  (set-face-attribute 'font-latex-sectioning-5-face nil :foreground (catppuccin-color 'red)))
-
-(use-package catppuccin-theme
-  :ensure t)
+  (set-face-attribute 'org-block nil :foreground (catppuccin-color 'text))
+  (require 'font-latex) ;; otherwise there is a face not found error
+  (set-face-attribute 'font-latex-sectioning-5-face nil :foreground (catppuccin-color 'red)))
 
 (darius/catppuccin-load-darker)         ; initial theme
 (defun darius/pick-theme ()
@@ -1198,7 +1199,6 @@ Doesn't work properly if it's not all the way at the end for some reason
 (use-package diminish
   :ensure t
   :diminish visual-line-mode
-  :diminish auto-revert-mode
   :diminish org-cdlatex-mode)
 #+end_src
 
@@ -1233,8 +1233,8 @@ Programming language specific stuff
 Automatically install tree-sitter grammars and enable the major modes
 
 #+begin_src emacs-lisp
-;; (setopt treesit-font-lock-level 3)        ; 4 is a little much
-(setopt treesit-font-lock-level 4)
+(use-package treesit
+  :custom (treesit-font-lock-level 4))
 
 (use-package treesit-auto
   :ensure t
@@ -1304,10 +1304,6 @@ Get the [[https://github.com/tree-sitter-grammars/tree-sitter-hyprlang][language
 Funny orange crab
 
 #+begin_src emacs-lisp
-(let ((cargo-path (expand-file-name "~/.cargo/bin")))
-  (setenv "PATH" (concat cargo-path ":" (getenv "PATH")))
-  (add-to-list 'exec-path cargo-path))
-
 (use-package rust-mode
   :ensure t)
 #+end_src
@@ -1324,13 +1320,6 @@ The one and only
   :init
   (setopt flymake-allowed-file-name-masks '())
   :config
-  (let ((my-ghcup-path (expand-file-name "~/.ghcup/bin")))
-    (setenv "PATH" (concat my-ghcup-path ":" (getenv "PATH")))
-    (add-to-list 'exec-path my-ghcup-path))
-  (let ((my-cabal-path (expand-file-name "~/.cabal/bin")))
-    (setenv "PATH" (concat my-cabal-path ":" (getenv "PATH")))
-    (add-to-list 'exec-path my-cabal-path))
-
   (require 'inf-haskell)                ; TODO there probably is a better way to do this than requiring it here
   (defun darius/haskell-interactive-beginning-of-line ()
     "Skip the interactive haskell prompt at the beginning of the line"
@@ -1383,10 +1372,6 @@ Aims to be a bit simpler than tuareg mode and highlighting looks better.
 
 
 #+begin_src emacs-lisp
-(let ((opam-bin-path (ignore-errors (car (process-lines "opam" "var" "bin")))))
-  (setenv "PATH" (concat opam-bin-path ":" (getenv "PATH")))
-  (add-to-list 'exec-path opam-bin-path))
-
 (use-package neocaml
   :ensure t
   :vc (:url "https://github.com/bbatsov/neocaml" :rev :newest)
@@ -1398,10 +1383,6 @@ Aims to be a bit simpler than tuareg mode and highlighting looks better.
 🦎
 
 #+begin_src emacs-lisp
-(let ((zig-path (expand-file-name "/opt/zig/")))
-  (setenv "PATH" (concat zig-path ":" (getenv "PATH")))
-  (add-to-list 'exec-path zig-path))
-
 (use-package zig-mode
   :ensure t)
 #+end_src
@@ -1626,7 +1607,8 @@ Web stuff
   :ensure t
   :hook ((jtsx-tsx-mode jtsx-jsx-mode) . biomejs-format-mode))
 
-(add-to-list 'auto-mode-alist '("\\.jsonc\\'" . json-ts-mode))
+(use-package json-ts-mode
+  :mode ("\\.jsonc\\'" . json-ts-mode))
 #+end_src
 
 * Custom Functions
