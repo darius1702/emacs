@@ -598,13 +598,13 @@ Easily place multiple cursors for edits
   :ensure t
   :custom ((mc/always-run-for-all t)
            (mc/cmds-to-run-once nil))
-
-  :bind (("C-S-c C-S-c" . mc/edit-lines)
-         ("C->" . mc/mark-next-like-this-word)
-         ("C-M->" . mc/skip-to-next-like-this)
-         ("C-<" . mc/mark-previous-like-this-word)
-         ("C-M-<" . mc/skip-to-previous-like-this)
-         ("C-c C-<" . mc/mark-all-like-this)))
+  :bind
+  ("C-S-c C-S-c" . mc/edit-lines)
+  ("C->" . mc/mark-next-like-this-word)
+  ("C-M->" . mc/skip-to-next-like-this)
+  ("C-<" . mc/mark-previous-like-this-word)
+  ("C-M-<" . mc/skip-to-previous-like-this)
+  ("C-c C-<" . mc/mark-all-like-this))
 #+end_src
 
 *** TLDR pages
@@ -931,10 +931,16 @@ Some improvements over DocView
 Some org-mode tweaks
 
 #+begin_src emacs-lisp
-(defun darius/org-setup ()
-  (setopt org-directory "~/Notes")
-  (setopt org-default-notes-file (concat org-directory "/captures.org"))
-  (setopt org-capture-templates
+(use-package org
+  :ensure t
+  :mode ("\\.org\\'" . org-mode)
+  :hook
+  (org-mode . org-indent-mode)
+  (org-mode . turn-on-org-cdlatex)
+  :custom
+  (org-directory "~/Notes")
+  (org-default-notes-file (concat org-directory "/captures.org"))
+  (org-capture-templates
           '(("t" "Todo" entry (file+headline "~/Notes/index.org" "Stuff")
              "* %?\n  %i\n")
             ("T" "Todo [with context]" entry (file+headline "~/Notes/index.org" "Stuff")
@@ -943,72 +949,38 @@ Some org-mode tweaks
              "* %?\n  %i \n%U\n")
             ("K" "KITcar [with context]" entry (file+headline "~/Notes/kitcar.org" "Stuff")
              "* %?\n  %i \n%U\n %a\n")))
-  (setopt org-refile-targets
+  (org-refile-targets
           '((nil :maxlevel . 3)
             (org-agenda-files :maxlevel . 3)))
-  (setopt org-agenda-span 'month)
-  (setopt org-agenda-files '("~/Notes"))
-  (setopt org-todo-keywords '((sequence "TODO(t)" "IN-PROGRESS(p)" "WAITING(w)" "|" "DONE(d)")))
-  (setopt org-use-fast-todo-selection 'expert)
-  (setopt org-return-follows-link t)
-  (setopt org-src-window-setup 'plain)
-  (setopt calendar-date-style 'european)
-  (setopt calendar-week-start-day 1)
-  (setopt org-imenu-depth 7)
-  (setopt org-highlight-latex-and-related '(latex))
-  (setopt org-hide-emphasis-markers t)    ; I will probably regret this?
-  (setopt org-M-RET-may-split-line '((default . nil)))
-  (setopt org-bookmark-names-plist nil) ;; stop org-capture from creating bookmarks
+  (org-agenda-span 'month)
+  (org-agenda-files '("~/Notes"))
+  (org-todo-keywords '((sequence "TODO(t)" "IN-PROGRESS(p)" "WAITING(w)" "|" "DONE(d)")))
+  (org-use-fast-todo-selection 'expert)
+  (org-return-follows-link t)
+  (org-src-window-setup 'plain)
+  (calendar-date-style 'european)
+  (calendar-week-start-day 1)
+  (org-imenu-depth 7)
+  (org-highlight-latex-and-related '(latex))
+  (org-hide-emphasis-markers t)    ; org-appear my beloved (see below)
+  (org-M-RET-may-split-line '((default . nil)))
+  (org-bookmark-names-plist nil) ;; stop org-capture from creating bookmarks
+  (org-src-preserve-indentation nil)
+  (org-edit-src-content-indentation 0)
+  :config
+  ;; follow links to files in the same window
   (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
+  ;; remove some decoration from links
   (set-face-attribute 'org-cite-key nil :underline nil)
-  (set-face-attribute 'org-cite nil :underline nil))
-
-(use-package org
-  :ensure t
-  :config
-  (darius/org-setup)
-  (setopt org-src-preserve-indentation nil
-          org-edit-src-content-indentation 0))
-
-;; For some reason there is an error if I set this using use-package's :hook inside the org block
-(add-hook 'org-mode-hook 'org-indent-mode)
-(add-hook 'org-mode-hook 'turn-on-org-cdlatex)
-
-;; Timer
-(setq darius/timer-running nil)
-(add-hook 'org-timer-start-hook '(lambda () (setq darius/timer-running t)))
-(add-hook 'org-timer-stop-hook '(lambda () (setq darius/timer-running nil)))
-(defun darius/org-timer-toggle ()
-  (interactive)
-  (if darius/timer-running
-      (org-timer-stop)
-    (org-timer-start)))
-
-;; Global keymaps
-(setq darius/global-org-keymap (make-sparse-keymap))
-(define-key global-map (kbd "C-c o") darius/global-org-keymap)
-(define-key darius/global-org-keymap (kbd "a") 'org-agenda)
-(define-key darius/global-org-keymap (kbd "g") 'consult-org-agenda)
-(define-key darius/global-org-keymap (kbd "c") 'org-capture)
-(define-key darius/global-org-keymap (kbd "t") 'darius/org-timer-toggle)
-
-;; Org-specific maps
-(setq darius/local-org-keymap (make-sparse-keymap))
-(define-key org-mode-map (kbd "C-c o") darius/local-org-keymap)
-(define-key darius/local-org-keymap (kbd "h") 'consult-org-heading)
-(define-key darius/local-org-keymap (kbd "s") 'org-store-link)
-
-;; Fix weird internal link behavior
-(with-eval-after-load 'org-ctags (setopt org-open-link-functions nil))
-
-(use-package org-latex-preview
-  :after org-mode                       ; this is org-mode, not org with the custom build for latex preview
-  :ensure nil
-  :config
-  (setopt org-latex-preview-live t)
-  (plist-put org-latex-preview-appearance-options :page-width 1.0)
-  (plist-put org-latex-preview-appearance-options :scale 2.5)
-  (add-hook 'org-mode-hook 'org-latex-preview-auto-mode))
+  (set-face-attribute 'org-cite nil :underline nil)
+  :bind
+  ("C-c o a" . org-agenda)
+  ("C-c o A" . consult-org-agenda)
+  ("C-c o t" . org-todo-list)
+  ("C-c o c" . org-capture)
+  (:map org-mode-map
+        ("C-c o s" . org-store-link)
+        ("C-c o h" . consult-org-heading)))
 
 ;; Show emphasis markers like ** and some other things when point is inside them
 (use-package org-appear
@@ -1019,6 +991,12 @@ Some org-mode tweaks
   (org-appear-autosubmarkers t)
   (org-appear-inside-latex t)
   :hook (org-mode . org-appear-mode))
+
+(use-package org-modern
+  :ensure t
+  :after org
+  :custom (org-modern-star nil)
+  :hook (org-mode . org-modern-mode))
 #+end_src
 
 ** Spell checking
@@ -1030,8 +1008,9 @@ Ispell is slow
   :config
   (dolist (hook '(text-mode-hook LaTex-mode-hook))
     (add-hook hook #'jinx-mode))
-  :bind (("M-$" . jinx-correct)
-         ("C-M-$" . jinx-languages))
+  :bind
+  ("M-$" . jinx-correct)
+  ("C-M-$" . jinx-languages)
   :custom
   (add-hook 'org-mode-hook #'(lambda () (jinx-mode 0))))
 #+end_src
@@ -1121,7 +1100,9 @@ The most important thing tbh.
 ;; (add-to-list 'default-frame-alist '(alpha-background . 98)) ; a little transparency
 
 (use-package catppuccin-theme
-  :ensure t)
+  :ensure t
+  :config
+  (add-hook 'org-mode-hook  #'darius/catppuccin-org-setup))
 
 (defun darius/catppuccin-load-light ()
   (interactive)
@@ -1134,9 +1115,9 @@ The most important thing tbh.
   (mapc #'disable-theme custom-enabled-themes)
   (catppuccin-load-flavor 'mocha)
   ;; reset to default colors
-  (catppuccin-set-color 'base "#1e1e2e" 'mocha)
-  (catppuccin-set-color 'mantle "#181825" 'mocha)
-  (catppuccin-set-color 'crust "#11111b" 'mocha)
+  (catppuccin-set-color 'base     "#1e1e2e" 'mocha)
+  (catppuccin-set-color 'mantle   "#181825" 'mocha)
+  (catppuccin-set-color 'crust    "#11111b" 'mocha)
   (catppuccin-set-color 'surface0 "#313244" 'mocha)
   (catppuccin-set-color 'surface1 "#45475a" 'mocha)
   (catppuccin-set-color 'surface2 "#585b70" 'mocha)
@@ -1147,9 +1128,9 @@ The most important thing tbh.
   (interactive)
   (mapc #'disable-theme custom-enabled-themes)
   (catppuccin-load-flavor 'mocha)
-  (catppuccin-set-color 'base "#1c1c1c" 'mocha)
-  (catppuccin-set-color 'mantle "#161616" 'mocha)
-  (catppuccin-set-color 'crust "#070707" 'mocha)
+  (catppuccin-set-color 'base     "#1c1c1c" 'mocha)
+  (catppuccin-set-color 'mantle   "#161616" 'mocha)
+  (catppuccin-set-color 'crust    "#070707" 'mocha)
   (catppuccin-set-color 'surface0 "#282828" 'mocha)
   (catppuccin-set-color 'surface1 "#404040" 'mocha)
   (catppuccin-set-color 'surface2 "#525252" 'mocha)
@@ -1162,17 +1143,20 @@ The most important thing tbh.
 (defun darius/catppuccin-face-setup ()
   "Common tweaks for all catppuccin themes"
   (set-face-attribute 'line-number nil :foreground (catppuccin-color 'overlay0))
-  (set-face-attribute 'org-block nil :foreground (catppuccin-color 'text))
   (require 'font-latex) ;; otherwise there is a face not found error
   (set-face-attribute 'font-latex-sectioning-5-face nil :foreground (catppuccin-color 'red)))
 
+(defun darius/catppuccin-org-setup ()
+  "Set up org-mode specific faces"
+  (set-face-attribute 'org-block nil :foreground (catppuccin-color 'text)))
+
 (darius/catppuccin-load-darker)         ; initial theme
+
 (defun darius/pick-theme ()
   (interactive)
   (let* ((themes '(("catppuccin-light"  . darius/catppuccin-load-light)
                    ("catppuccin-dark"   . darius/catppuccin-load-dark)
-                   ("catppuccin-darker" . darius/catppuccin-load-darker)
-                   ("doom-dark+"        . darius/doom-dark+-setup)))
+                   ("catppuccin-darker" . darius/catppuccin-load-darker)))
          (choice (completing-read "Load theme: " (mapcar #'car themes)))
          (fn (cdr (assoc choice themes))))
     (when fn
@@ -1186,7 +1170,7 @@ Switching and moving windows
 #+begin_src emacs-lisp
 (use-package ace-window
   :ensure t
-  :bind (("M-O" . ace-swap-window))
+  :bind ("M-O" . ace-swap-window)
   :custom
   (aw-scope 'frame))
 #+end_src
@@ -1458,6 +1442,7 @@ Work with citations
 Also requires auctex
 
 ~citar-open-entry-in-zotero~ relies on the BetterBibTex plugin for Zotero
+
 #+begin_src emacs-lisp
 (defun darius/LaTeX-mode-setup ()
   (progn
@@ -1496,15 +1481,15 @@ Also requires auctex
     (citar-open-entry-in-zotero citekey))
   :custom
   (citar-file-open-functions '(("html" . citar-file-open-external) ("pdf" . citar-file-open-external) (t . find-file)))
-  (org-cite-global-bibliography '("~/Documents/library.bib"))
   (org-cite-insert-processor 'citar)
   (org-cite-follow-processor 'citar)
   (org-cite-activate-processor 'citar)
-  (citar-bibliography org-cite-global-bibliography)
+  (citar-bibliography "~/Documents/library.bib")
   :hook
   (LaTeX-mode . citar-capf-setup)
   (org-mode . citar-capf-setup)
-  :bind ("C-c z" . 'citar-insert-citation)
+  :bind
+  ("C-c z" . 'citar-insert-citation)
   (:map org-mode-map :package org ("C-c b" . #'org-cite-insert)))
 
 (use-package citar-embark
@@ -1680,5 +1665,5 @@ Wrap words with * for org mode
         (goto-char beg)))
     (insert "*"))
 
-(define-key org-mode-map (kbd "*") #'darius/maybe-wrap-with-asterisks)
+(add-hook 'org-mode-hook #'(lambda () (define-key org-mode-map (kbd "*") #'darius/maybe-wrap-with-asterisks)))
 #+end_src
