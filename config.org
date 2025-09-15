@@ -20,7 +20,11 @@ The docs say you can ~(setq inhibit-startup-echo-area-message "$username")~ but 
 (setq-default inhibit-message t)
 (add-hook 'window-setup-hook
           (lambda ()
-            (setq-default inhibit-message nil)))
+            (setq-default inhibit-message nil)
+            ;; The echo area is too small and will resize the first time a message is displayed
+            ;; when messages are inhibited during startup.
+            ;; I find that kind of annoying, so just message "" here so it resizes immediately.
+            (message "")))
 #+end_src
 
 ** Faster startup
@@ -483,7 +487,7 @@ For running in ~-nw~ mode
 (defun darius/disable-terminal-background ()
   "Removes theme background color in terminal windows"
   (unless (display-graphic-p (selected-frame))
-   (set-face-attribute 'default nil :background "unspecified-bg" )))
+    (set-face-attribute 'default nil :background "unspecified-bg" )))
 
 (add-hook 'window-setup-hook 'darius/disable-terminal-background)
 #+end_src
@@ -695,11 +699,11 @@ Emulate a terminal
   (eat-kill-buffer-on-exit t)
   :config
   (add-to-list 'display-buffer-alist
-      '("\\(?:\\*-eat\\*\\|.*eat.*\\)"
-      (display-buffer-reuse-mode-window)))
+               '("\\(?:\\*-eat\\*\\|.*eat.*\\)"
+                 (display-buffer-reuse-mode-window)))
   :bind
   (:map eat-semi-char-mode-map
-              ("M-o" . other-window)))
+        ("M-o" . other-window)))
 #+end_src
 
 *** Doom modeline
@@ -941,17 +945,17 @@ Some org-mode tweaks
   (org-directory "~/Notes")
   (org-default-notes-file (concat org-directory "/captures.org"))
   (org-capture-templates
-          '(("t" "Todo" entry (file+headline "~/Notes/index.org" "Stuff")
-             "* %?\n  %i\n")
-            ("T" "Todo [with context]" entry (file+headline "~/Notes/index.org" "Stuff")
-             "* %?\n  %i\n  %a\n")
-            ("k" "KITcar" entry (file+headline "~/Notes/kitcar.org" "Stuff")
-             "* %?\n  %i \n%U\n")
-            ("K" "KITcar [with context]" entry (file+headline "~/Notes/kitcar.org" "Stuff")
-             "* %?\n  %i \n%U\n %a\n")))
+   '(("t" "Todo" entry (file+headline "~/Notes/index.org" "Stuff")
+      "* %?\n  %i\n")
+     ("T" "Todo [with context]" entry (file+headline "~/Notes/index.org" "Stuff")
+      "* %?\n  %i\n  %a\n")
+     ("k" "KITcar" entry (file+headline "~/Notes/kitcar.org" "Stuff")
+      "* %?\n  %i \n%U\n")
+     ("K" "KITcar [with context]" entry (file+headline "~/Notes/kitcar.org" "Stuff")
+      "* %?\n  %i \n%U\n %a\n")))
   (org-refile-targets
-          '((nil :maxlevel . 3)
-            (org-agenda-files :maxlevel . 3)))
+   '((nil :maxlevel . 3)
+     (org-agenda-files :maxlevel . 3)))
   (org-agenda-span 'month)
   (org-agenda-files '("~/Notes"))
   (org-todo-keywords '((sequence "TODO(t)" "IN-PROGRESS(p)" "WAITING(w)" "|" "DONE(d)")))
@@ -995,7 +999,9 @@ Some org-mode tweaks
 (use-package org-modern
   :ensure t
   :after org
-  :custom (org-modern-star nil)
+  :custom
+  (org-modern-star nil)
+  (org-modern-block-fringe nil) ;; doesn't work with org-indent-mode
   :hook (org-mode . org-modern-mode))
 #+end_src
 
@@ -1281,7 +1287,7 @@ Get the [[https://github.com/tree-sitter-grammars/tree-sitter-hyprlang][language
 (add-to-list 'major-mode-remap-alist '(c-mode . c-ts-mode))
 (add-to-list 'major-mode-remap-alist '(c++-mode . c++-ts-mode))
 (add-to-list 'major-mode-remap-alist
-              '(c-or-c++-mode . c-or-c++-ts-mode))\
+             '(c-or-c++-mode . c-or-c++-ts-mode))\
 #+end_src
 
 ** Rust
@@ -1644,26 +1650,37 @@ This is hardcoded to foot because wayland is obviously superior.
   (interactive "P")
   (if (not arg)
       (eat-project-other-window)
-      (if-let* ((foot-path (executable-find "foot")))
+    (if-let* ((foot-path (executable-find "foot")))
         (call-process foot-path nil 0 nil "-D" (expand-file-name default-directory)))))
 
 (global-set-key (kbd "M-g t") 'darius/spawn-terminal-here)
 #+end_src
 
 ** Maybe wrap with asterisk
-Wrap words with * for org mode
+Wrap the active region with a character, like '(' in electric-pair-mode
 
 #+begin_src emacs-lisp
-(defun darius/maybe-wrap-with-asterisks ()
-  "Wrap region with * and spaces, or insert * and place point in between."
-  (interactive)
+(defun darius/maybe-wrap-with-char (char)
+  "If region is active, wrap it with CHAR, else insert CHAR.
+   If called interactively, prompt for a character to use."
+  (interactive "cChar: ")
   (when (use-region-p)
-      (let ((beg (region-beginning))
-            (end (region-end)))
-        (goto-char end)
-        (insert "*")
-        (goto-char beg)))
-    (insert "*"))
+    (let ((beg (region-beginning))
+          (end (region-end)))
+      (goto-char end)
+      (insert char)
+      (goto-char beg)))
+  (insert char))
 
-(add-hook 'org-mode-hook #'(lambda () (define-key org-mode-map (kbd "*") #'darius/maybe-wrap-with-asterisks)))
+(defun darius/maybe-wrap-org-setup (key)
+  "Bind KEY in `org-mode-map' to maybe wrap."
+  (define-key org-mode-map key
+              (lambda () (interactive) (darius/maybe-wrap-with-char (string-to-char key)))))
+
+;; wrap with * and ~ for `org-mode'
+(with-eval-after-load 'org
+  (add-hook 'org-mode-hook
+            (lambda ()
+              (darius/maybe-wrap-org-setup "*")
+              (darius/maybe-wrap-org-setup "~"))))
 #+end_src
