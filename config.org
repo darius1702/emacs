@@ -831,8 +831,8 @@ Show uncommitted changes in the fringe
   :ensure t
   :hook
   (magit-post-refresh . diff-hl-magit-post-refresh)
-  :config
-  (global-diff-hl-mode)
+  :hook
+  (prog-mode . diff-hl-mode)
   :bind
   ("C-c v n" . diff-hl-next-hunk)
   ("C-c v p" . diff-hl-previous-hunk)
@@ -1000,7 +1000,8 @@ Some org-mode tweaks
   :ensure t
   :after org
   :custom
-  (org-modern-star nil)
+  (org-modern-star 'fold)
+  (org-modern-fold-stars '(("" . "")))
   (org-modern-block-fringe nil) ;; doesn't work with org-indent-mode
   :hook (org-mode . org-modern-mode))
 #+end_src
@@ -1219,6 +1220,7 @@ Simple presentations from org-mode buffers
 
 * Languages
 Programming language specific stuff
+
 ** Treesitter
 Automatically install tree-sitter grammars and enable the major modes
 
