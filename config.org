@@ -247,7 +247,7 @@ Navigate buffer via headings/definitions/...
 #+end_src
 
 *** Ibuffer
-Ibuffer and other buffer things
+Ibuffer for buffer management
 
 #+begin_src emacs-lisp
 (use-package ibuffer
@@ -259,6 +259,7 @@ Ibuffer and other buffer things
   :custom
   (ibuffer-expert t)                    ; don't prompt for everything
   (ibuffer-display-summary nil)
+  (ibuffer-human-readable-size t)
   (ibuffer-saved-filter-groups
    (quote (("default"
             ("Code" (or (derived-mode . prog-mode) (mode . ess-mode)
