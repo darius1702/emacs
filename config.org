@@ -97,6 +97,8 @@ Tweaks that don't fit the other categories
 (setopt view-read-only t
         view-inhibit-help-message t)
 
+(setopt shell-command-prompt-show-cwd t)
+
 (setopt vc-follow-symlinks t)
 
 (setopt read-process-output-max (* 1024 1024 4))
@@ -136,8 +138,13 @@ Change default UI settings
         scroll-margin 1)
 
 (use-package paren
-  :custom (show-paren-when-point-inside-paren t)
-  :config (show-paren-mode t))
+  :custom
+  (show-paren-delay 0.1)
+  (show-paren-when-point-inside-paren t)
+  (show-paren-when-point-in-periphery t)
+  (show-paren-context-when-offscreen  'overlay)
+  :config
+  (show-paren-mode t))
 
 ;; only show tab bar with >1 tabs
 (setopt tab-bar-show 1)
@@ -180,6 +187,10 @@ Changes to default editing behavior
 
 ;; indentation+completion with TAB
 (setopt tab-always-indent 'complete)
+
+(use-package dabbrev
+  :custom
+  (dabbrev-case-replace nil))
 
 ;; read .editorconfig if present
 (editorconfig-mode t)
@@ -263,6 +274,7 @@ Ibuffer for buffer management
   (ibuffer-expert t)                    ; don't prompt for everything
   (ibuffer-display-summary nil)
   (ibuffer-human-readable-size t)
+  (ibuffer-show-empty-filter-groups nil)
   (ibuffer-saved-filter-groups
    (quote (("default"
             ("Code" (or (derived-mode . prog-mode) (mode . ess-mode)
@@ -305,6 +317,9 @@ File browsing on crack
   (dired-listing-switches "-alh")
   (dired-kill-when-opening-new-dired-buffer t)
   (dired-auto-revert-buffer t)
+  (dired-do-revert-buffer t)
+  (dired-hide-details-hide-symlink-targets nil)
+  (dired-create-destination-dirs 'ask)
   :hook (dired-mode . dired-hide-details-mode)
   :bind
   ("<mouse-8>" . dired-jump) ; back button
@@ -350,8 +365,8 @@ Bookmarks are saved in the ~bookmarks.eld~ file
 #+begin_src emacs-lisp
 (global-set-key (kbd "M-g b") 'bookmark-jump)
 
-;; don't show bookmarks in buffers
-(setopt bookmark-fringe-mark nil)
+(setopt bookmark-fringe-mark nil ; don't show bookmarks in buffers
+        bookmark-save-flag 1)    ; don't wait until emacs exits to save bookmarks
 #+end_src
 
 ** Minibuffer things
@@ -367,7 +382,8 @@ Setup minibuffer and ~completing-read~
 (setopt enable-recursive-minibuffers t
         minibuffer-default-prompt-format " [%s]"
         read-minibuffer-restore-windows nil
-        minibuffer-prompt-properties '(read-only t cursor-intangible t face minibuffer-prompt))
+        minibuffer-prompt-properties '(read-only t cursor-intangible t face minibuffer-prompt)
+        minibuffer-follows-selected-frame nil)
 
 (minibuffer-electric-default-mode t)
 (minibuffer-depth-indicate-mode t)
@@ -390,21 +406,16 @@ Changes to compile and comint buffers
   ("M-N" . next-error)
   ("M-P" . previous-error))
 
-(setopt comint-prompt-read-only t)
+(use-package comint
+  :custom
+  (comint-input-ignoredups t)
+  (comint-prompt-read-only t))
 #+end_src
 
 ** Help and Docs
 Help popups, linting, documentation, ...
 
 #+begin_src emacs-lisp
-(use-package flymake
-  :bind
-  ("M-n" . flymake-goto-next-error)
-  ("M-p" . flymake-goto-prev-error))
-
-(setopt eldoc-idle-delay 0.3)
-(setopt eldoc-echo-area-use-multiline-p nil)
-
 (setopt suggest-key-bindings nil
         echo-keystrokes 0.01
         echo-keystrokes-help nil)
@@ -412,6 +423,28 @@ Help popups, linting, documentation, ...
 ;; make apropos search more extensively
 (setopt apropos-do-all t)
 
+;; show character name in  C-x =
+(setopt what-cursor-show-names t)
+
+;; syntax checking
+(use-package flymake
+  :bind
+  ("M-n" . flymake-goto-next-error)
+  ("M-p" . flymake-goto-prev-error))
+
+;; jumping to definition etc.
+(use-package xref
+  :custom
+  (xref-history-storage 'xref-window-local-history)
+  (xref-search-program 'ripgrep))
+
+;; help in the echo area
+(use-package eldoc
+  :custom
+  (eldoc-idle-delay 0.3)
+  (eldoc-echo-area-use-multiline-p nil))
+
+;; show help for key bindings
 (use-package which-key
   :custom (which-key-lighter "")
   :config (which-key-mode))
@@ -427,16 +460,22 @@ Help popups, linting, documentation, ...
 
 ;; spell check
 ;; Arch linux provides /usr/share/dict/words in the extra/words package
-(setopt ispell-dictionary "en_US"
-        ispell-program-name "hunspell"
-        ispell-alternate-dictionary "/usr/share/dict/words")
+(use-package ispell
+  :custom
+  (ispell-dictionary "en_US")
+  (ispell-program-name "hunspell")
+  (spell-alternate-dictionary "/usr/share/dict/words"))
 
 ;; manual pages (colorschemes can override the colors)
 (use-package man
+  :bind
+  ("C-c m" . man)
+  :custom
+  (Man-notify-method 'thrifty) ; reuse existing manpage window if possible
   :config
   (set-face-attribute 'Man-overstrike nil :inherit font-lock-keyword-face :bold t)
-  (set-face-attribute 'Man-underline nil :inherit font-lock-string-face :underline t)
-  :bind ("C-c m" . man))
+  (set-face-attribute 'Man-underline nil :inherit font-lock-string-face :underline t))
+
 #+end_src
 
 ** Proced
@@ -511,8 +550,9 @@ alias l ls
 alias gs magit-status
 #+end_src
 
-** Annoying files
+** Auto-saves and backups
 Disble all annoying auto-generated files and make ~custom-set-variables~ go to their own file
+Also disable auto-save messages
 
 #+begin_src emacs-lisp
 (make-directory (expand-file-name "tmp/auto-saves/" user-emacs-directory) t)
@@ -930,8 +970,9 @@ Some improvements over DocView
 #+end_src
 
 ** Org
-Some org-mode tweaks
+Settings for org-mode and related packages
 
+*** org-mode
 #+begin_src emacs-lisp
 (use-package org
   :ensure t
@@ -941,7 +982,7 @@ Some org-mode tweaks
   (org-mode . turn-on-org-cdlatex)
   :custom
   (org-directory "~/Notes")
-  (org-default-notes-file (concat org-directory "/captures.org"))
+  (org-default-notes-file (concat org-directory "/index.org"))
   (org-capture-templates
    '(("t" "Todo" entry (file+headline "~/Notes/index.org" "Stuff")
       "* %?\n  %i\n")
@@ -959,7 +1000,6 @@ Some org-mode tweaks
   (org-todo-keywords '((sequence "TODO(t)" "IN-PROGRESS(p)" "WAITING(w)" "|" "DONE(d)")))
   (org-use-fast-todo-selection 'expert)
   (org-return-follows-link t)
-  (org-src-window-setup 'plain)
   (calendar-date-style 'european)
   (calendar-week-start-day 1)
   (org-imenu-depth 7)
@@ -967,6 +1007,7 @@ Some org-mode tweaks
   (org-hide-emphasis-markers t)    ; org-appear my beloved (see below)
   (org-M-RET-may-split-line '((default . nil)))
   (org-bookmark-names-plist nil) ; stop org-capture from creating bookmarks
+  (org-src-window-setup 'plain)
   (org-src-preserve-indentation nil)
   (org-edit-src-content-indentation 0)
   (org-ellipsis "...") ; setting this explicitly makes it show in a different face
