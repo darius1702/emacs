@@ -132,6 +132,9 @@ Change default UI settings
 
 (column-number-mode t)
 
+(setopt scroll-preserve-screen-position t
+        scroll-margin 1)
+
 (use-package paren
   :custom (show-paren-when-point-inside-paren t)
   :config (show-paren-mode t))
@@ -757,32 +760,26 @@ Font presets (lots of them because I can't decide)
   :ensure t
   :custom
   (fontaine-presets
-   '((iosevka
-      :default-family "Iosevka NFP"
+   '((sf-mono
+      :default-family "SFMono Nerd Font Mono"
       :default-weight regular
       :default-height 130
       :fixed-pitch-weight nil ; falls back to :default-weight
-      :variable-pitch-family "Iosevka Aile"
-      :variable-pitch-weight semilight
+      :variable-pitch-family "Inter"
+      :variable-pitch-height 100
       :bold-family nil
       :italic-family nil)
      (adwaita
-      :inherit iosevka
+      :inherit sf-mono
       :default-family "AdwaitaMono Nerd Font Propo")
-     (sf-mono
-      :inherit iosevka
-      :default-family "SFMono Nerd Font Mono")
-     (iosevka-large
-      :inherit iosevka
-      :default-height 180)
      (sf-mono-large
-      :inherit iosevka
+      :inherit sf-mono
       :default-height 165
-      :default-family "SFMono Nerd Font Mono")
+      :variable-pitch-height 155)
      (adwaita-large
-      :inherit iosevka
+      :inherit adwaita
       :default-height 165
-      :default-family "AdwaitaMono Nerd Font Propo")))
+      :variable-pitch-height 155)))
   :config
   (defun darius/reapply-fontaine ()
     (fontaine-set-preset (or (fontaine-restore-latest-preset) 'present)))
@@ -969,9 +966,10 @@ Some org-mode tweaks
   (org-highlight-latex-and-related '(latex))
   (org-hide-emphasis-markers t)    ; org-appear my beloved (see below)
   (org-M-RET-may-split-line '((default . nil)))
-  (org-bookmark-names-plist nil) ;; stop org-capture from creating bookmarks
+  (org-bookmark-names-plist nil) ; stop org-capture from creating bookmarks
   (org-src-preserve-indentation nil)
   (org-edit-src-content-indentation 0)
+  (org-ellipsis "...") ; setting this explicitly makes it show in a different face
   :config
   ;; follow links to files in the same window
   (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
@@ -986,8 +984,12 @@ Some org-mode tweaks
   (:map org-mode-map
         ("C-c o s" . org-store-link)
         ("C-c o h" . consult-org-heading)))
+#+end_src
 
-;; Show emphasis markers like ** and some other things when point is inside them
+*** org-appear
+Show emphasis markers like ** and some other things when point is inside them
+
+#+begin_src emacs-lisp
 (use-package org-appear
   :ensure t
   :custom
@@ -996,15 +998,44 @@ Some org-mode tweaks
   (org-appear-autosubmarkers t)
   (org-appear-inside-latex t)
   :hook (org-mode . org-appear-mode))
+#+end_src
 
+*** org-modern
+Nicer visuals
+#+begin_src emacs-lisp
 (use-package org-modern
   :ensure t
   :after org
   :custom
   (org-modern-star 'fold)
-  (org-modern-fold-stars '(("" . "")))
+  (org-modern-fold-stars '(("" . "")))
   (org-modern-block-fringe nil) ;; doesn't work with org-indent-mode
   :hook (org-mode . org-modern-mode))
+#+end_src
+
+*** org-present
+Simple presentations from org-mode buffers
+
+#+begin_src emacs-lisp
+(use-package visual-fill-column
+  :ensure t
+  :custom
+  (visual-fill-column-center-text t)
+  (visual-fill-column-width 110))
+
+(use-package org-present
+  :ensure t
+  :after visual-fill-column
+  :config
+  (defun darius/org-present-start ()
+    (visual-fill-column-mode 1)
+    (read-only-mode 1))
+  (defun darius/org-present-end ()
+    (visual-fill-column-mode 0)
+    (read-only-mode 0))
+  ;; this doesn't work with :hook for some reason
+  :hook ((org-present-mode . darius/org-present-start)
+         (org-present-mode-quit . darius/org-present-end)))
 #+end_src
 
 ** Spell checking
@@ -1194,31 +1225,6 @@ Doesn't work properly if it's not all the way at the end for some reason
   :diminish org-cdlatex-mode)
 #+end_src
 
-** Org Presentations
-Simple presentations from org-mode buffers
-
-#+begin_src emacs-lisp
-(use-package visual-fill-column
-  :ensure t
-  :custom
-  (visual-fill-column-center-text t)
-  (visual-fill-column-width 110))
-
-(use-package org-present
-  :ensure t
-  :after visual-fill-column
-  :config
-  (defun darius/org-present-start ()
-    (visual-fill-column-mode 1)
-    (read-only-mode 1))
-  (defun darius/org-present-end ()
-    (visual-fill-column-mode 0)
-    (read-only-mode 0))
-  ;; this doesn't work with :hook for some reason
-  :hook ((org-present-mode . darius/org-present-start)
-         (org-present-mode-quit . darius/org-present-end)))
-#+end_src
-
 * Languages
 Programming language specific stuff
 
@@ -1367,7 +1373,7 @@ Aims to be a bit simpler than tuareg mode and highlighting looks better.
 #+begin_src emacs-lisp
 (use-package neocaml
   :ensure t
-  :vc (:url "https://github.com/bbatsov/neocaml" :rev :newest)
+  :vc (:url "https://github.com/bbatsov/neocaml" :branch "main")
   :config
   (add-hook 'neocaml-mode-hook #'neocaml-repl-minor-mode))
 #+end_src
@@ -1546,7 +1552,7 @@ Requires ~sail-mode.el~ somewhere in the load-path
 (add-hook 'sail-mode-hook #'(lambda () (setq-local tab-width 2)))
 #+end_src
 
-** Lean
+** COMMENT Lean
 I love lean.
 The default lean4 mode depends on lsp-mode, so until they do eglot or none at all, pull in this fork.
 
