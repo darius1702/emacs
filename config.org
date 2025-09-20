@@ -111,18 +111,18 @@ Tweaks that don't fit the other categories
 Unbind some defaults and bind some more keys
 
 #+begin_src emacs-lisp
-(global-unset-key (kbd "C-x C-c"))            ; stop accidentally quitting emacs
-(global-unset-key (kbd "C-x C-z"))            ; stop accidentally suspending emacs
-(global-unset-key (kbd "C-z"))                ; stop accidentally suspending emacs (other binding)
+(keymap-unset global-map "C-x C-c")            ; stop accidentally quitting emacs
+(keymap-unset global-map "C-x C-z")            ; stop accidentally suspending emacs
+(keymap-unset global-map "C-z")                ; stop accidentally suspending emacs (other binding)
 
-(global-set-key (kbd "C-x C-z") 'find-grep)   ; something more useful
+(keymap-set global-map "C-x C-z" #'find-grep) ; something more use
 
-(global-set-key (kbd "M-o") 'other-window)
-(global-set-key (kbd "C-M-o") 'window-layout-transpose)
+(keymap-set global-map "M-o" #'other-window)
+(keymap-set global-map "C-M-o" #'window-layout-transpose)
 
-(global-unset-key (kbd "C-<wheel-up>"))
-(global-unset-key (kbd "C-<wheel-down>"))
-(global-unset-key (kbd "<pinch>"))
+(keymap-unset global-map "C-<wheel-up>")
+(keymap-unset global-map "C-<wheel-down>")
+(keymap-unset global-map "<pinch>")
 #+end_src
 
 ** User interface
@@ -177,13 +177,13 @@ Changes to default editing behavior
 
 #+begin_src emacs-lisp
 ;; this is `zap-to-char' by default
-(global-set-key (kbd "M-z") 'zap-up-to-char)
+(keymap-set global-map "M-z" #'zap-up-to-char)
 
 ;; Act on region if active, otherwise on line/word
-(global-set-key (kbd "M-D") 'duplicate-dwim)
-(global-set-key (kbd "M-u") 'upcase-dwim)
-(global-set-key (kbd "M-l") 'downcase-dwim)
-(global-set-key (kbd "M-c") 'capitalize-dwim)
+(keymap-set global-map "M-D" #'duplicate-dwim)
+(keymap-set global-map "M-u" #'upcase-dwim)
+(keymap-set global-map "M-l" #'downcase-dwim)
+(keymap-set global-map "M-c" #'capitalize-dwim)
 
 ;; indentation+completion with TAB
 (setopt tab-always-indent 'complete)
@@ -224,8 +224,8 @@ Isearch, ibuffer, imenu, ...
 *** Keybinds and misc
 
 #+begin_src emacs-lisp
-(global-set-key (kbd "C-;") 'switch-to-buffer)
-(global-set-key (kbd "C-<tab>") 'mode-line-other-buffer)
+(keymap-set global-map "C-;" #'switch-to-buffer)
+(keymap-set global-map "C-<tab>" #'mode-line-other-buffer)
 
 (setopt switch-to-buffer-obey-display-actions t)
 
@@ -363,7 +363,7 @@ Remember recently visited files
 Bookmarks are saved in the ~bookmarks.eld~ file
 
 #+begin_src emacs-lisp
-(global-set-key (kbd "M-g b") 'bookmark-jump)
+(keymap-set global-map "M-g b" #'bookmark-jump)
 
 (setopt bookmark-fringe-mark nil ; don't show bookmarks in buffers
         bookmark-save-flag 1)    ; don't wait until emacs exits to save bookmarks
@@ -1241,7 +1241,7 @@ The most important thing tbh.
          (fn (cdr (assoc choice themes))))
     (when fn
       (funcall fn))))
-(global-set-key (kbd "<f12>") #'darius/pick-theme)
+(keymap-set global-map "<f12>" #'darius/pick-theme)
 #+end_src
 
 ** Windows and Frames
@@ -1298,7 +1298,46 @@ Language server stuff
   (eglot-events-buffer-size 0)          ; deprecated?
   (eglot-events-buffer-config '(:size 0 :format short))
   (jsonrpc-event-hook nil)
+  :bind
+  (:map eglot-mode-map ; see :config for prefix maps
+        ;; C-c e a -> code-actions
+        ;; C-c e g -> find
+        ;; C-c e s -> show
+        ("C-c e TAB" . eglot-format)
+        ("C-c e i" . eglot-inlay-hints-mode)
+        ("C-c e l" . eglot-list-connections)
+        ("C-c e r" . eglot-rename))
   :config
+  ;; couldn't get this nested keymap to work with use-package :c
+  (defvar-keymap darius/eglot-code-actions-map
+    :doc "Bindings for eglot code actions"
+    "a" #'eglot-code-actions
+    "e" #'eglot-code-action-extract
+    "i" #'eglot-code-action-inline
+    "o" #'eglot-code-action-organize-imports
+    "q" #'eglot-code-action-quickfix
+    "r" #'eglot-code-action-rewrite)
+  (keymap-set eglot-mode-map "C-c e a" darius/eglot-code-actions-map)
+
+  (defvar-keymap darius/eglot-find-map
+    :doc "Bindings to find definition/declaration/type/... via eglot"
+    "d" #'eglot-find-declaration
+    "i" #'eglot-find-implementation
+    "t" #'eglot-find-typeDefinition)
+  (keymap-set eglot-mode-map "C-c e f" darius/eglot-find-map)
+
+  (defvar-keymap darius/eglot-show-map
+    :doc "Bindings to show call/type hierarchy via eglot"
+    "c" #'eglot-show-call-hierarchy
+    "t" #'eglot-show-type-hierarchy)
+  (keymap-set eglot-mode-map "C-c e s" darius/eglot-show-map)
+
+  ;; which-key hints for the new maps
+  (which-key-add-keymap-based-replacements eglot-mode-map
+    "C-c e a" `("code-actions" . ,darius/eglot-code-actions-map)
+    "C-c e f" `("goto" . ,darius/eglot-find-map)
+    "C-c e s" `("show" . ,darius/eglot-show-map))
+
   (fset #'jsonrpc--log-event #'ignore)
   (add-to-list 'eglot-server-programs
                `((scala-mode scala-ts-mode)
@@ -1687,7 +1726,7 @@ The ~table~ thing makes completing-read keep the original order of the list pass
          (selection (completing-read "Jump: " table nil t)))
     (find-file selection)))
 
-(global-set-key (kbd "M-g z") 'darius/zoxide-find-file)
+(keymap-set global-map "M-g z" #'darius/zoxide-find-file)
 #+end_src
 
 ** Spawn terminal here
@@ -1703,7 +1742,7 @@ This is hardcoded to foot because wayland is obviously superior.
     (if-let* ((foot-path (executable-find "foot")))
         (call-process foot-path nil 0 nil "-D" (expand-file-name default-directory)))))
 
-(global-set-key (kbd "M-g t") 'darius/spawn-terminal-here)
+(keymap-set global-map "M-g t" #'darius/spawn-terminal-here)
 #+end_src
 
 ** Maybe wrap with asterisk
