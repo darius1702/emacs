@@ -1051,6 +1051,10 @@ Nicer visuals
   (org-modern-star 'fold)
   (org-modern-fold-stars '(("" . "")))
   (org-modern-block-fringe nil) ;; doesn't work with org-indent-mode
+  (org-modern-checkbox
+   '((88 . "󰄲")   ; done
+     (45 . "󰡖")   ; in-progress
+     (32 . ""))) ; todo
   :hook (org-mode . org-modern-mode))
 #+end_src
 
@@ -1185,13 +1189,11 @@ The most important thing tbh.
   (add-hook 'org-mode-hook  #'darius/catppuccin-org-setup))
 
 (defun darius/catppuccin-load-light ()
-  (interactive)
   (mapc #'disable-theme custom-enabled-themes)
   (catppuccin-load-flavor 'latte)
   (darius/catppuccin-face-setup))
 
 (defun darius/catppuccin-load-dark ()
-  (interactive)
   (mapc #'disable-theme custom-enabled-themes)
   (catppuccin-load-flavor 'mocha)
   ;; reset to default colors
@@ -1205,7 +1207,6 @@ The most important thing tbh.
   (darius/catppuccin-face-setup))
 
 (defun darius/catppuccin-load-darker ()
-  (interactive)
   (mapc #'disable-theme custom-enabled-themes)
   (catppuccin-load-flavor 'mocha)
   (catppuccin-set-color 'base     "#1c1c1c" 'mocha)
@@ -1220,11 +1221,12 @@ The most important thing tbh.
 ;; TODO on first init, `font-latex' is not found
 ;; because this is loaded before auctex
 ;; but I also don't want to move this further down/auctex up
+;; maybe the `with-eval-after-load' fixes it? I'm too lazy to test
 (defun darius/catppuccin-face-setup ()
   "Common tweaks for all catppuccin themes"
   (set-face-attribute 'line-number nil :foreground (catppuccin-color 'overlay0))
-  (require 'font-latex) ;; otherwise there is a face not found error
-  (set-face-attribute 'font-latex-sectioning-5-face nil :foreground (catppuccin-color 'red)))
+  (with-eval-after-load 'font-latex
+    (set-face-attribute 'font-latex-sectioning-5-face nil :foreground (catppuccin-color 'red))))
 
 (defun darius/catppuccin-org-setup ()
   "Set up org-mode specific faces"
@@ -1772,4 +1774,29 @@ Wrap the active region with a character, like '(' in electric-pair-mode
             (lambda ()
               (darius/maybe-wrap-org-setup "*")
               (darius/maybe-wrap-org-setup "~"))))
+#+end_src
+
+** Swap semicolon and dash
+In lisp-based modes and the minibuffer, I type ~-~ a lot more than ~;~
+Most use-cases for semincolons are covered by ~comment-line~ and ~comment-dwim~
+
+#+begin_src emacs-lisp
+(defun darius/insert-dash-or-semicolon (arg)
+  (interactive "P")
+  (if (not arg)
+      (insert "-")
+    (insert ";")))
+
+(define-minor-mode darius/dash-semicolon-minor-mode
+  "When pressing the ; key, insert a - unless called with a prefix argument"
+  :global nil
+  :initial-value nil
+  :lighter " :3"
+  :keymap '((";" . darius/insert-dash-or-semicolon)))
+
+(dolist (mode '(minibuffer-setup-hook
+                emacs-lisp-mode-hook
+                ielm-mode-hook
+                org-mode-hook))
+  (add-hook mode #'darius/dash-semicolon-minor-mode))
 #+end_src
