@@ -118,7 +118,9 @@ Unbind some defaults and bind some more keys
 (keymap-set global-map "C-x C-z" #'find-grep) ; something more use
 
 (keymap-set global-map "M-o" #'other-window)
-(keymap-set global-map "C-M-o" #'window-layout-transpose)
+(keymap-set global-map "M-O" #'other-window-backward)
+
+(keymap-set global-map "C-M-S-o" #'window-layout-transpose)
 
 (keymap-unset global-map "C-<wheel-up>")
 (keymap-unset global-map "C-<wheel-down>")
@@ -1225,6 +1227,7 @@ The most important thing tbh.
 (defun darius/catppuccin-face-setup ()
   "Common tweaks for all catppuccin themes"
   (set-face-attribute 'line-number nil :foreground (catppuccin-color 'overlay0))
+  (set-face-attribute 'minibuffer-nonselected nil :foreground (catppuccin-color 'red) :background 'unspecified)
   (with-eval-after-load 'font-latex
     (set-face-attribute 'font-latex-sectioning-5-face nil :foreground (catppuccin-color 'red))))
 
@@ -1252,7 +1255,7 @@ Switching and moving windows
 #+begin_src emacs-lisp
 (use-package ace-window
   :ensure t
-  :bind ("M-O" . ace-swap-window)
+  :bind ("C-M-o" . ace-swap-window)
   :custom
   (aw-scope 'frame))
 #+end_src
