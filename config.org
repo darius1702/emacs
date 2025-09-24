@@ -717,15 +717,6 @@ Set timers
   (tmr-sound-file nil))
 #+end_src
 
-*** Sudoedit
-Sudoedit files a little nicer than the built-in /sudoedit::
-
-#+begin_src emacs-lisp
-(use-package sudo-edit
-  :ensure t
-  :defer t)
-#+end_src
-
 *** Expand region
 Expand the region
 
