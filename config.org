@@ -167,11 +167,15 @@ Change default UI settings
 ;; zoom text in smaller increments
 (setopt text-scale-mode-step 1.05)
 
-;; what to show in `whitespace-mode'
-(setopt whitespace-style '(face tabs spaces trailing
-                                space-before-tab newline
-                                indentation empty space-after-tab
-                                space-mark tab-mark))
+;; indicate lines exceeding fill-colum
+(setopt display-fill-column-indicator-warning t)
+
+(use-package whitespace
+  :custom
+  (whitespace-line-column nil) ; use `fill-column'
+  (whitespace-style '(face trailing tabs indentatinon
+                                space-before-tab space-after-tab
+                                tab-mark space-mark empty)))
 #+end_src
 
 ** Editing and Formatting
@@ -186,6 +190,9 @@ Changes to default editing behavior
 (keymap-set global-map "M-u" #'upcase-dwim)
 (keymap-set global-map "M-l" #'downcase-dwim)
 (keymap-set global-map "M-c" #'capitalize-dwim)
+
+;; continue comment on new line
+(keymap-set prog-mode-map "M-RET" #'comment-indent-new-line)
 
 ;; indentation+completion with TAB
 (setopt tab-always-indent 'complete)
@@ -398,7 +405,7 @@ Changes to compile and comint buffers
 (use-package compile
   :custom
   (compilation-max-output-line-length 800)
-  (compilation-scroll-output t)
+  (compilation-scroll-output 'first-error)
   (compile-command "")
   :hook
   (compilation-filter . ansi-color-compilation-filter)
@@ -457,8 +464,7 @@ Help popups, linting, documentation, ...
   (which-func-update-delay 0.1)
   :config
   ;; setting this with :custom doesn't work for some reason?
-  (setopt which-func-unknown ":3")
-  (which-function-mode))
+  (setopt which-func-unknown ":3"))
 
 ;; spell check
 ;; Arch linux provides /usr/share/dict/words in the extra/words package
@@ -684,6 +690,17 @@ Grep in pdfs
   :config (pdfgrep-mode))
 #+end_src
 
+*** ace-window
+Switching and moving windows
+
+#+begin_src emacs-lisp
+(use-package ace-window
+  :ensure t
+  :bind ("C-M-o" . ace-swap-window)
+  :custom
+  (aw-scope 'frame))
+#+end_src
+
 *** Embark
 Very cool
 Still not 100% sure I get what it does
@@ -838,7 +855,8 @@ Eldoc in a popup frame
 #+begin_src emacs-lisp
 (use-package eldoc-box
   :ensure t
-  :bind ("C-c k" . #'eldoc-box-help-at-point))
+  ;; override `view-hello-file'
+  :bind ("C-h h" . #'eldoc-box-help-at-point))
 #+end_src
 
 ** Git
@@ -874,7 +892,7 @@ Show uncommitted changes in the fringe
 Some nice additional completing-read stuff
 
 #+begin_src emacs-lisp
-;; builtin-version
+;; builtin alternative for consult-xref
 ;;(setopt xref-show-definitions-function #'xref-show-definitions-completing-read)
 
 (use-package consult
@@ -894,11 +912,9 @@ Some nice additional completing-read stuff
     (interactive)
     (let* ((consult-fd-args (s-concat consult-fd-args " --hidden")))
       (call-interactively 'consult-fd)))
-
   :hook
   (minibuffer-setup . (lambda () (local-set-key (kbd "M-r") #'consult-history)))
   (eshell-mode . (lambda () (keymap-set eshell-prompt-mode-map "M-r" #'consult-history)))
-
   :bind
   ("C-S-Y"     . consult-yank-from-kill-ring)
   ;; M-s `search-map'
@@ -921,6 +937,7 @@ Some nice additional completing-read stuff
   ("M-g i"     . consult-imenu)
   ("M-g I"     . consult-imenu-multi))
 
+;; use consult to search for TODO, NOTE, etc
 (use-package consult-todo
   :ensure t
   :after consult
@@ -1093,7 +1110,10 @@ Ispell is slow
 #+end_src
 
 ** Completion at point
-Corfu for in-buffer completion
+Completion invoked by ~complete-symbol~ etc
+
+*** Corfu
+Completion
 
 #+begin_src emacs-lisp
 (use-package corfu
@@ -1119,9 +1139,7 @@ Corfu for in-buffer completion
              completion-cycle-threshold completion-cycling)
          (consult-completion-in-region beg end table pred)))))
   (add-to-list 'corfu-continue-commands #'corfu-move-to-minibuffer)
-
-  ;; Stop stealing my keybinds you weirdo
-  :bind
+  :bind ; Stop stealing my keybinds you weirdo
   (:map corfu-map
         ("RET" . nil)
         ([remap move-beginning-of-line] . nil)
@@ -1129,15 +1147,25 @@ Corfu for in-buffer completion
         ([remap next-line] . nil)
         ([remap previous-line] . nil)
         ("M-m" . 'corfu-move-to-minibuffer))
-
   :init (global-corfu-mode))
+#+end_src
 
+*** Corfu nerd icons
+Pretty icons, still not sure if I like this
+
+#+begin_src emacs-lisp
 (use-package nerd-icons-corfu
   :ensure t
   :after corfu
   :config
   (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))
+#+end_src
 
+*** CAPE
+Completion At Point Extensions
+Makes corfu also complete filenames and consider dabbrev
+
+#+begin_src emacs-lisp
 (use-package cape
   :ensure t
   :init
@@ -1238,17 +1266,6 @@ The most important thing tbh.
     (when fn
       (funcall fn))))
 (keymap-set global-map "<f12>" #'darius/pick-theme)
-#+end_src
-
-** Windows and Frames
-Switching and moving windows
-
-#+begin_src emacs-lisp
-(use-package ace-window
-  :ensure t
-  :bind ("C-M-o" . ace-swap-window)
-  :custom
-  (aw-scope 'frame))
 #+end_src
 
 ** Diminish
