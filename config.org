@@ -1279,16 +1279,10 @@ Automatically install tree-sitter grammars and enable the major modes
 
 #+begin_src emacs-lisp
 (use-package treesit
-  :custom (treesit-font-lock-level 4))
-
-(use-package treesit-auto
-  :ensure t
-  :after emacs ;; idk if this is really necessary
   :custom
-  (treesit-auto-install 'prompt)
-  :config
-  (treesit-auto-add-to-auto-mode-alist 'all)
-  (global-treesit-auto-mode))
+  (treesit-enabled-modes t)             ; turn on all tree-sitter modes
+  (treesit-auto-install-grammar 'ask)
+  (treesit-font-lock-level 4))
 #+end_src
 
 ** Eglot Setup
@@ -1374,22 +1368,20 @@ Get the [[https://github.com/tree-sitter-grammars/tree-sitter-hyprlang][language
   :custom (hyprlang-ts-mode-indent-offset 4))
 #+end_src
 
-** COMMENT C and C++
+** C and C++
 
 #+begin_src emacs-lisp
-(setopt c-ts-mode-enable-doxygen t)
-(add-to-list 'major-mode-remap-alist '(c-mode . c-ts-mode))
-(add-to-list 'major-mode-remap-alist '(c++-mode . c++-ts-mode))
-(add-to-list 'major-mode-remap-alist
-             '(c-or-c++-mode . c-or-c++-ts-mode))\
+(use-package c-ts-mode
+  :custom (c-ts-mode-enable-doxygen t))
 #+end_src
 
 ** Rust
 Funny orange crab
 
 #+begin_src emacs-lisp
-(use-package rust-mode
-  :ensure t)
+(use-package rust-ts-mode
+  :custom
+  (rust-ts-mode-fontify-number-suffix-as-type t))
 #+end_src
 
 ** Haskell
@@ -1452,8 +1444,6 @@ This assumes metals is installed in ~./local/bin/metals-emacs~.
 ** OCaml
 Neocaml downloads a treesitter grammar for .ml and .mli files automatically.
 Aims to be a bit simpler than tuareg mode and highlighting looks better.
-# Assumes the ~merlin~, ~dune~, and ~tuareg~ packages are installed in the current opam switch.
-
 
 #+begin_src emacs-lisp
 (use-package neocaml
