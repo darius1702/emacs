@@ -12,7 +12,7 @@ Nativecomp, pgtk, tree-sitter, ...
 
 
 * Early init
-** No startup message
+** No startup message spam
 The docs say you can ~(setq inhibit-startup-echo-area-message "$username")~ but that doesn't work for me
 
 #+begin_src emacs-lisp :tangle early-init.el
@@ -25,24 +25,34 @@ The docs say you can ~(setq inhibit-startup-echo-area-message "$username")~ but 
             ;; when messages are inhibited during startup.
             ;; I find that kind of annoying, so just message "" here so it resizes immediately.
             (message "")))
+
+(setopt inhibit-startup-message t
+        initial-scratch-message nil
+        server-client-instructions nil)
 #+end_src
 
 ** Faster startup
-Change some variables until after startup to make emacs load faster
+This makes emacs start a little faster, or maybe I am just imagining things
 
 #+begin_src emacs-lisp :tangle early-init.el
-(setopt gc-cons-threshold (eval-when-compile (* 5 1024 1024 1024)))
-
 (defvar darius/file-name-handler-alist file-name-handler-alist)
 (setopt file-name-handler-alist nil)
 
-(defvar darius/vc-handled-backends vc-handled-backends)
-(setopt vc-handled-backends nil)
-
 (add-hook 'emacs-startup-hook
           (lambda ()
-            (setopt file-name-handler-alist darius/file-name-handler-alist
-                    vc-handled-backends     darius/vc-handled-backends)))
+            (setopt file-name-handler-alist darius/file-name-handler-alist)))
+#+end_src
+
+** Garbage collection
+I find it really annoying when I have tiny stutters while scrolling due to GC.
+This is probably a very ugly solution but it has worked for me so far:
+Set ~gc-cons-threshold~ really high to make emacs not consider doing GC on its own.
+When emacs is idle for 2 seconds, manually trigger a GC.
+This way the GC pause doesn't happen while I am interacting with the UI.
+
+#+begin_src emacs-lisp :tangle early-init.el
+(setopt gc-cons-threshold (eval-when-compile (* 5 1024 1024 1024)))
+(run-with-idle-timer 2 t (lambda () (garbage-collect)))
 #+end_src
 
 ** Default clutter
@@ -50,20 +60,19 @@ Adjust some default settings
 I don't know why I have this in the early-init but I moved it here at some point
 
 #+begin_src emacs-lisp :tangle early-init.el
-(setopt inhibit-startup-message t)
+(setopt use-dialog-box nil
+        use-short-answers +)
+
 (setopt native-comp-async-report-warnings-errors nil)
-(setopt initial-scratch-message nil)
-(setopt server-client-instructions nil)
-(tool-bar-mode 0)
-(menu-bar-mode 0)
-(scroll-bar-mode 0)
-(tooltip-mode 0)
-(blink-cursor-mode 0)
-(setopt frame-resize-pixelwise t)
-(setopt use-dialog-box nil)
-(setopt use-short-answers t)
-(winner-mode t)                         ; window layout history
-(undelete-frame-mode t)
+
+(tool-bar-mode -1)
+(menu-bar-mode -1)
+(scroll-bar-mode -1)
+(tooltip-mode -1)
+(blink-cursor-mode -1)
+
+(winner-mode 1)                         ; window layout history
+(undelete-frame-mode 1)
 #+end_src
 
 * Builtin stuff
@@ -88,10 +97,6 @@ Tweaks that don't fit the other categories
 (setopt read-buffer-completion-ignore-case t
         read-file-name-completion-ignore-case t
         completion-ignore-case t)
-
-;; collect garbage when idle for 2 seconds
-;; I don't like it when gc makes scrolling lag
-(run-with-idle-timer 2 t (lambda () (garbage-collect)))
 
 ;; make read-only buffers use `view-mode'
 (setopt view-read-only t
@@ -132,7 +137,8 @@ Change default UI settings
 
 #+begin_src emacs-lisp
 ;; remove the "GNU Emacs at [hostname]" part
-(setopt frame-title-format '("%b"))
+(setopt frame-title-format '("%b")
+        frame-resize-pixelwise t)
 
 (column-number-mode t)
 
@@ -207,7 +213,7 @@ Changes to default editing behavior
 (setq-default indent-tabs-mode nil)
 (setq-default tab-width 4)
 
-(add-to-list 'write-file-functions 'delete-trailing-whitespace)
+(add-to-list 'write-file-functions #'delete-trailing-whitespace)
 
 (setopt require-final-newline t)
 
@@ -437,6 +443,8 @@ Help popups, linting, documentation, ...
 
 ;; syntax checking
 (use-package flymake
+  :custom
+  (flymake-wrap-around nil)
   :bind
   ("M-n" . flymake-goto-next-error)
   ("M-p" . flymake-goto-prev-error))
@@ -813,10 +821,10 @@ Font presets (lots of them because I can't decide)
    '((sf-mono
       :default-family "SFMono Nerd Font Mono"
       :default-weight regular
-      :default-height 130
+      :default-height 110
       :fixed-pitch-weight nil ; falls back to :default-weight
-      :variable-pitch-family "Inter"
-      :variable-pitch-height 100
+      :variable-pitch-family "IBM Plex Sans"
+      :variable-pitch-height 120
       :bold-family nil
       :italic-family nil)
      (adwaita
@@ -952,13 +960,14 @@ Some improvements over DocView
   :ensure t
   :init
   (pdf-loader-install)
+  :custom
+  (pdf-view-continuous nil) ;; don't auto-switch to the next/previous page when scrolling
+  (pdf-annot-default-annotation-properties '((t (label . "Darius Schefer")) (text (icon . "Comment"))))
+  (pdf-view-use-scaling t)
+  (pdf-view-resize-factor 1.1)
   :config
   (setq-default pdf-view-display-size 'fit-page)
   (add-to-list 'revert-without-query ".pdf")
-  (setopt pdf-view-continuous nil) ;; don't auto-switch to the next/previous page when scrolling
-  (setopt pdf-annot-default-annotation-properties '((t (label . "Darius Schefer")) (text (icon . "Comment"))))
-  (setopt pdf-view-use-scaling t)
-  (setopt pdf-view-resize-factor 1.1)
   (push
    '(".*\\.pdf$" . (nil (reusable-frames . t)
                         (inhibit-switch-frame . t)))
@@ -1349,19 +1358,19 @@ Language server stuff
   (add-to-list 'eglot-server-programs
                `((scala-mode scala-ts-mode)
                  . ,(alist-get 'scala-mode eglot-server-programs)))
-  (add-to-list 'eglot-server-programs
-               '((c-mode c++-mode c-ts-mode c++-ts-mode)
-                 . ("clangd"
-                    "-j=16"
-                    "--log=error"
-                    "--malloc-trim"
-                    "--background-index"
-                    "--clang-tidy"
-                    "--cross-file-rename"
-                    "--completion-style=detailed"
-                    "--pch-storage=memory"
-                    "--header-insertion=never"
-                    "--header-insertion-decorators=0"))) ; I hope this does what I want it to
+  ;; (add-to-list 'eglot-server-programs
+  ;;              '((c-mode c++-mode c-ts-mode c++-ts-mode)
+  ;;                . ("clangd"
+  ;;                   "-j=16"
+  ;;                   "--log=error"
+  ;;                   "--malloc-trim"
+  ;;                   "--background-index"
+  ;;                   "--clang-tidy"
+  ;;                   "--cross-file-rename"
+  ;;                   "--completion-style=detailed"
+  ;;                   "--pch-storage=memory"
+  ;;                   "--header-insertion=never"
+  ;;                   "--header-insertion-decorators=0"))) ; I hope this does what I want it to
   :hook (LaTeX-mode . eglot-ensure))
 #+end_src
 
@@ -1800,4 +1809,18 @@ Most use-cases for semincolons are covered by ~comment-line~ and ~comment-dwim~
                 ielm-mode-hook
                 org-mode-hook))
   (add-hook mode #'darius/dash-semicolon-minor-mode))
+#+end_src
+
+** Switch buffer or delete window
+Use ~C-;~ to bring up a buffer prompt or delete the current window with prefix argument
+
+#+begin_src emacs-lisp
+(defun darius/switch-buffer-or-delete-window (arg)
+  "Call `switch-to-buffer' or `delete-window' if called with prefix argument"
+  (interactive "P")
+  (if (not arg)
+      (call-interactively #'switch-to-buffer)
+    (delete-window)))
+
+(keymap-set global-map "C-;" #'darius/switch-buffer-or-delete-window)
 #+end_src
