@@ -1747,12 +1747,20 @@ This is hardcoded to foot because wayland is obviously superior.
 
 #+begin_src emacs-lisp
 (defun darius/spawn-terminal-here (arg)
-  "Open an *eat* buffer in the current project spawn a terminal window (foot) in the current directory when called with prefix argument"
+  "Open an *eat* buffer in the current project if called without prefix.
+If called with one C-u open a regular *eat* in the other window.
+If called with two C-u's, spawn a terminal window (foot) in the current directory."
   (interactive "P")
-  (if (not arg)
-      (eat-project-other-window)
+  (cond
+   ((null arg)
+    (eat-project-other-window))
+   ((equal arg '(4))
+    (eat-other-window))
+   ((equal arg '(16))
     (if-let* ((foot-path (executable-find "foot")))
-        (call-process foot-path nil 0 nil "-D" (expand-file-name default-directory)))))
+        (call-process foot-path nil 0 nil "-D" (expand-file-name default-directory))))
+   (t ; fallback
+    (eat-other-window))))
 
 (keymap-set global-map "M-g t" #'darius/spawn-terminal-here)
 #+end_src
