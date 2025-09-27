@@ -61,7 +61,7 @@ I don't know why I have this in the early-init but I moved it here at some point
 
 #+begin_src emacs-lisp :tangle early-init.el
 (setopt use-dialog-box nil
-        use-short-answers +)
+        use-short-answers t)
 
 (setopt native-comp-async-report-warnings-errors nil)
 
@@ -291,16 +291,16 @@ Ibuffer for buffer management
   (ibuffer-human-readable-size t)
   (ibuffer-show-empty-filter-groups nil)
   (ibuffer-saved-filter-groups
-   (quote (("default"
-            ("Code" (or (derived-mode . prog-mode) (mode . ess-mode)
-                        (mode . compilation-mode)))
-            ("LaTeX" (filename . "\\.tex$"))
-            ("Dired" (mode . dired-mode))
-            ("Org" (mode . org-mode))
-            ("Pdf" (mode . pdf-view-mode))
-            ("Help" (or (mode . help-mode) (mode . Man-mode)))
-            ("Git" (name . "^magit"))
-            ("Misc" (name . "^\\**.*\\*$"))))))
+   '((("default"
+       ("Code" (or (derived-mode . prog-mode) (mode . ess-mode)
+                   (mode . compilation-mode)))
+       ("LaTeX" (filename . "\\.tex$"))
+       ("Dired" (mode . dired-mode))
+       ("Org" (mode . org-mode))
+       ("Pdf" (mode . pdf-view-mode))
+       ("Help" (or (mode . help-mode) (mode . Man-mode)))
+       ("Git" (name . "^magit"))
+       ("Misc" (name . "^\\**.*\\*$"))))))
   (ibuffer-formats
    '((mark modified read-only vc-status-mini " "
            (name 18 18 :left :elide)
@@ -1032,7 +1032,7 @@ Settings for org-mode and related packages
   (org-ellipsis "...") ; setting this explicitly makes it show in a different face
   :config
   ;; follow links to files in the same window
-  (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
+  (setcdr (assoc 'file org-link-frame-setup) 'find-file)
   ;; remove some decoration from links
   (set-face-attribute 'org-cite-key nil :underline nil)
   (set-face-attribute 'org-cite nil :underline nil)
