@@ -116,20 +116,31 @@ Tweaks that don't fit the other categories
 Unbind some defaults and bind some more keys
 
 #+begin_src emacs-lisp
-(keymap-unset global-map "C-x C-c")            ; stop accidentally quitting emacs
-(keymap-unset global-map "C-x C-z")            ; stop accidentally suspending emacs
-(keymap-unset global-map "C-z")                ; stop accidentally suspending emacs (other binding)
+(keymap-global-unset "C-x C-c")            ; stop accidentally quitting emacs
+(keymap-global-unset "C-x C-z")            ; stop accidentally suspending emacs
+(keymap-global-unset "C-h g")              ; really
+(keymap-global-unset "C-z")                ; stop accidentally suspending emacs (other binding)
 
-(keymap-set global-map "C-x C-z" #'find-grep) ; something more use
+(keymap-global-set "M-o" #'other-window)
+(keymap-global-set "M-O" #'other-window-backward)
+(keymap-global-set "C-M-S-o" #'window-layout-transpose)
+#+end_src
 
-(keymap-set global-map "M-o" #'other-window)
-(keymap-set global-map "M-O" #'other-window-backward)
+*** Mouse and Trackpad
+Make right click behave like left click and make the middle button only paste with a prefix
+Also I keep accidentally triggering pinch-to-zoom and ctrl+mousewheel on my laptop
 
-(keymap-set global-map "C-M-S-o" #'window-layout-transpose)
+#+begin_src emacs-lisp
+(keymap-global-set "<mouse-3>" #'mouse-set-point)
+(keymap-global-set "<down-mouse-3>" #'mouse-drag-region)
+(keymap-global-set "<drag-mouse-3>" #'mouse-set-region)
 
-(keymap-unset global-map "C-<wheel-up>")
-(keymap-unset global-map "C-<wheel-down>")
-(keymap-unset global-map "<pinch>")
+(keymap-global-set "<mouse-2>"
+            #'(lambda (arg) (interactive "P") (when arg (mouse-yank-primary))))
+
+(keymap-global-unset "C-<wheel-up>")
+(keymap-global-unset "C-<wheel-down>")
+(keymap-global-unset "<pinch>")
 #+end_src
 
 ** User interface
@@ -189,13 +200,16 @@ Changes to default editing behavior
 
 #+begin_src emacs-lisp
 ;; this is `zap-to-char' by default
-(keymap-set global-map "M-z" #'zap-up-to-char)
+(keymap-global-set "M-z" #'zap-up-to-char)
 
 ;; Act on region if active, otherwise on line/word
-(keymap-set global-map "M-D" #'duplicate-dwim)
-(keymap-set global-map "M-u" #'upcase-dwim)
-(keymap-set global-map "M-l" #'downcase-dwim)
-(keymap-set global-map "M-c" #'capitalize-dwim)
+(keymap-global-set "M-D" #'duplicate-dwim)
+(keymap-global-set "M-u" #'upcase-dwim)
+(keymap-global-set "M-l" #'downcase-dwim)
+(keymap-global-set "M-c" #'capitalize-dwim)
+
+;; join line with next line
+(keymap-global-set "C-c j" #'join-line)
 
 ;; continue comment on new line
 (keymap-set prog-mode-map "M-RET" #'comment-indent-new-line)
@@ -239,8 +253,8 @@ Isearch, ibuffer, imenu, ...
 *** Keybinds and misc
 
 #+begin_src emacs-lisp
-(keymap-set global-map "C-;" #'switch-to-buffer)
-(keymap-set global-map "C-<tab>" #'mode-line-other-buffer)
+(keymap-global-set "C-;" #'switch-to-buffer)
+(keymap-global-set "C-<tab>" #'mode-line-other-buffer)
 
 (setopt switch-to-buffer-obey-display-actions t)
 
@@ -378,7 +392,7 @@ Remember recently visited files
 Bookmarks are saved in the ~bookmarks.eld~ file
 
 #+begin_src emacs-lisp
-(keymap-set global-map "M-g b" #'bookmark-jump)
+(keymap-global-set "M-g b" #'bookmark-jump)
 
 (setopt bookmark-fringe-mark nil ; don't show bookmarks in buffers
         bookmark-save-flag 1)    ; don't wait until emacs exits to save bookmarks
@@ -440,6 +454,19 @@ Help popups, linting, documentation, ...
 
 ;; show character name in  C-x =
 (setopt what-cursor-show-names t)
+
+;; make mouse side buttons go back and forth in help and info buffers
+(use-package help-mode
+  :bind
+  (:map help-mode-map
+        ("<mouse-8>" . help-go-back)
+        ("<mouse-9>" . help-go-forward)))
+
+(use-package info
+  :bind
+  (:map Info-mode-map
+        ("<mouse-8>" . Info-history-back)
+        ("<mouse-9>" . Info-history-forward)))
 
 ;; syntax checking
 (use-package flymake
@@ -611,7 +638,6 @@ Load ~.envrc~ files from ~direnv~
     :init
     (add-to-list 'exec-path nix-bin-path)
     (setenv "PATH" (concat nix-bin-path ":" (getenv "PATH")))
-    ;; :bind (:map envrc-mode-map ("C-c e" . envrc-command-map))
     :custom (envrc-none-lighter nil)
     :hook (after-init . envrc-global-mode)))
 #+end_src
@@ -776,7 +802,7 @@ Make the modeline a little prettier
   :ensure t
   :init (doom-modeline-mode 1)
   :custom
-  (doom-modeline-height 26)
+  (doom-modeline-height 20)
   (doom-modeline-bar-width 4)
   (doom-modeline-minor-modes nil) ;; nil is the default but otherwise I forget this exists
   (doom-modeline-icon nil)
@@ -802,7 +828,6 @@ no idea why.
 
 (use-package ultra-scroll
   :ensure t
-  :vc (:url "https://github.com/jdtsmith/ultra-scroll" :branch "main")
   :init
   (setopt scroll-conservatively 3
           scroll-margin 0) ; scroll-margin > 0 doesn't work with ultra-scroll yet
@@ -810,7 +835,27 @@ no idea why.
   (ultra-scroll-mode 1))
 #+end_src
 
-*** Fontaine
+*** Dumb Jump
+Jump to definition
+
+#+begin_src emacs-lisp
+(use-package dumb-jump
+  :ensure t
+  :config
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
+#+end_src
+
+*** Eldoc-Box
+Eldoc in a popup frame
+
+#+begin_src emacs-lisp
+(use-package eldoc-box
+  :ensure t
+  ;; override `view-hello-file'
+  :bind ("C-h h" . #'eldoc-box-help-at-point))
+#+end_src
+
+** Fontaine
 Font presets (lots of them because I can't decide)
 
 #+begin_src emacs-lisp
@@ -845,26 +890,6 @@ Font presets (lots of them because I can't decide)
   (fontaine-mode 1)
   (define-key global-map (kbd "C-c f") #'fontaine-set-preset)
   (add-hook 'server-mode-hook 'darius/reapply-fontaine))
-#+end_src
-
-*** Dumb Jump
-Jump to definition
-
-#+begin_src emacs-lisp
-(use-package dumb-jump
-  :ensure t
-  :config
-  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
-#+end_src
-
-*** Eldoc-Box
-Eldoc in a popup frame
-
-#+begin_src emacs-lisp
-(use-package eldoc-box
-  :ensure t
-  ;; override `view-hello-file'
-  :bind ("C-h h" . #'eldoc-box-help-at-point))
 #+end_src
 
 ** Git
@@ -914,36 +939,35 @@ Some nice additional completing-read stuff
     (interactive)
     (let* ((consult-ripgrep-args (s-concat consult-ripgrep-args " --hidden")))
       (call-interactively 'consult-ripgrep)))
-
   (defun darius/consult-fd-hidden ()
     "Call fd with additional --hidden flag"
     (interactive)
     (let* ((consult-fd-args (s-concat consult-fd-args " --hidden")))
       (call-interactively 'consult-fd)))
-  :hook
-  (minibuffer-setup . (lambda () (local-set-key (kbd "M-r") #'consult-history)))
-  (eshell-mode . (lambda () (keymap-set eshell-prompt-mode-map "M-r" #'consult-history)))
+  (with-eval-after-load 'em-prompt
+    (keymap-set eshell-prompt-mode-map "M-r" #'consult-history))
   :bind
-  ("C-S-Y"     . consult-yank-from-kill-ring)
-  ;; M-s `search-map'
-  ("M-s d"     . consult-fd)
-  ("M-s D"     . darius/consult-fd-hidden)
-  ("M-s l"     . consult-line)
-  ("M-s L"     . consult-line-multi)
-  ("M-s r"     . consult-ripgrep)
-  ("M-s R"     . darius/consult-ripgrep-hidden)
-  ("M-s u"     . consult-focus-lines)
-  ("M-s k"     . consult-keep-lines)
-  ;; M-g `goto-map'
-  ("M-g g"     . consult-goto-line)
-  ("M-g M-g"   . consult-goto-line)
-  ("M-g e"     . consult-compile-error)
-  ("M-g f"     . consult-flymake)
-  ("M-g o"     . consult-outline)
-  ("M-g m"     . consult-mark)
-  ("M-g k"     . consult-global-mark)
-  ("M-g i"     . consult-imenu)
-  ("M-g I"     . consult-imenu-multi))
+  (("C-S-Y"     . consult-yank-from-kill-ring)
+   ;; M-s `search-map'
+   ("M-s d"     . consult-fd)
+   ("M-s D"     . darius/consult-fd-hidden)
+   ("M-s l"     . consult-line)
+   ("M-s L"     . consult-line-multi)
+   ("M-s r"     . consult-ripgrep)
+   ("M-s R"     . darius/consult-ripgrep-hidden)
+   ("M-s u"     . consult-focus-lines)
+   ("M-s k"     . consult-keep-lines)
+   ;; M-g `goto-map'
+   ("M-g g"     . consult-goto-line)
+   ("M-g M-g"   . consult-goto-line)
+   ("M-g e"     . consult-compile-error)
+   ("M-g f"     . consult-flymake)
+   ("M-g o"     . consult-outline)
+   ("M-g m"     . consult-mark)
+   ("M-g k"     . consult-global-mark)
+   ("M-g i"     . consult-imenu)
+   ("M-g I"     . consult-imenu-multi)
+   :map minibuffer-local-map ("M-r" . consult-history)))
 
 ;; use consult to search for TODO, NOTE, etc
 (use-package consult-todo
@@ -972,7 +996,9 @@ Some improvements over DocView
    '(".*\\.pdf$" . (nil (reusable-frames . t)
                         (inhibit-switch-frame . t)))
    display-buffer-alist) ;; this allows for example the synctex integration from pdf-tools to reuse a buffer
-  :hook (pdf-view-mode . (lambda () (display-line-numbers-mode -1)))
+  :hook
+  (pdf-view-mode . (lambda () (display-line-numbers-mode -1)))
+  (pdf-outline-buffer-mode . pdf-outline-follow-mode)
   :bind (:map pdf-view-mode-map
               ("C" . pdf-view-center-in-window)
               ("C-=" . pdf-view-enlarge)
@@ -1274,7 +1300,7 @@ The most important thing tbh.
          (fn (cdr (assoc choice themes))))
     (when fn
       (funcall fn))))
-(keymap-set global-map "<f12>" #'darius/pick-theme)
+(keymap-global-set "<f12>" #'darius/pick-theme)
 #+end_src
 
 ** Diminish
@@ -1386,6 +1412,7 @@ Get the [[https://github.com/tree-sitter-grammars/tree-sitter-hyprlang][language
 #+end_src
 
 ** C and C++
+C++ and C
 
 #+begin_src emacs-lisp
 (use-package c-ts-mode
@@ -1439,7 +1466,6 @@ The one and only
 
 ** Scala
 why
-
 This assumes metals is installed in ~./local/bin/metals-emacs~.
 
 #+begin_src emacs-lisp
@@ -1738,7 +1764,7 @@ The ~table~ thing makes completing-read keep the original order of the list pass
          (selection (completing-read "Jump: " table nil t)))
     (find-file selection)))
 
-(keymap-set global-map "M-g z" #'darius/zoxide-find-file)
+(keymap-global-set "M-g z" #'darius/zoxide-find-file)
 #+end_src
 
 ** Spawn terminal here
@@ -1762,7 +1788,7 @@ If called with two C-u's, spawn a terminal window (foot) in the current director
    (t ; fallback
     (eat-other-window))))
 
-(keymap-set global-map "M-g t" #'darius/spawn-terminal-here)
+(keymap-global-set "M-g t" #'darius/spawn-terminal-here)
 #+end_src
 
 ** Maybe wrap with asterisk
@@ -1830,5 +1856,5 @@ Use ~C-;~ to bring up a buffer prompt or delete the current window with prefix a
       (call-interactively #'switch-to-buffer)
     (delete-window)))
 
-(keymap-set global-map "C-;" #'darius/switch-buffer-or-delete-window)
+(keymap-global-set "C-;" #'darius/switch-buffer-or-delete-window)
 #+end_src
