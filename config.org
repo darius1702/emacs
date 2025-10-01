@@ -154,7 +154,9 @@ Change default UI settings
 (column-number-mode t)
 
 (setopt scroll-preserve-screen-position t
-        scroll-margin 1)
+        scroll-margin 0                 ; becuase of ultra-scroll
+        scroll-conservatively 3
+        next-screen-context-lines 10)
 
 (use-package paren
   :custom
@@ -265,8 +267,7 @@ Isearch, ibuffer, imenu, ...
   (auto-revert-avoid-polling t)
   (auto-revert-check-vc-info t)
   :config
-  (auto-revert-mode)
-  :diminish auto-revert-mode)
+  (auto-revert-mode 1))
 #+end_src
 
 *** Isearch
@@ -425,15 +426,16 @@ Changes to compile and comint buffers
 (use-package compile
   :custom
   (compilation-max-output-line-length 800)
-  (compilation-scroll-output 'first-error)
+  (compilation-scroll-output t)
   (compile-command "")
   :hook
   (compilation-filter . ansi-color-compilation-filter)
   :bind
-  ("C-c c" . compile)
+  (("C-c c" . compile)
   ("C-c r" . recompile)
   ("M-N" . next-error)
   ("M-P" . previous-error))
+  (:map compilation-mode-map ("r" . recompile)))
 
 (use-package comint
   :custom
@@ -463,6 +465,8 @@ Help popups, linting, documentation, ...
         ("<mouse-9>" . help-go-forward)))
 
 (use-package info
+  :custom
+  (Info-fontify-visited-nodes nil)
   :bind
   (:map Info-mode-map
         ("<mouse-8>" . Info-history-back)
@@ -821,18 +825,12 @@ no idea why.
 
 #+begin_src emacs-lisp
 ;; builtin-version
-;; (setopt scroll-conservatively 5)
-;; (setopt scroll-margin 1)
 ;; (pixel-scroll-precision-mode 1)
 ;; (setopt pixel-scroll-precision-interpolate-mice nil)
 
 (use-package ultra-scroll
   :ensure t
-  :init
-  (setopt scroll-conservatively 3
-          scroll-margin 0) ; scroll-margin > 0 doesn't work with ultra-scroll yet
-  :config
-  (ultra-scroll-mode 1))
+  :config (ultra-scroll-mode 1))
 #+end_src
 
 *** Dumb Jump
@@ -868,19 +866,12 @@ Font presets (lots of them because I can't decide)
       :default-weight regular
       :default-height 110
       :fixed-pitch-weight nil ; falls back to :default-weight
-      :variable-pitch-family "IBM Plex Sans"
-      :variable-pitch-height 120
+      :variable-pitch-family "SF Pro"
+      :variable-pitch-height 120.0
       :bold-family nil
       :italic-family nil)
-     (adwaita
-      :inherit sf-mono
-      :default-family "AdwaitaMono Nerd Font Propo")
      (sf-mono-large
       :inherit sf-mono
-      :default-height 165
-      :variable-pitch-height 155)
-     (adwaita-large
-      :inherit adwaita
       :default-height 165
       :variable-pitch-height 155)))
   :config
@@ -983,7 +974,7 @@ Some improvements over DocView
 (use-package pdf-tools
   :ensure t
   :init
-  (pdf-loader-install)
+  (pdf-loader-install t) ; don't whether ask to build epdinfo
   :custom
   (pdf-view-continuous nil) ;; don't auto-switch to the next/previous page when scrolling
   (pdf-annot-default-annotation-properties '((t (label . "Darius Schefer")) (text (icon . "Comment"))))
@@ -1022,9 +1013,8 @@ Settings for org-mode and related packages
 (use-package org
   :ensure t
   :mode ("\\.org\\'" . org-mode)
-  :hook
-  (org-mode . org-indent-mode)
-  (org-mode . turn-on-org-cdlatex)
+  :hook (org-mode . turn-on-org-cdlatex)
+  :diminish org-cdlatex-mode
   :custom
   (org-directory "~/Notes")
   (org-default-notes-file (concat org-directory "/index.org"))
@@ -1070,6 +1060,11 @@ Settings for org-mode and related packages
   (:map org-mode-map
         ("C-c o s" . org-store-link)
         ("C-c o h" . consult-org-heading)))
+
+;; builtin package to make org documents more readable
+(use-package org-indent
+  :hook org-mode
+  :diminish)
 #+end_src
 
 *** org-appear
@@ -1281,6 +1276,7 @@ The most important thing tbh.
 (defun darius/catppuccin-face-setup ()
   "Common tweaks for all catppuccin themes"
   (set-face-attribute 'line-number nil :foreground (catppuccin-color 'overlay0))
+  (set-face-attribute 'link nil :underline nil :foreground (catppuccin-color 'blue))
   (set-face-attribute 'minibuffer-nonselected nil :foreground (catppuccin-color 'red) :background 'unspecified)
   (with-eval-after-load 'font-latex
     (set-face-attribute 'font-latex-sectioning-5-face nil :foreground (catppuccin-color 'red))))
@@ -1306,12 +1302,15 @@ The most important thing tbh.
 ** Diminish
 Get rid of some clutter in the modeline
 Doesn't work properly if it's not all the way at the end for some reason
+This diminished some built-in modes, for external packages and org the :diminish
+is in the use-package declaration
 
 #+begin_src emacs-lisp
 (use-package diminish
   :ensure t
-  :diminish visual-line-mode
-  :diminish org-cdlatex-mode)
+  :diminish 'visual-line-mode
+  :diminish 'eldoc-mode
+  :diminish 'auto-revert-mode)
 #+end_src
 
 * Languages
@@ -1434,13 +1433,22 @@ The one and only
 #+begin_src emacs-lisp
 (use-package haskell-mode
   :ensure t
-  :after haskell-interactive-mode
   :custom
   (haskell-process-auto-import-loaded-modules t)
   :init
   (setopt flymake-allowed-file-name-masks '())
+  :bind
+  (:map haskell-mode-map
+        ("M-n" . 'haskell-goto-next-error)
+        ("M-p" . 'haskell-goto-prev-error)))
+
+(use-package haskell-interactive-mode
+  :after haskell-mode
   :config
-  (require 'inf-haskell)                ; TODO there probably is a better way to do this than requiring it here
+  ;; TODO this requires inf-haskell to be loaded for `haskell-prompt-regexp'
+  ;; which is required neither by haskell mode nor by haskell interaction mode
+  ;; there probably is a better way to do this
+  (require 'inf-haskell)
   (defun darius/haskell-interactive-beginning-of-line ()
     "Skip the interactive haskell prompt at the beginning of the line"
     (interactive)
@@ -1449,13 +1457,8 @@ The one and only
            (end (if pos (match-end 0) 0)))
       (beginning-of-line)
       (forward-char end)))
-
-  :bind
-  (:map haskell-mode-map
-        ("M-n" . 'haskell-goto-next-error)
-        ("M-p" . 'haskell-goto-prev-error)
-        :map haskell-interactive-mode-map
-        ("C-a" . 'darius/haskell-interactive-beginning-of-line)))
+  :bind (:map haskell-interactive-mode-map
+              ("C-a" . darius/haskell-interactive-beginning-of-line)))
 
 (use-package hindent
   :ensure t
@@ -1847,14 +1850,21 @@ Most use-cases for semincolons are covered by ~comment-line~ and ~comment-dwim~
 
 ** Switch buffer or delete window
 Use ~C-;~ to bring up a buffer prompt or delete the current window with prefix argument
+With two prefixes call ~winner-undo~
 
 #+begin_src emacs-lisp
 (defun darius/switch-buffer-or-delete-window (arg)
-  "Call `switch-to-buffer' or `delete-window' if called with prefix argument"
+  "Call `switch-to-buffer' or `delete-window'/`winnder-undo' if called with one/two C-u presses"
   (interactive "P")
-  (if (not arg)
-      (call-interactively #'switch-to-buffer)
-    (delete-window)))
+  (cond
+   ((null arg)
+    (call-interactively #'switch-to-buffer))
+   ((equal arg '(4))
+    (delete-window))
+   ((equal arg '(16))
+    (winner-undo))
+   (t ; fallback
+    (call-interactively #'switch-to-buffer))))
 
 (keymap-global-set "C-;" #'darius/switch-buffer-or-delete-window)
 #+end_src
