@@ -4,16 +4,17 @@
 #+STARTUP: show2levels
 
 * Build flags
-Nativecomp, pgtk, tree-sitter, ...
+Nativecomp, pgtk, ...
 
 #+begin_src sh
-./configure --with-native-compilation=aot --with-tree-sitter --with-pgtk --with-imagemagick --without-compress-install --disable-gc-mark-trace --enable-link-time-optimization 'CFLAGS=-O3 -march=native'
+./configure --with-native-compilation=aot --with-pgtk --without-x --without-ns --with-imagemagick --without-compress-install --disable-gc-mark-trace --enable-link-time-optimization 'CFLAGS=-O3 -march=native'
 #+end_src
 
 
 * Early init
 ** No startup message spam
-The docs say you can ~(setq inhibit-startup-echo-area-message "$username")~ but that doesn't work for me
+The docs say you can ~(setq inhibit-startup-echo-area-message "$username")~ but that doesn't work for me.
+Also lexical-bindings for early-init.
 
 #+begin_src emacs-lisp :tangle early-init.el
 ;; -*- lexical-binding: t -*-
@@ -32,7 +33,7 @@ The docs say you can ~(setq inhibit-startup-echo-area-message "$username")~ but 
 #+end_src
 
 ** Faster startup
-This makes emacs start a little faster, or maybe I am just imagining things
+This makes emacs start a little faster, or maybe I am just imagining things.
 
 #+begin_src emacs-lisp :tangle early-init.el
 (defvar darius/file-name-handler-alist file-name-handler-alist)
@@ -56,8 +57,8 @@ This way the GC pause doesn't happen while I am interacting with the UI.
 #+end_src
 
 ** Default clutter
-Adjust some default settings
-I don't know why I have this in the early-init but I moved it here at some point
+Adjust some default settings,
+I don't know why I have this in the early-init but I moved it here at some point.
 
 #+begin_src emacs-lisp :tangle early-init.el
 (setopt use-dialog-box nil
@@ -127,7 +128,7 @@ Unbind some defaults and bind some more keys
 #+end_src
 
 *** Mouse and Trackpad
-Make right click behave like left click and make the middle button only paste with a prefix
+Make right click behave like left click and make the middle button only paste with a prefix.
 Also I keep accidentally triggering pinch-to-zoom and ctrl+mousewheel on my laptop
 
 #+begin_src emacs-lisp
@@ -167,9 +168,8 @@ Change default UI settings
   :config
   (show-paren-mode t))
 
-;; only show tab bar with >1 tabs
-(setopt tab-bar-show 1)
-(setopt tab-bar-close-button-show nil)
+(setopt tab-bar-show 1 ; only show tab bar when more than 1 tab
+        tab-bar-close-button-show nil)
 
 ;; show active region in inactive windows
 (setopt highlight-nonselected-windows t)
@@ -193,8 +193,8 @@ Change default UI settings
   :custom
   (whitespace-line-column nil) ; use `fill-column'
   (whitespace-style '(face trailing tabs indentatinon
-                                space-before-tab space-after-tab
-                                tab-mark space-mark empty)))
+                           space-before-tab space-after-tab
+                           tab-mark space-mark empty)))
 #+end_src
 
 ** Editing and Formatting
@@ -210,7 +210,7 @@ Changes to default editing behavior
 (keymap-global-set "M-l" #'downcase-dwim)
 (keymap-global-set "M-c" #'capitalize-dwim)
 
-;; join line with next line
+;; join line with line above
 (keymap-global-set "C-c j" #'join-line)
 
 ;; continue comment on new line
@@ -226,8 +226,8 @@ Changes to default editing behavior
 ;; read .editorconfig if present
 (editorconfig-mode t)
 
-(setq-default indent-tabs-mode nil)
-(setq-default tab-width 4)
+(setq-default indent-tabs-mode nil
+              tab-width 4)
 
 (add-to-list 'write-file-functions #'delete-trailing-whitespace)
 
@@ -253,12 +253,16 @@ Changes to default editing behavior
 Isearch, ibuffer, imenu, ...
 
 *** Keybinds and misc
+As the heading suggests
 
 #+begin_src emacs-lisp
-(keymap-global-set "C-;" #'switch-to-buffer)
 (keymap-global-set "C-<tab>" #'mode-line-other-buffer)
 
-(setopt switch-to-buffer-obey-display-actions t)
+(use-package window
+  :custom
+  (split-window-preferred-direction 'longest)
+  (switch-to-buffer-obey-display-actions nil)
+  (switch-to-buffer-in-dedicated-window 'pop))
 
 ;; automatically revert buffers that change on disk
 (use-package autorevert
@@ -272,6 +276,7 @@ Isearch, ibuffer, imenu, ...
 
 *** Isearch
 Searching within a buffer
+
 #+begin_src emacs-lisp
 (use-package isearch
   :custom
@@ -284,38 +289,54 @@ Searching within a buffer
 
 *** Imenu
 Navigate buffer via headings/definitions/...
+These are settings for the builtin ~imenu~, [[*Consult][Consult]] has it's own version, ~consult-imenu~
 
 #+begin_src emacs-lisp
 (use-package imenu
-  :custom (imenu-auto-rescan t))
+  :hook
+  (imenu-after-jump . recenter)
+  :custom
+  (imenu-auto-rescan t)
+  (imenu-flatten t)
+  (imenu-space-replacement "_"))
 #+end_src
 
 *** Ibuffer
-Ibuffer for buffer management
+Ibuffer for buffer management.
+The *vc-status* format below depends on [[*Ibuffer-vc][Ibuffer-vc]].
 
 #+begin_src emacs-lisp
 (use-package ibuffer
-  :bind (("C-x C-b" . ibuffer)
-         (:map ibuffer-mode-map ("M-o" . other-window)))
-  :hook (ibuffer-mode . (lambda ()
-                          (ibuffer-switch-to-saved-filter-groups "default")
-                          (ibuffer-auto-mode t)))
+  :bind
+  (("C-x C-b" . ibuffer)
+   (:map ibuffer-mode-map ("M-o" . other-window)))
+  :hook
+  (ibuffer-mode . (lambda ()
+                    (ibuffer-switch-to-saved-filter-groups "default")
+                    (ibuffer-auto-mode t)))
   :custom
   (ibuffer-expert t)                    ; don't prompt for everything
   (ibuffer-display-summary nil)
   (ibuffer-human-readable-size t)
   (ibuffer-show-empty-filter-groups nil)
   (ibuffer-saved-filter-groups
-   '((("default"
-       ("Code" (or (derived-mode . prog-mode) (mode . ess-mode)
-                   (mode . compilation-mode)))
-       ("LaTeX" (filename . "\\.tex$"))
-       ("Dired" (mode . dired-mode))
-       ("Org" (mode . org-mode))
-       ("Pdf" (mode . pdf-view-mode))
-       ("Help" (or (mode . help-mode) (mode . Man-mode)))
-       ("Git" (name . "^magit"))
-       ("Misc" (name . "^\\**.*\\*$"))))))
+   '(("default"
+      ("Code" (and
+               (derived-mode . prog-mode)
+               (not (name . "^\\*scratch\\*$"))))
+      ("Dir" (mode . dired-mode))
+      ("Org" (mode . org-mode))
+      ("Pdf" (mode . pdf-view-mode))
+      ("TeX" (filename . "\\.tex$"))
+      ("Term" (or
+               (mode . shell-mode)
+               (mode . term-mode)
+               (mode . eshell-mode)
+               (mode . compilation-mode)
+               (mode . eat-mode)))
+      ("Git" (name . "^magit"))
+      ("Help" (or (mode . help-mode) (mode . Man-mode) (mode . Info-mode)))
+      ("Misc" (name . "^\\*.**\\*$")))))
   (ibuffer-formats
    '((mark modified read-only vc-status-mini " "
            (name 18 18 :left :elide)
@@ -397,6 +418,18 @@ Bookmarks are saved in the ~bookmarks.eld~ file
 
 (setopt bookmark-fringe-mark nil ; don't show bookmarks in buffers
         bookmark-save-flag 1)    ; don't wait until emacs exits to save bookmarks
+#+end_src
+
+*** Grep
+Grep
+
+#+begin_src emacs-lisp
+(use-package grep
+  :custom
+  (grep-use-headings t)
+  :bind
+  (:map grep-mode-map
+        ("F" . next-error-follow-minor-mode)))
 #+end_src
 
 ** Minibuffer things
@@ -577,7 +610,7 @@ For running in ~-nw~ mode
 (defun darius/disable-terminal-background ()
   "Removes theme background color in terminal windows"
   (unless (display-graphic-p (selected-frame))
-    (set-face-attribute 'default nil :background "unspecified-bg" )))
+    (set-face-attribute 'default nil :background "unspecified-bg")))
 
 (add-hook 'window-setup-hook 'darius/disable-terminal-background)
 #+end_src
@@ -622,11 +655,16 @@ Configure ~package.el~ and ~use-package~
 (add-to-list 'load-path (file-name-concat user-emacs-directory "external"))
 
 (use-package package
-  :config
-  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t))
-
-;; this will just be ignored if native-comp isn't available
-(setopt package-native-compile t)
+  :custom
+  (package-native-compile t) ; this will just be ignored if native-comp isn't available
+  (package-archives
+   '(("elpa" . "https://elpa.gnu.org/packages/")
+     ("elpa-devel" . "https://elpa.gnu.org/devel/")
+     ("nongnu" . "https://elpa.nongnu.org/nongnu/")
+     ("melpa" . "https://melpa.org/packages/")))
+  (package-archive-priorities ; prefer stable elpa over devel
+   '(("elpa" . 2)
+     ("elpa-devel" . 1))))
 #+end_src
 
 ** Useful random stuff
@@ -651,7 +689,10 @@ Version control integration for Ibuffer
 
 #+begin_src emacs-lisp
 (use-package ibuffer-vc
-  :ensure t)
+  :ensure t
+  :bind
+  (:map ibuffer-mode-map
+        ("v" . ibuffer-vc-set-filter-groups-by-vc-root)))
 #+end_src
 
 *** Marginalia
@@ -671,8 +712,9 @@ Making the frame background transparent via ~alpha-background~ makes the colors 
 (use-package colorful-mode
   :ensure t
   :custom (css-fontify-colors nil)
-  :custom-face (colorful-base ((t :box nil))) ; colors have a box around them by default which looks weird
-  :config (global-colorful-mode))
+  :config
+  (global-colorful-mode)
+  (set-face-attribute 'colorful-base nil :box nil)) ; colors have a box around them by default which looks weird
 #+end_src
 
 *** hl-todo
@@ -798,23 +840,6 @@ Emulate a terminal
         ("M-o" . other-window)))
 #+end_src
 
-*** Doom modeline
-Make the modeline a little prettier
-
-#+begin_src emacs-lisp
-(use-package doom-modeline
-  :ensure t
-  :init (doom-modeline-mode 1)
-  :custom
-  (doom-modeline-height 20)
-  (doom-modeline-bar-width 4)
-  (doom-modeline-minor-modes nil) ;; nil is the default but otherwise I forget this exists
-  (doom-modeline-icon nil)
-  (doom-modeline-percent-position '(-3 "%o")) ;; proportion of "travel" of the window through buffer
-  (doom-modeline-buffer-file-name-style 'file-name-with-project)
-  (doom-modeline-buffer-encoding nil))
-#+end_src
-
 *** Ultra-scroll
 Doesn't have this one annoying bug that pixel-scroll-precision-mode has that
 makes the page jump backwards when scrolling with the caret all the way at the
@@ -854,7 +879,7 @@ Eldoc in a popup frame
 #+end_src
 
 ** Fontaine
-Font presets (lots of them because I can't decide)
+Font presets
 
 #+begin_src emacs-lisp
 (use-package fontaine
@@ -863,17 +888,19 @@ Font presets (lots of them because I can't decide)
   (fontaine-presets
    '((sf-mono
       :default-family "SFMono Nerd Font Mono"
+      :fixed-pitch-family "SFMono Nerd Font Mono"
+      :variable-pitch-family "SF Pro"
       :default-weight regular
       :default-height 110
       :fixed-pitch-weight nil ; falls back to :default-weight
-      :variable-pitch-family "SF Pro"
-      :variable-pitch-height 120.0
       :bold-family nil
       :italic-family nil)
      (sf-mono-large
       :inherit sf-mono
-      :default-height 165
-      :variable-pitch-height 155)))
+      :default-height 165)
+     (sf-mono-larger
+      :inherit sf-mono
+      :default-height 185)))
   :config
   (defun darius/reapply-fontaine ()
     (fontaine-set-preset (or (fontaine-restore-latest-preset) 'present)))
@@ -983,10 +1010,12 @@ Some improvements over DocView
   :config
   (setq-default pdf-view-display-size 'fit-page)
   (add-to-list 'revert-without-query ".pdf")
-  (push
-   '(".*\\.pdf$" . (nil (reusable-frames . t)
-                        (inhibit-switch-frame . t)))
-   display-buffer-alist) ;; this allows for example the synctex integration from pdf-tools to reuse a buffer
+  ;; this allows for example the synctex integration from pdf-tools to reuse a buffer
+  (add-to-list 'display-buffer-alist
+               '(".*\\.pdf$"
+                 (display-buffer-reuse-window)
+                 (reusable-frames . t)
+                 (inhibit-switch-frame . t)))
   :hook
   (pdf-view-mode . (lambda () (display-line-numbers-mode -1)))
   (pdf-outline-buffer-mode . pdf-outline-follow-mode)
@@ -1129,14 +1158,9 @@ Ispell is slow
 #+begin_src emacs-lisp
 (use-package jinx
   :ensure t
-  :config
-  (dolist (hook '(text-mode-hook LaTex-mode-hook))
-    (add-hook hook #'jinx-mode))
   :bind
   ("M-$" . jinx-correct)
-  ("C-M-$" . jinx-languages)
-  :custom
-  (add-hook 'org-mode-hook #'(lambda () (jinx-mode 0))))
+  ("C-M-$" . jinx-languages))
 #+end_src
 
 ** Completion at point
@@ -1277,6 +1301,7 @@ The most important thing tbh.
   "Common tweaks for all catppuccin themes"
   (set-face-attribute 'line-number nil :foreground (catppuccin-color 'overlay0))
   (set-face-attribute 'link nil :underline nil :foreground (catppuccin-color 'blue))
+  (set-face-attribute 'mode-line-highlight nil :box nil :foreground (catppuccin-color 'blue))
   (set-face-attribute 'minibuffer-nonselected nil :foreground (catppuccin-color 'red) :background 'unspecified)
   (with-eval-after-load 'font-latex
     (set-face-attribute 'font-latex-sectioning-5-face nil :foreground (catppuccin-color 'red))))
@@ -1669,6 +1694,7 @@ Requires ~sail-mode.el~ somewhere in the load-path
 #+begin_src emacs-lisp
 (require 'sail-mode)
 (add-hook 'sail-mode-hook #'font-lock-update) ; Syntax doesn't update on its own for some reason
+(add-hook 'sail-project-mode-hook #'font-lock-update)
 (add-hook 'sail-mode-hook #'display-line-numbers-mode)
 (add-hook 'sail-mode-hook #'(lambda () (setq-local tab-width 2)))
 #+end_src
@@ -1734,22 +1760,91 @@ Web stuff
 
 * Custom Functions
 Various cringe
-** COMMENT Todo comments
-Prompt for a string and insert a command with that string.
-
-~hl-todo~ seems to have something similar called ~hl-todo-occur~
+** Mode line
+Custom mode line config.
+This has to load after [[*Colorscheme][Colorscheme]] for ~catppuccin-color~
 
 #+begin_src emacs-lisp
-(setq darius/comment-keyword-list
-      '(("TODO") ("FIXME") ("NOTE") ("OPTIMIZE") ("HACK") ("BUG")))
+(defface my/mode-line-buffer-modified
+  `((t
+     :foreground ,(catppuccin-color 'yellow)
+     :inherit bold))
+  "Face for the name of a modified buffer in the mode line")
 
-(defun darius/todo-occur ()
-  "List all lines containing a keyword from `darius/comment-keyword-list'"
-  (interactive)
-  (let ((keyword (completing-read "Occur keyword: " darius/comment-keyword-list)))
-    (occur keyword)))
+(defface my/mode-line-buffer-unmodified
+  `((t
+     :foreground ,(catppuccin-color 'green)
+     :inherit bold))
+  "Face for the name of an unmodified buffer in the mode line")
+
+(defface my/mode-line-bold
+  `((t
+     :inherit bold))
+  "Face for bold text in the mode line")
+
+(defvar-local my/mode-line-buffer-name
+  '(:eval
+    (if (mode-line-window-selected-p)
+        (if (not (buffer-modified-p))
+            (if (project-current)
+                (propertize (buffer-name) 'face 'my/mode-line-bold)
+              (propertize (buffer-name) 'face 'my/mode-line-buffer-unmodified))
+          (propertize (buffer-name) 'face 'my/mode-line-buffer-modified))
+      (buffer-name))))
+
+(defvar-local my/mode-line-project-name
+  '(:eval
+    (if (and (project-current)
+             (not (string-equal (buffer-name) (project-name (project-current)))))
+        (if (mode-line-window-selected-p)
+            (if (buffer-modified-p)
+                (propertize (project-name (project-current)) 'face 'my/mode-line-buffer-modified)
+              (propertize (project-name (project-current)) 'face 'my/mode-line-buffer-unmodified))
+          (project-name (project-current)))
+      "")))
+
+(defvar-local my/mode-line-project-separator
+  '(:eval
+    (if (and (project-current)
+             (not (string-equal (buffer-name) (project-name (project-current)))))
+        (if (mode-line-window-selected-p)
+            (if (buffer-modified-p)
+                (propertize "|" 'face 'my/mode-line-buffer-modified)
+              (propertize "|" 'face 'my/mode-line-bold))
+          "|")
+      "")))
+
+(defvar-local my/mode-line-read-only-indicator
+  '(:eval
+    (propertize
+     (if buffer-read-only
+         "%%"
+       "")
+     'face 'my/mode-line-bold)))
+
+(dolist (var '(my/mode-line-buffer-name
+               my/mode-line-read-only-indicator
+               my/mode-line-project-name
+               my/mode-line-project-separator))
+  (put var 'risky-local-variable t))
+
+(setq-default mode-line-format
+              '("%e "
+                mode-line-window-dedicated
+                my/mode-line-read-only-indicator
+                " "
+                my/mode-line-project-name
+                my/mode-line-project-separator
+                my/mode-line-buffer-name
+                "   "
+                mode-line-position
+                mode-line-format-right-align
+                (vc-mode vc-mode)
+                "   "
+                mode-line-modes
+                mode-line-misc-info
+                mode-line-end-spaces))
 #+end_src
-
 ** Zoxide
 Querying the zoxide database for all entries returns them in a sorted order, so we can just pass it to completing read.
 The ~table~ thing makes completing-read keep the original order of the list passed to it.
@@ -1867,4 +1962,20 @@ With two prefixes call ~winner-undo~
     (call-interactively #'switch-to-buffer))))
 
 (keymap-global-set "C-;" #'darius/switch-buffer-or-delete-window)
+#+end_src
+
+** COMMENT Todo comments
+Prompt for a string and insert a command with that string.
+
+~hl-todo~ seems to have something similar called ~hl-todo-occur~
+
+#+begin_src emacs-lisp
+(setq darius/comment-keyword-list
+      '(("TODO") ("FIXME") ("NOTE") ("OPTIMIZE") ("HACK") ("BUG")))
+
+(defun darius/todo-occur ()
+  "List all lines containing a keyword from `darius/comment-keyword-list'"
+  (interactive)
+  (let ((keyword (completing-read "Occur keyword: " darius/comment-keyword-list)))
+    (occur keyword)))
 #+end_src
