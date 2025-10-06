@@ -1088,12 +1088,6 @@ Some nice additional completing-read stuff
    ("M-g i"     . consult-imenu)
    ("M-g I"     . consult-imenu-multi)
    :map minibuffer-local-map ("M-r" . consult-history)))
-
-;; use consult to search for TODO, NOTE, etc
-(use-package consult-todo
-  :ensure t
-  :after consult
-  :bind ("M-s t" . consult-todo-project))
 #+end_src
 
 ** PDF Tools
@@ -1809,7 +1803,7 @@ Various cringe
 
 ** Zoxide
 Querying the zoxide database for all entries returns them in a sorted order, so we can just pass it to completing read.
-The ~table~ thing makes completing-read keep the original order of the list passed to it.
+The ~table~ thing makes completing-read keep the original order of the list passed to it
 
 #+begin_src emacs-lisp
 (defun darius/zoxide-find-file ()
@@ -1829,7 +1823,7 @@ The ~table~ thing makes completing-read keep the original order of the list pass
 
 ** Spawn terminal here
 Spawn a terminal in the current directory.
-This is hardcoded to foot because wayland is obviously superior.
+This is hardcoded to foot because wayland is obviously superior
 
 #+begin_src emacs-lisp
 (defun darius/spawn-terminal-here (arg)
@@ -1881,7 +1875,7 @@ Wrap the active region with a character, like '(' in electric-pair-mode
 #+end_src
 
 ** Swap semicolon and dash
-In lisp-based modes and the minibuffer, I type ~-~ a lot more than ~;~
+In lisp-based modes and the minibuffer, I type ~-~ a lot more than ~;~.
 Most use-cases for semincolons are covered by ~comment-line~ and ~comment-dwim~
 
 #+begin_src emacs-lisp
@@ -1906,7 +1900,7 @@ Most use-cases for semincolons are covered by ~comment-line~ and ~comment-dwim~
 #+end_src
 
 ** Switch buffer or delete window
-Use ~C-;~ to bring up a buffer prompt or delete the current window with prefix argument
+Use ~C-;~ to bring up a buffer prompt or delete the current window with prefix argument.
 With two prefixes call ~winner-undo~
 
 #+begin_src emacs-lisp
@@ -1926,18 +1920,18 @@ With two prefixes call ~winner-undo~
 (keymap-global-set "C-;" #'darius/switch-buffer-or-delete-window)
 #+end_src
 
-** COMMENT Todo comments
-Prompt for a string and insert a command with that string.
-
+** Todo comments
 ~hl-todo~ seems to have something similar called ~hl-todo-occur~
 
 #+begin_src emacs-lisp
-(setq darius/comment-keyword-list
-      '(("TODO") ("FIXME") ("NOTE") ("OPTIMIZE") ("HACK") ("BUG")))
+(defvar darius/comment-keyword-list
+      '(("TODO") ("FIXME") ("NOTE") ("FAIL") ("HACK") ("XXX")))
 
 (defun darius/todo-occur ()
   "List all lines containing a keyword from `darius/comment-keyword-list'"
   (interactive)
   (let ((keyword (completing-read "Occur keyword: " darius/comment-keyword-list)))
     (occur keyword)))
+
+(keymap-global-set "M-s t" #'darius/todo-occur)
 #+end_src
