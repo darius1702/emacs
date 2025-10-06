@@ -111,6 +111,9 @@ Tweaks that don't fit the other categories
 
 ;; according to someone else's config this does something good
 (setopt pgtk-wait-for-event-timeout 0.001)
+
+;; render html using monospoace fonts
+(setopt shr-use-fonts nil)
 #+end_src
 
 ** Default Keybindings
@@ -410,7 +413,8 @@ These are settings for the builtin ~imenu~, [[*Consult][Consult]] has it's own v
   :custom
   (imenu-auto-rescan t)
   (imenu-flatten t)
-  (imenu-space-replacement "_"))
+  (imenu-level-separator "/")
+  (imenu-space-replacement "-"))
 #+end_src
 
 *** Ibuffer
@@ -716,6 +720,8 @@ For running in ~-nw~ mode
 ;; disable cursor blinking
 (setopt visible-cursor nil)
 
+(xterm-mouse-mode 1)
+
 (defun darius/disable-terminal-background ()
   "Removes theme background color in terminal windows"
   (unless (display-graphic-p (selected-frame))
@@ -918,7 +924,16 @@ Set timers
 #+begin_src emacs-lisp
 (use-package tmr
   :ensure t
-  :custom (tmr-sound-file nil))
+  :custom
+  (tmr-mode-line-format "[%r]")
+  (tmr-mode-line-prefix "")
+  (tmr-timer-finished-functions '(tmr-notification-notify
+                                  tmr-print-message-for-finished-timer
+                                  tmr-acknowledge-minibuffer))
+  :bind
+  ("<f9>" . tmr)
+  :config
+  (tmr-mode-line-mode 1))
 #+end_src
 
 *** Expand region
@@ -1254,6 +1269,32 @@ Simple presentations from org-mode buffers
   ;; this doesn't work with :hook for some reason
   :hook ((org-present-mode . darius/org-present-start)
          (org-present-mode-quit . darius/org-present-end)))
+#+end_src
+
+** Elfeed
+RSS feeds
+
+#+begin_src emacs-lisp
+(use-package elfeed
+  :ensure t
+  :custom
+  (elfeed-enclosure-default-dir user-emacs-directory)
+  (elfeed-db-directory (locate-user-emacs-file "elfeed/"))
+  :config
+  (setq-default elfeed-search-filter "@1-year-old")
+  (defconst darius/elfeed-feeds-file (locate-user-emacs-file "elfeed-feeds.eld"))
+  (defun darius/reload-elfeed-feeds ()
+    (interactive)
+    (when-let* ((file darius/elfeed-feeds-file)
+                ((file-exists-p file)))
+      (setopt elfeed-feeds
+              (with-temp-buffer
+                (insert-file-contents file)
+                (read (current-buffer))))))
+  (darius/reload-elfeed-feeds)
+  (elfeed-update)
+  :bind
+  ("<f8>" . elfeed))
 #+end_src
 
 ** Spell checking
