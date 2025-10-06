@@ -164,7 +164,7 @@ Change default UI settings
   (show-paren-when-point-in-periphery t)
   (show-paren-context-when-offscreen  'overlay)
   :config
-  (show-paren-mode t))
+  (show-paren-mode 1))
 
 (setopt tab-bar-show 1 ; only show tab bar when more than 1 tab
         tab-bar-close-button-show nil)
@@ -200,14 +200,16 @@ Custom mode line config.
 Very inspired by doom-modeline
 
 #+begin_src emacs-lisp
-(column-number-mode t)
+(column-number-mode 1)
 
 (setopt mode-line-default-help-echo nil
         mode-line-modes-delimiters nil
+        mode-line-position-column-line-format '(" %l:%c")
         mode-line-collapse-minor-modes-to "")
 
 (dolist (mode '(auto-revert-mode
                 visual-line-mode
+                view-mode
                 eldoc-mode))
   (add-to-list 'mode-line-collapse-minor-modes mode))
 
@@ -240,33 +242,37 @@ Very inspired by doom-modeline
 
 (defvar-local darius/mode-line-project-name
   '(:eval
-    (if (and (project-current)
-             (not (string-equal (buffer-name) (project-name (project-current)))))
-        (if (mode-line-window-selected-p)
-            (if (buffer-modified-p)
-                (propertize (project-name (project-current)) 'face 'darius/mode-line-buffer-modified)
-              (propertize (project-name (project-current)) 'face 'darius/mode-line-buffer-unmodified))
-          (project-name (project-current)))
-      "")))
+    (when (and (project-current)
+               (not (string-equal (buffer-name) (project-name (project-current)))))
+      (if (mode-line-window-selected-p)
+          (if (buffer-modified-p)
+              (propertize (project-name (project-current)) 'face 'darius/mode-line-buffer-modified)
+            (propertize (project-name (project-current)) 'face 'darius/mode-line-buffer-unmodified))
+        (project-name (project-current))))))
 
 (defvar-local darius/mode-line-project-separator
   '(:eval
-    (if (and (project-current)
-             (not (string-equal (buffer-name) (project-name (project-current)))))
-        (if (mode-line-window-selected-p)
-            (if (buffer-modified-p)
-                (propertize "│" 'face 'darius/mode-line-buffer-modified)
-              (propertize "│" 'face 'darius/mode-line-bold))
-          "│")
-      "")))
+    (when (and (project-current)
+               (not (string-equal (buffer-name) (project-name (project-current)))))
+      (if (mode-line-window-selected-p)
+          (if (buffer-modified-p)
+              (propertize "│" 'face 'darius/mode-line-buffer-modified)
+            (propertize "│" 'face 'darius/mode-line-bold))
+        "│"))))
 
 (defvar-local darius/mode-line-read-only-indicator
   '(:eval
-    (propertize
-     (if buffer-read-only
-         "%%"
-       "")
-     'face 'darius/mode-line-bold)))
+    (when buffer-read-only
+      (if (mode-line-window-selected-p)
+          (propertize " %%" 'face 'darius/mode-line-buffer-modified)
+        " %%"))))
+
+(defvar-local darius/mode-line-narrow-indicator
+  '(:eval
+    (when (buffer-narrowed-p)
+      (if (mode-line-window-selected-p)
+          (propertize " ><" 'face 'darius/mode-line-buffer-modified)
+        " ><"))))
 
 (defvar-local darius/mode-line-git-status
   '(:eval
@@ -276,17 +282,18 @@ Very inspired by doom-modeline
 
 (dolist (var '(darius/mode-line-buffer-name
                darius/mode-line-read-only-indicator
+               darius/mode-line-narrow-indicator
                darius/mode-line-project-separator
                darius/mode-line-project-name
                darius/mode-line-git-status))
   (put var 'risky-local-variable t))
 
 (setq-default mode-line-format
-              '("%e "
+              '("%e"
                 mode-line-client
                 mode-line-window-dedicated
                 mode-line-window-remote
-                mode-line-window-dedicated
+                darius/mode-line-narrow-indicator
                 darius/mode-line-read-only-indicator
                 " "
                 darius/mode-line-project-name
@@ -329,7 +336,7 @@ Changes to default editing behavior
   (dabbrev-case-replace nil))
 
 ;; read .editorconfig if present
-(editorconfig-mode t)
+(editorconfig-mode 1)
 
 (setq-default indent-tabs-mode nil
               tab-width 4)
@@ -343,7 +350,7 @@ Changes to default editing behavior
 ;; make C-w delete a word backwards when no region is active
 (setopt kill-region-dwim 'emacs-word)
 
-(electric-pair-mode t)
+(electric-pair-mode 1)
 
 ;; save system clipboard to kill ring before overwriting it
 (setopt save-interprogram-paste-before-kill t)
@@ -418,7 +425,7 @@ The *vc-status* format below depends on [[*Ibuffer-vc][Ibuffer-vc]].
   :hook
   (ibuffer-mode . (lambda ()
                     (ibuffer-switch-to-saved-filter-groups "default")
-                    (ibuffer-auto-mode t)))
+                    (ibuffer-auto-mode 1)))
   :custom
   (ibuffer-expert t)                    ; don't prompt for everything
   (ibuffer-display-summary nil)
@@ -545,7 +552,7 @@ Setup minibuffer and ~completing-read~
 (setopt crm-prompt "[%d (%s)] %p")
 
 ;; remember minibuffer history
-(savehist-mode t)
+(savehist-mode 1)
 
 (setopt enable-recursive-minibuffers t
         minibuffer-default-prompt-format " [%s]"
@@ -553,8 +560,8 @@ Setup minibuffer and ~completing-read~
         minibuffer-prompt-properties '(read-only t cursor-intangible t face minibuffer-prompt)
         minibuffer-follows-selected-frame nil)
 
-(minibuffer-electric-default-mode t)
-(minibuffer-depth-indicate-mode t)
+(minibuffer-electric-default-mode 1)
+(minibuffer-depth-indicate-mode 1)
 #+end_src
 
 ** Compilation and Comint
@@ -1277,7 +1284,7 @@ Completion
   (corfu-separator ?\s)
   (corfu-preview-current 'insert)
   (corfu-on-exact-match nil)
-  (corfu-popupinfo-mode t)
+  (corfu-popupinfo-mode 1)
   (corfu-popupinfo-delay '(nil . 0.0))
   (global-corfu-minibuffers t)
   :config
@@ -1666,7 +1673,7 @@ Work with citations, also requires auctex.
   (progn
     (add-to-list 'TeX-view-program-selection '(output-pdf "PDF Tools"))
     (add-to-list 'reftex-ref-style-default-list "Hyperref")
-    (TeX-source-correlate-mode t)
+    (TeX-source-correlate-mode 1)
     (define-key LaTeX-mode-map (kbd "C-c C-r") 'reftex-reference)
     (define-key LaTeX-mode-map (kbd "C-M-i") 'complete-symbol)
     (font-latex-add-keywords '(("autoref" "*{") ("Autoref" "{")) 'reference)))
