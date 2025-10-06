@@ -460,12 +460,6 @@ File browsing, projects, recent files, bookmarks
 File browsing on crack
 
 #+begin_src emacs-lisp
-(defun darius/dired-create-directory ()
-  "Wrapper around `dired-create-directory' with no minibuffer completion."
-  (interactive)
-  (let ((dir (read-from-minibuffer "Make directory: ")))
-    (dired-create-directory dir)))
-
 (use-package dired
   :custom
   (dired-recursive-deletes 'top) ; this is the default but I'm paranoid
@@ -485,6 +479,11 @@ File browsing on crack
         ("SPC" . dired-jump)
         ("b" . dired-jump))
   :config
+  (defun darius/dired-create-directory ()
+    "Wrapper around `dired-create-directory' with no minibuffer completion."
+    (interactive)
+    (let ((dir (read-from-minibuffer "Make directory: ")))
+      (dired-create-directory dir)))
   ;; Make `dired-do-shell-command' suggest better defaults for some filetypes
   (add-to-list 'dired-guess-shell-alist-user '("\\.pdf\\'" "zathura"))
   (add-to-list 'dired-guess-shell-alist-user '("\\.mp4\\'" "mpv")))
@@ -519,10 +518,11 @@ Remember recently visited files
 Bookmarks are saved in the ~bookmarks.eld~ file
 
 #+begin_src emacs-lisp
-(keymap-global-set "M-g b" #'bookmark-jump)
-
-(setopt bookmark-fringe-mark nil ; don't show bookmarks in buffers
-        bookmark-save-flag 1)    ; don't wait until emacs exits to save bookmarks
+(use-package bookmark
+  :custom
+  (bookmark-fringe-mark nil)
+  (bookmark-save-flag 1)
+  :bind ("M-g b" . bookmark-jump))
 #+end_src
 
 *** Grep
@@ -706,9 +706,6 @@ Remote editing with TRAMP
 For running in ~-nw~ mode
 
 #+begin_src emacs-lisp
-;; make the mouse wheel scroll the buffer
-(xterm-mouse-mode 1)
-
 ;; disable cursor blinking
 (setopt visible-cursor nil)
 
@@ -736,16 +733,16 @@ alias gs magit-status
 #+end_src
 
 ** Auto-saves and backups
-Disble all annoying auto-generated files and make ~custom-set-variables~ go to their own file
+Disble all annoying auto-generated files and make ~custom-set-variables~ go to their own file.
 Also disable auto-save messages
 
 #+begin_src emacs-lisp
 (make-directory (expand-file-name "tmp/auto-saves/" user-emacs-directory) t)
 (setopt auto-save-list-file-prefix (expand-file-name "tmp/auto-saves/sessions/" user-emacs-directory)
         auto-save-file-name-transforms `((".*" ,(expand-file-name "tmp/auto-saves/" user-emacs-directory) t))
-        auto-save-no-message t)
-(setopt backup-directory-alist `(("." . ,(expand-file-name "tmp/backups/" user-emacs-directory))))
-(setopt backup-by-copying t)
+        auto-save-no-message t
+        backup-directory-alist `(("." . ,(expand-file-name "tmp/backups/" user-emacs-directory)))
+        backup-by-copying t)
 
 ;; Enable when lockfiles become annoying
 ;; (setopt create-lockfiles nil)
@@ -753,7 +750,7 @@ Also disable auto-save messages
 
 * External Packages
 ** Setup
-Load lisp files from ~[user-emacs-directory]/external~
+Load lisp files from ~[user-emacs-directory]/external~.
 Configure ~package.el~ and ~use-package~
 
 #+begin_src emacs-lisp
@@ -882,8 +879,7 @@ Switching and moving windows
 (use-package ace-window
   :ensure t
   :bind ("C-M-o" . ace-swap-window)
-  :custom
-  (aw-scope 'frame))
+  :custom (aw-scope 'frame))
 #+end_src
 
 *** Embark
@@ -915,8 +911,7 @@ Set timers
 #+begin_src emacs-lisp
 (use-package tmr
   :ensure t
-  :custom
-  (tmr-sound-file nil))
+  :custom (tmr-sound-file nil))
 #+end_src
 
 *** Expand region
@@ -964,7 +959,7 @@ no idea why.
 #+end_src
 
 *** Dumb Jump
-Jump to definition
+Jump to definition.
 
 #+begin_src emacs-lisp
 (use-package dumb-jump
@@ -989,6 +984,7 @@ Font presets
 #+begin_src emacs-lisp
 (use-package fontaine
   :ensure t
+  :demand t ; load fonts immediately
   :custom
   (fontaine-presets
    '((sf-mono
@@ -1009,10 +1005,12 @@ Font presets
   :config
   (defun darius/reapply-fontaine ()
     (fontaine-set-preset (or (fontaine-restore-latest-preset) 'present)))
-  (darius/reapply-fontaine)
   (fontaine-mode 1)
-  (define-key global-map (kbd "C-c f") #'fontaine-set-preset)
-  (add-hook 'server-mode-hook 'darius/reapply-fontaine))
+  (darius/reapply-fontaine)
+  :bind
+  ("C-c f" . fontaine-set-preset)
+  :hook
+  (server-mode . darius/reapply-fontaine))
 #+end_src
 
 ** Git
@@ -1288,7 +1286,6 @@ Completion
   (corfu-popupinfo-mode t)
   (corfu-popupinfo-delay '(nil . 0.0))
   (global-corfu-minibuffers t)
-
   :config
   (defun corfu-move-to-minibuffer ()
     (interactive)
@@ -1365,68 +1362,47 @@ The most important thing tbh.
 
 (use-package catppuccin-theme
   :ensure t
+  :demand t ; immediately load colors
+  :hook
+  (org-mode . darius/catppuccin-org-setup)
+  :bind
+  ("<f12>" . darius/pick-theme)
   :config
-  (add-hook 'org-mode-hook  #'darius/catppuccin-org-setup))
-
-(defun darius/catppuccin-load-light ()
-  (mapc #'disable-theme custom-enabled-themes)
-  (catppuccin-load-flavor 'latte)
-  (darius/catppuccin-face-setup))
-
-(defun darius/catppuccin-load-dark ()
-  (mapc #'disable-theme custom-enabled-themes)
-  (catppuccin-load-flavor 'mocha)
-  ;; reset to default colors
-  (catppuccin-set-color 'base     "#1e1e2e" 'mocha)
-  (catppuccin-set-color 'mantle   "#181825" 'mocha)
-  (catppuccin-set-color 'crust    "#11111b" 'mocha)
-  (catppuccin-set-color 'surface0 "#313244" 'mocha)
-  (catppuccin-set-color 'surface1 "#45475a" 'mocha)
-  (catppuccin-set-color 'surface2 "#585b70" 'mocha)
-  (catppuccin-reload)
-  (darius/catppuccin-face-setup))
-
-(defun darius/catppuccin-load-darker ()
-  (mapc #'disable-theme custom-enabled-themes)
-  (catppuccin-load-flavor 'mocha)
-  (catppuccin-set-color 'base     "#1c1c1c" 'mocha)
-  (catppuccin-set-color 'mantle   "#161616" 'mocha)
-  (catppuccin-set-color 'crust    "#070707" 'mocha)
-  (catppuccin-set-color 'surface0 "#282828" 'mocha)
-  (catppuccin-set-color 'surface1 "#404040" 'mocha)
-  (catppuccin-set-color 'surface2 "#525252" 'mocha)
-  (catppuccin-reload)
-  (darius/catppuccin-face-setup))
-
-;; TODO on first init, `font-latex' is not found
-;; because this is loaded before auctex
-;; but I also don't want to move this further down/auctex up
-;; maybe the `with-eval-after-load' fixes it? I'm too lazy to test
-(defun darius/catppuccin-face-setup ()
-  "Common tweaks for all catppuccin themes"
-  (set-face-attribute 'line-number nil :foreground (catppuccin-color 'overlay0))
-  (set-face-attribute 'link nil :underline nil :foreground (catppuccin-color 'blue))
-  (set-face-attribute 'mode-line-highlight nil :box nil :foreground (catppuccin-color 'blue))
-  (set-face-attribute 'minibuffer-nonselected nil :foreground (catppuccin-color 'red) :background 'unspecified)
-  (with-eval-after-load 'font-latex
-    (set-face-attribute 'font-latex-sectioning-5-face nil :foreground (catppuccin-color 'red))))
-
-(defun darius/catppuccin-org-setup ()
-  "Set up org-mode specific faces"
-  (set-face-attribute 'org-block nil :foreground (catppuccin-color 'text)))
-
-(darius/catppuccin-load-darker)         ; initial theme
-
-(defun darius/pick-theme ()
-  (interactive)
-  (let* ((themes '(("catppuccin-light"  . darius/catppuccin-load-light)
-                   ("catppuccin-dark"   . darius/catppuccin-load-dark)
-                   ("catppuccin-darker" . darius/catppuccin-load-darker)))
-         (choice (completing-read "Load theme: " (mapcar #'car themes)))
-         (fn (cdr (assoc choice themes))))
-    (when fn
-      (funcall fn))))
-(keymap-global-set "<f12>" #'darius/pick-theme)
+  (defun darius/catppuccin-load-light ()
+    (mapc #'disable-theme custom-enabled-themes)
+    (catppuccin-load-flavor 'latte)
+    (darius/catppuccin-face-setup))
+  (defun darius/catppuccin-load-dark ()
+    (mapc #'disable-theme custom-enabled-themes)
+    (catppuccin-load-flavor 'mocha)
+    (catppuccin-set-color 'base     "#1c1c1c" 'mocha)
+    (catppuccin-set-color 'mantle   "#161616" 'mocha)
+    (catppuccin-set-color 'crust    "#070707" 'mocha)
+    (catppuccin-set-color 'surface0 "#282828" 'mocha)
+    (catppuccin-set-color 'surface1 "#404040" 'mocha)
+    (catppuccin-set-color 'surface2 "#525252" 'mocha)
+    (catppuccin-reload)
+    (darius/catppuccin-face-setup))
+  (defun darius/catppuccin-face-setup ()
+    "Common tweaks for all catppuccin themes"
+    (set-face-attribute 'line-number nil :foreground (catppuccin-color 'overlay0))
+    (set-face-attribute 'link nil :underline nil :foreground (catppuccin-color 'blue))
+    (set-face-attribute 'mode-line-highlight nil :box nil :foreground (catppuccin-color 'blue))
+    (set-face-attribute 'minibuffer-nonselected nil :foreground (catppuccin-color 'red) :background 'unspecified)
+    (with-eval-after-load 'font-latex
+      (set-face-attribute 'font-latex-sectioning-5-face nil :foreground (catppuccin-color 'red))))
+  (defun darius/catppuccin-org-setup ()
+    "Set up org-mode specific faces"
+    (set-face-attribute 'org-block nil :foreground (catppuccin-color 'text)))
+  (defun darius/pick-theme ()
+    (interactive)
+    (let* ((themes '(("light"  . darius/catppuccin-load-light)
+                     ("dark" . darius/catppuccin-load-dark)))
+           (choice (completing-read "Load theme: " (mapcar #'car themes)))
+           (fn (cdr (assoc choice themes))))
+      (when fn
+        (funcall fn))))
+  (darius/catppuccin-load-dark))
 #+end_src
 
 * Languages
@@ -1516,8 +1492,7 @@ Language server stuff
 #+end_src
 
 ** Hyprlang
-Hyprland ecosystem config language
-Uses the builtin treesit
+Hyprland ecosystem config language.
 Get the [[https://github.com/tree-sitter-grammars/tree-sitter-hyprlang][language grammar here]]
 
 #+begin_src emacs-lisp
@@ -1611,8 +1586,7 @@ Aims to be a bit simpler than tuareg mode and highlighting looks better.
 (use-package neocaml
   :ensure t
   :vc (:url "https://github.com/bbatsov/neocaml" :branch "main")
-  :config
-  (add-hook 'neocaml-mode-hook #'neocaml-repl-minor-mode))
+  :hook (neocaml-mode . neocaml-repl-minor-mode))
 #+end_src
 
 ** Zig
@@ -1690,9 +1664,7 @@ GFM mode seems to work better than markdown-ts-mode for me.
 #+end_src
 
 ** LaTeX and Citar
-Work with citations
-Also requires auctex
-
+Work with citations, also requires auctex.
 ~citar-open-entry-in-zotero~ relies on the BetterBibTex plugin for Zotero
 
 #+begin_src emacs-lisp
@@ -1707,12 +1679,13 @@ Also requires auctex
 
 (use-package tex
   :ensure auctex
+  :custom
+  (TeX-parse-self t)
+  (TeX-auto-save t)
+  (LaTeX-electric-left-right-brace t)
+  (reftex-plug-into-AUCTeX t)
+  (reftex-default-bibliography '("~/Documents/library.bib"))
   :config
-  (setopt TeX-parse-self t)
-  (setopt TeX-auto-save t)
-  (setopt LaTeX-electric-left-right-brace t)
-  (setopt reftex-plug-into-AUCTeX t)
-  (setopt reftex-default-bibliography '("~/Documents/library.bib"))
   (setq-default TeX-master 'shared)
   (setq-default TeX-command-extra-options "--shell-escape")
   :hook
@@ -1778,8 +1751,7 @@ The cooler LaTeX?
 #+end_src
 
 ** SAIL
-Sail architecture definition language
-See [[https://github.com/rems-project/sail][GitHub]]
+Sail architecture definition language, see [[https://github.com/rems-project/sail][GitHub]].
 Requires ~sail-mode.el~ somewhere in the load-path
 
 #+begin_src emacs-lisp
@@ -1792,30 +1764,13 @@ Requires ~sail-mode.el~ somewhere in the load-path
 
 ** COMMENT Lean
 I love lean.
-The default lean4 mode depends on lsp-mode, so until they do eglot or none at all, pull in this fork.
+The default lean4 mode depends on lsp-mode, so until they do eglot or none at all, pull in [[https://codeberg.org/mekeor/nael][this fork]].
+For some reason the repo contains three different packages and I can't figure out how to pull only one,
+so it's also banished to the COMMENT realm until I think of something.
 
 #+begin_src emacs-lisp
-(use-package nael
-  :ensure t
-  :vc (:url "https://codeberg.org/mekeor/nael" :branch "release")
-  :config
-  (defun my-nael-setup ()
-    (interactive)
-    ;; Enable Emacs' built-in `TeX' input-method.  Alternatively, you
-    ;; could install the external `unicode-math-input' package and
-    ;; use the `unicode-math' input-method.
-    (set-input-method "TeX")
-    ;; Enable Emacs' built-in LSP-client Eglot.
-    (eglot-ensure))
-
-  (add-hook 'nael-mode-hook #'my-nael-setup)
-
-  ;; Nael buffer-locally sets `compile-command' to "lake build".
-  (keymap-set nael-mode-map "C-c C-c" #'project-compile)
-
-  ;; Find out how to type the character at point in the current
-  ;; input-method.
-  (keymap-set nael-mode-map "C-c C-k" #'quail-show-key))
+(use-package nael-mode
+  :vc (:url "https://codeberg.org/mekeor/nael" :branch "release"))
 #+end_src
 
 ** Web stuff
