@@ -137,7 +137,7 @@ Also I keep accidentally triggering pinch-to-zoom and ctrl+mousewheel on my lapt
 (keymap-global-set "<drag-mouse-3>" #'mouse-set-region)
 
 (keymap-global-set "<mouse-2>"
-            #'(lambda (arg) (interactive "P") (when arg (mouse-yank-primary))))
+                   #'(lambda (arg) (interactive "P") (when arg (mouse-yank-primary))))
 
 (keymap-global-unset "C-<wheel-up>")
 (keymap-global-unset "C-<wheel-down>")
@@ -151,8 +151,6 @@ Change default UI settings
 ;; remove the "GNU Emacs at [hostname]" part
 (setopt frame-title-format '("%b")
         frame-resize-pixelwise t)
-
-(column-number-mode t)
 
 (setopt scroll-preserve-screen-position t
         scroll-margin 0                 ; becuase of ultra-scroll
@@ -195,6 +193,113 @@ Change default UI settings
   (whitespace-style '(face trailing tabs indentatinon
                            space-before-tab space-after-tab
                            tab-mark space-mark empty)))
+#+end_src
+
+*** Mode line
+Custom mode line config.
+Very inspired by doom-modeline
+
+#+begin_src emacs-lisp
+(column-number-mode t)
+
+(setopt mode-line-default-help-echo nil
+        mode-line-modes-delimiters nil
+        mode-line-collapse-minor-modes-to "")
+
+(dolist (mode '(auto-revert-mode
+                visual-line-mode
+                eldoc-mode))
+  (add-to-list 'mode-line-collapse-minor-modes mode))
+
+(defface darius/mode-line-buffer-modified
+  `((t
+     :weight bold
+     :inherit warning))
+  "Face for the name of a modified buffer in the mode line")
+
+(defface darius/mode-line-buffer-unmodified
+  `((t
+     :weight bold
+     :inherit success))
+  "Face for the name of an unmodified buffer in the mode line")
+
+(defface darius/mode-line-bold
+  `((t
+     :inherit bold))
+  "Face for bold text in the mode line")
+
+(defvar-local darius/mode-line-buffer-name
+  '(:eval
+    (if (mode-line-window-selected-p)
+        (if (not (buffer-modified-p))
+            (if (project-current)
+                (propertize (buffer-name) 'face 'darius/mode-line-bold)
+              (propertize (buffer-name) 'face 'darius/mode-line-buffer-unmodified))
+          (propertize (buffer-name) 'face 'darius/mode-line-buffer-modified))
+      (buffer-name))))
+
+(defvar-local darius/mode-line-project-name
+  '(:eval
+    (if (and (project-current)
+             (not (string-equal (buffer-name) (project-name (project-current)))))
+        (if (mode-line-window-selected-p)
+            (if (buffer-modified-p)
+                (propertize (project-name (project-current)) 'face 'darius/mode-line-buffer-modified)
+              (propertize (project-name (project-current)) 'face 'darius/mode-line-buffer-unmodified))
+          (project-name (project-current)))
+      "")))
+
+(defvar-local darius/mode-line-project-separator
+  '(:eval
+    (if (and (project-current)
+             (not (string-equal (buffer-name) (project-name (project-current)))))
+        (if (mode-line-window-selected-p)
+            (if (buffer-modified-p)
+                (propertize "│" 'face 'darius/mode-line-buffer-modified)
+              (propertize "│" 'face 'darius/mode-line-bold))
+          "│")
+      "")))
+
+(defvar-local darius/mode-line-read-only-indicator
+  '(:eval
+    (propertize
+     (if buffer-read-only
+         "%%"
+       "")
+     'face 'darius/mode-line-bold)))
+
+(defvar-local darius/mode-line-git-status
+  '(:eval
+    (if (mode-line-window-selected-p)
+        (propertize vc-mode 'face 'darius/mode-line-buffer-unmodified)
+      vc-mode)))
+
+(dolist (var '(darius/mode-line-buffer-name
+               darius/mode-line-read-only-indicator
+               darius/mode-line-project-separator
+               darius/mode-line-project-name
+               darius/mode-line-git-status))
+  (put var 'risky-local-variable t))
+
+(setq-default mode-line-format
+              '("%e "
+                mode-line-client
+                mode-line-window-dedicated
+                mode-line-window-remote
+                mode-line-window-dedicated
+                darius/mode-line-read-only-indicator
+                " "
+                darius/mode-line-project-name
+                darius/mode-line-project-separator
+                darius/mode-line-buffer-name
+                "   "
+                mode-line-position
+                mode-line-format-right-align
+                darius/mode-line-git-status
+                "  "
+                mode-line-modes
+                mode-line-misc-info
+                " "))
 #+end_src
 
 ** Editing and Formatting
@@ -465,9 +570,9 @@ Changes to compile and comint buffers
   (compilation-filter . ansi-color-compilation-filter)
   :bind
   (("C-c c" . compile)
-  ("C-c r" . recompile)
-  ("M-N" . next-error)
-  ("M-P" . previous-error))
+   ("C-c r" . recompile)
+   ("M-N" . next-error)
+   ("M-P" . previous-error))
   (:map compilation-mode-map ("r" . recompile)))
 
 (use-package comint
@@ -919,7 +1024,6 @@ Very nice git interface
 #+begin_src emacs-lisp
 (use-package magit
   :ensure t
-  :defer t
   :bind ("C-x g" . magit-status))
 #+end_src
 
@@ -1043,7 +1147,6 @@ Settings for org-mode and related packages
   :ensure t
   :mode ("\\.org\\'" . org-mode)
   :hook (org-mode . turn-on-org-cdlatex)
-  :diminish org-cdlatex-mode
   :custom
   (org-directory "~/Notes")
   (org-default-notes-file (concat org-directory "/index.org"))
@@ -1076,6 +1179,7 @@ Settings for org-mode and related packages
   (org-edit-src-content-indentation 0)
   (org-ellipsis "...") ; setting this explicitly makes it show in a different face
   :config
+  (add-to-list 'mode-line-collapse-minor-modes 'org-cdlatex-mode)
   ;; follow links to files in the same window
   (setcdr (assoc 'file org-link-frame-setup) 'find-file)
   ;; remove some decoration from links
@@ -1093,7 +1197,8 @@ Settings for org-mode and related packages
 ;; builtin package to make org documents more readable
 (use-package org-indent
   :hook org-mode
-  :diminish)
+  :config
+  (add-to-list 'mode-line-collapse-minor-modes 'org-indent-mode))
 #+end_src
 
 *** org-appear
@@ -1324,20 +1429,6 @@ The most important thing tbh.
 (keymap-global-set "<f12>" #'darius/pick-theme)
 #+end_src
 
-** Diminish
-Get rid of some clutter in the modeline
-Doesn't work properly if it's not all the way at the end for some reason
-This diminished some built-in modes, for external packages and org the :diminish
-is in the use-package declaration
-
-#+begin_src emacs-lisp
-(use-package diminish
-  :ensure t
-  :diminish 'visual-line-mode
-  :diminish 'eldoc-mode
-  :diminish 'auto-revert-mode)
-#+end_src
-
 * Languages
 Programming language specific stuff
 
@@ -1489,7 +1580,7 @@ The one and only
   :ensure t
   :after haskell-mode
   :hook (haskell-mode . hindent-mode)
-  :diminish)
+  :config (add-to-list 'mode-line-collapse-minor-modes 'hindent-mode))
 #+end_src
 
 ** Scala
@@ -1656,9 +1747,9 @@ Also requires auctex
 (use-package citar-embark
   :ensure t
   :after citar embark
-  :diminish
   :custom (citar-at-point-function 'embark-act)
   :config
+  (add-to-list 'mode-line-collapse-minor-modes 'citar-embark-mode)
   (citar-embark-mode)
   (define-key citar-embark-map (kbd "z") #'citar-open-entry-in-zotero)
   (define-key citar-citation-map (kbd "z") #'citar-open-entry-in-zotero))
@@ -1760,91 +1851,7 @@ Web stuff
 
 * Custom Functions
 Various cringe
-** Mode line
-Custom mode line config.
-This has to load after [[*Colorscheme][Colorscheme]] for ~catppuccin-color~
 
-#+begin_src emacs-lisp
-(defface my/mode-line-buffer-modified
-  `((t
-     :foreground ,(catppuccin-color 'yellow)
-     :inherit bold))
-  "Face for the name of a modified buffer in the mode line")
-
-(defface my/mode-line-buffer-unmodified
-  `((t
-     :foreground ,(catppuccin-color 'green)
-     :inherit bold))
-  "Face for the name of an unmodified buffer in the mode line")
-
-(defface my/mode-line-bold
-  `((t
-     :inherit bold))
-  "Face for bold text in the mode line")
-
-(defvar-local my/mode-line-buffer-name
-  '(:eval
-    (if (mode-line-window-selected-p)
-        (if (not (buffer-modified-p))
-            (if (project-current)
-                (propertize (buffer-name) 'face 'my/mode-line-bold)
-              (propertize (buffer-name) 'face 'my/mode-line-buffer-unmodified))
-          (propertize (buffer-name) 'face 'my/mode-line-buffer-modified))
-      (buffer-name))))
-
-(defvar-local my/mode-line-project-name
-  '(:eval
-    (if (and (project-current)
-             (not (string-equal (buffer-name) (project-name (project-current)))))
-        (if (mode-line-window-selected-p)
-            (if (buffer-modified-p)
-                (propertize (project-name (project-current)) 'face 'my/mode-line-buffer-modified)
-              (propertize (project-name (project-current)) 'face 'my/mode-line-buffer-unmodified))
-          (project-name (project-current)))
-      "")))
-
-(defvar-local my/mode-line-project-separator
-  '(:eval
-    (if (and (project-current)
-             (not (string-equal (buffer-name) (project-name (project-current)))))
-        (if (mode-line-window-selected-p)
-            (if (buffer-modified-p)
-                (propertize "|" 'face 'my/mode-line-buffer-modified)
-              (propertize "|" 'face 'my/mode-line-bold))
-          "|")
-      "")))
-
-(defvar-local my/mode-line-read-only-indicator
-  '(:eval
-    (propertize
-     (if buffer-read-only
-         "%%"
-       "")
-     'face 'my/mode-line-bold)))
-
-(dolist (var '(my/mode-line-buffer-name
-               my/mode-line-read-only-indicator
-               my/mode-line-project-name
-               my/mode-line-project-separator))
-  (put var 'risky-local-variable t))
-
-(setq-default mode-line-format
-              '("%e "
-                mode-line-window-dedicated
-                my/mode-line-read-only-indicator
-                " "
-                my/mode-line-project-name
-                my/mode-line-project-separator
-                my/mode-line-buffer-name
-                "   "
-                mode-line-position
-                mode-line-format-right-align
-                (vc-mode vc-mode)
-                "   "
-                mode-line-modes
-                mode-line-misc-info
-                mode-line-end-spaces))
-#+end_src
 ** Zoxide
 Querying the zoxide database for all entries returns them in a sorted order, so we can just pass it to completing read.
 The ~table~ thing makes completing-read keep the original order of the list passed to it.
