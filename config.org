@@ -222,46 +222,26 @@ Very inspired by doom-modeline
      :inherit warning))
   "Face for the name of a modified buffer in the mode line")
 
-(defface darius/mode-line-buffer-unmodified
+(defface darius/mode-line-green
   `((t
      :weight bold
      :inherit success))
-  "Face for the name of an unmodified buffer in the mode line")
-
-(defface darius/mode-line-bold
-  `((t
-     :inherit bold))
-  "Face for bold text in the mode line")
+  "Bold and green face for the mode line")
 
 (defvar-local darius/mode-line-buffer-name
   '(:eval
     (if (mode-line-window-selected-p)
-        (if (not (buffer-modified-p))
-            (if (project-current)
-                (propertize (buffer-name) 'face 'darius/mode-line-bold)
-              (propertize (buffer-name) 'face 'darius/mode-line-buffer-unmodified))
-          (propertize (buffer-name) 'face 'darius/mode-line-buffer-modified))
+        (if (buffer-modified-p)
+            (propertize (buffer-name) 'face 'darius/mode-line-buffer-modified)
+          (propertize (buffer-name) 'face 'bold))
       (buffer-name))))
 
 (defvar-local darius/mode-line-project-name
   '(:eval
-    (when (and (project-current)
-               (not (string-equal (buffer-name) (project-name (project-current)))))
+    (when (project-current)
       (if (mode-line-window-selected-p)
-          (if (buffer-modified-p)
-              (propertize (project-name (project-current)) 'face 'darius/mode-line-buffer-modified)
-            (propertize (project-name (project-current)) 'face 'darius/mode-line-buffer-unmodified))
-        (project-name (project-current))))))
-
-(defvar-local darius/mode-line-project-separator
-  '(:eval
-    (when (and (project-current)
-               (not (string-equal (buffer-name) (project-name (project-current)))))
-      (if (mode-line-window-selected-p)
-          (if (buffer-modified-p)
-              (propertize "│" 'face 'darius/mode-line-buffer-modified)
-            (propertize "│" 'face 'darius/mode-line-bold))
-        "│"))))
+          (propertize (format "[%s]" (project-name (project-current))) 'face 'shadow)
+        (format "[%s]" (project-name (project-current)))))))
 
 (defvar-local darius/mode-line-read-only-indicator
   '(:eval
@@ -279,32 +259,32 @@ Very inspired by doom-modeline
 
 (defvar-local darius/mode-line-git-status
   '(:eval
-    (if (mode-line-window-selected-p)
-        (propertize vc-mode 'face 'darius/mode-line-buffer-unmodified)
-      vc-mode)))
+    (when vc-mode
+      (if (mode-line-window-selected-p)
+          (propertize vc-mode 'face 'bold)
+        vc-mode))))
 
 (dolist (var '(darius/mode-line-buffer-name
                darius/mode-line-read-only-indicator
                darius/mode-line-narrow-indicator
-               darius/mode-line-project-separator
                darius/mode-line-project-name
                darius/mode-line-git-status))
   (put var 'risky-local-variable t))
 
 (setq-default mode-line-format
-              '("%e"
+              '("%e "
                 mode-line-client
                 mode-line-window-dedicated
                 mode-line-window-remote
                 darius/mode-line-narrow-indicator
                 darius/mode-line-read-only-indicator
                 " "
-                darius/mode-line-project-name
-                darius/mode-line-project-separator
                 darius/mode-line-buffer-name
-                "   "
+                "  "
                 mode-line-position
                 mode-line-format-right-align
+                darius/mode-line-project-name
+                " "
                 darius/mode-line-git-status
                 "  "
                 mode-line-modes
@@ -1198,7 +1178,7 @@ Settings for org-mode and related packages
   (setcdr (assoc 'file org-link-frame-setup) 'find-file)
   ;; remove some decoration from links
   (set-face-attribute 'org-cite-key nil :underline nil)
-  (set-face-attribute 'org-cite nil :underline nil)
+  (set-face-attribute 'org-cite nil :underline nil :inherit 'shadow)
   :bind
   ("C-c o a" . org-agenda)
   ("C-c o A" . consult-org-agenda)
@@ -1295,6 +1275,7 @@ RSS feeds
   (add-hook 'elfeed-new-entry-hook
           (elfeed-make-tagger :before "2 weeks ago"
                               :remove 'unread))
+  ;; make news post stand out less than blogs
   (push '(news shadow)
       elfeed-search-face-alist)
   (darius/reload-elfeed-feeds)
@@ -1410,11 +1391,6 @@ The most important thing tbh.
 
 (use-package catppuccin-theme
   :ensure t
-  :demand t ; immediately load colors
-  :hook
-  (org-mode . darius/catppuccin-org-setup)
-  :bind
-  ("<f12>" . darius/pick-theme)
   :config
   (defun darius/catppuccin-load-light ()
     (mapc #'disable-theme custom-enabled-themes)
@@ -1438,10 +1414,9 @@ The most important thing tbh.
     (set-face-attribute 'mode-line-highlight nil :box nil :foreground (catppuccin-color 'blue))
     (set-face-attribute 'minibuffer-nonselected nil :foreground (catppuccin-color 'red) :background 'unspecified)
     (with-eval-after-load 'font-latex
-      (set-face-attribute 'font-latex-sectioning-5-face nil :foreground (catppuccin-color 'red))))
-  (defun darius/catppuccin-org-setup ()
-    "Set up org-mode specific faces"
-    (set-face-attribute 'org-block nil :foreground (catppuccin-color 'text)))
+      (set-face-attribute 'font-latex-sectioning-5-face nil :foreground (catppuccin-color 'red)))
+    (with-eval-after-load 'org
+      (set-face-attribute 'org-block nil :foreground (face-foreground 'default))))
   (defun darius/pick-theme ()
     (interactive)
     (let* ((themes '(("light"  . darius/catppuccin-load-light)
@@ -1450,6 +1425,9 @@ The most important thing tbh.
            (fn (cdr (assoc choice themes))))
       (when fn
         (funcall fn))))
+  ;; if I :bind this I also have to :demand t
+  ;; which is lame and causes a loop if it's not loaded
+  (keymap-global-set "<f12>" #'darius/pick-theme)
   (darius/catppuccin-load-dark))
 #+end_src
 
@@ -1787,15 +1765,15 @@ The cooler LaTeX?
 #+begin_src emacs-lisp
 (use-package typst-ts-mode
   :ensure t
-  :after eglot
   :config
   ;; typst-ts-mode downloads the latest stable build of tinymist (https://myriad-dreamin.github.io/tinymist/frontend/emacs.html)
   ;; so use that if it's available
-  (add-to-list 'eglot-server-programs
-               `((typst-ts-mode) .
-                 ,(eglot-alternatives
-                   `(,typst-ts-lsp-download-path
-                     "tinymist")))))
+  (with-eval-after-load 'eglot
+    (add-to-list 'eglot-server-programs
+                 `((typst-ts-mode) .
+                   ,(eglot-alternatives
+                     `(,typst-ts-lsp-download-path
+                       "tinymist"))))))
 #+end_src
 
 ** SAIL

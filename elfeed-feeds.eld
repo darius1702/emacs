@@ -1,6 +1,6 @@
 ("https://www.logicmatters.net/feed/"
  "https://joeyh.name/blog/index.rss"
- "https://protesilaos.com/codelog.xml"
+ "https://protesilaos.com/master.xml"
  "https://jakob.space/feed.xml"
  "https://taylor.town/feed.xml"
  "https://flak.tedunangst.com/rss"
@@ -16,7 +16,6 @@
  "https://blog.ganets.ky/feed"
  "https://cadence.moe/blog/atom.xml?limit=30"
  "https://devblogs.microsoft.com/oldnewthing/feed/"
- "https://www.sandordargo.com/feed.xml"
  "https://nibblestew.blogspot.com/feeds/posts/default"
  "https://herbsutter.com/feed"
 
@@ -44,9 +43,8 @@
 
  ("https://people.kernel.org/read/feed/" os)
  ("https://os.phil-opp.com/rss.xml" os)
+ ("https://archlinux.org/feeds/news/" arch)
 
- ("https://www.cnx-software.com/feed" hw news)
  ("https://chipsandcheese.com/feed" hw)
  ("https://www.copetti.org/index.xml" hw)
-
- ("https://www.phoronix.com/rss.php" news))
+ ("https://www.cnx-software.com/feed" hw news))
