@@ -82,7 +82,7 @@ Lexical bindings and set+load custom file
 
 #+begin_src emacs-lisp
 ;; -*- lexical-binding: t -*-
-(setq custom-file (concat user-emacs-directory "custom.el"))
+(setq custom-file (locate-user-emacs-file "custom.el"))
 (when (file-exists-p custom-file)
   (load custom-file))
 #+end_src
@@ -750,11 +750,11 @@ Disble all annoying auto-generated files and make ~custom-set-variables~ go to t
 Also disable auto-save messages
 
 #+begin_src emacs-lisp
-(make-directory (expand-file-name "tmp/auto-saves/" user-emacs-directory) t)
-(setopt auto-save-list-file-prefix (expand-file-name "tmp/auto-saves/sessions/" user-emacs-directory)
-        auto-save-file-name-transforms `((".*" ,(expand-file-name "tmp/auto-saves/" user-emacs-directory) t))
+(make-directory (locate-user-emacs-file "tmp/auto-saves/") t)
+(setopt auto-save-list-file-prefix (locate-user-emacs-file "tmp/auto-saves/sessions/")
+        auto-save-file-name-transforms `((".*" ,(locate-user-emacs-file "tmp/auto-saves/") t))
         auto-save-no-message t
-        backup-directory-alist `(("." . ,(expand-file-name "tmp/backups/" user-emacs-directory)))
+        backup-directory-alist `(("." . ,(locate-user-emacs-file "tmp/backups/")))
         backup-by-copying t)
 
 ;; Enable when lockfiles become annoying
@@ -767,7 +767,7 @@ Load lisp files from ~[user-emacs-directory]/external~.
 Configure ~package.el~ and ~use-package~
 
 #+begin_src emacs-lisp
-(add-to-list 'load-path (file-name-concat user-emacs-directory "external"))
+(add-to-list 'load-path (locate-user-emacs-file "external/"))
 
 (use-package package
   :custom
@@ -1291,6 +1291,12 @@ RSS feeds
               (with-temp-buffer
                 (insert-file-contents file)
                 (read (current-buffer))))))
+  ;; mark new entries older than two weeks as read automatically
+  (add-hook 'elfeed-new-entry-hook
+          (elfeed-make-tagger :before "2 weeks ago"
+                              :remove 'unread))
+  (push '(news shadow)
+      elfeed-search-face-alist)
   (darius/reload-elfeed-feeds)
   (elfeed-update)
   :bind
@@ -1644,7 +1650,7 @@ SMT solving aaaa
 For some reason this depends on flycheck which is very cringe
 
 #+begin_src emacs-lisp
-(add-to-list 'load-path (file-name-concat user-emacs-directory "/external/z3-mode"))
+(add-to-list 'load-path (locate-user-emacs-file "external/z3-mode/"))
 
 (require 'z3-mode)
 #+end_src
