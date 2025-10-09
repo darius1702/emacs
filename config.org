@@ -308,6 +308,11 @@ Changes to default editing behavior
 ;; join line with line above
 (keymap-global-set "C-c j" #'join-line)
 
+;; delete parens and quotes
+(setopt delete-pair-push-mark t
+        delete-pair-blink-delay 0.4)
+(keymap-global-set "C-c d" #'delete-pair)
+
 ;; continue comment on new line
 (keymap-set prog-mode-map "M-RET" #'comment-indent-new-line)
 
@@ -827,8 +832,9 @@ Easily place multiple cursors for edits
 #+begin_src emacs-lisp
 (use-package multiple-cursors
   :ensure t
-  :custom ((mc/always-run-for-all t)
-           (mc/cmds-to-run-once nil))
+  :custom
+  (mc/always-run-for-all t)
+  (mc/cmds-to-run-once nil)
   :bind
   ("C-S-c C-S-c" . mc/edit-lines)
   ("C->" . mc/mark-next-like-this-word)
@@ -947,9 +953,6 @@ Doesn't have this one annoying bug that pixel-scroll-precision-mode has that
 makes the page jump backwards when scrolling with the caret all the way at the
 top of the screen.
 
-For some reason this gives a 'You are not currently on a branch' git error when trying to upgrade,
-no idea why.
-
 #+begin_src emacs-lisp
 ;; builtin-version
 ;; (pixel-scroll-precision-mode 1)
@@ -1006,7 +1009,7 @@ Font presets
       :default-height 185)))
   :config
   (defun darius/reapply-fontaine ()
-    (fontaine-set-preset (or (fontaine-restore-latest-preset) 'present)))
+    (fontaine-set-preset (or (fontaine-restore-latest-preset) 'sf-mono)))
   (fontaine-mode 1)
   (darius/reapply-fontaine)
   :bind
@@ -1121,7 +1124,7 @@ Some improvements over DocView
               ("C" . pdf-view-center-in-window)
               ("C-=" . pdf-view-enlarge)
               ("C--" . pdf-view-shrink)
-              ;; this also makes scroll-other-window work for PDFView buffers
+              ;; this also makes `scroll-other-window' work for PDFView buffers
               ([remap scroll-up-command] . pdf-view-scroll-up-or-next-page)
               ([remap scroll-down-command] . pdf-view-scroll-down-or-previous-page)
               ("<up>" . pdf-view-previous-line-or-previous-page)
@@ -1451,7 +1454,7 @@ Language server stuff
 #+begin_src emacs-lisp
 (use-package eglot
   :custom
-  (eglot-ignored-server-capabilities '(:documentHighlightProvider))
+  ;; (eglot-ignored-server-capabilities '(:documentHighlightProvider))
   (eglot-autoshutdown t)
   (eglot-extend-to-xref t)
   (eglot-events-buffer-size 0)          ; deprecated?
@@ -1552,8 +1555,6 @@ The one and only
   :ensure t
   :custom
   (haskell-process-auto-import-loaded-modules t)
-  :init
-  (setopt flymake-allowed-file-name-masks '())
   :bind
   (:map haskell-mode-map
         ("M-n" . 'haskell-goto-next-error)
