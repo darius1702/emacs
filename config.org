@@ -995,7 +995,7 @@ Font presets
    '((sf-mono
       :default-family "SFMono Nerd Font Mono"
       :fixed-pitch-family "SFMono Nerd Font Mono"
-      :variable-pitch-family "SF Pro"
+      :variable-pitch-family "SF Pro Text"
       :default-weight regular
       :default-height 110
       :fixed-pitch-weight nil ; falls back to :default-weight
@@ -1264,7 +1264,7 @@ RSS feeds
   (elfeed-enclosure-default-dir user-emacs-directory)
   (elfeed-db-directory (locate-user-emacs-file "elfeed/"))
   :config
-  (setq-default elfeed-search-filter "@1-year-old")
+  (setq-default elfeed-search-filter "@6-months-ago")
   (defconst darius/elfeed-feeds-file (locate-user-emacs-file "elfeed-feeds.eld"))
   (defun darius/reload-elfeed-feeds ()
     (interactive)

@@ -1,4 +1,5 @@
 ("https://www.logicmatters.net/feed/"
+ "https://bartoszmilewski.com/feed"
  "https://joeyh.name/blog/index.rss"
  "https://protesilaos.com/master.xml"
  "https://jakob.space/feed.xml"
