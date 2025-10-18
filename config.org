@@ -5,9 +5,13 @@
 
 * Build flags
 Nativecomp, pgtk, ...
+Some build options taken from [[https://github.com/D4lj337/Emacs-performance][here]].
 
 #+begin_src sh
-./configure --with-native-compilation=aot --with-pgtk --without-x --without-ns --with-imagemagick --without-compress-install --disable-gc-mark-trace --enable-link-time-optimization 'CFLAGS=-O3 -march=native'
+./configure --with-native-compilation=aot --with-pgtk --with-imagemagick \
+            --without-x --without-ns --without-gsettings --without-compress-install \
+            --disable-gc-mark-trace --enable-link-time-optimization \
+            'CFLAGS=-Ofast -march=native -fno-finite-math-only -pipe -fgraphite-identity -floop-nest-optimize -fdevirtualize-at-ltrans -fipa-pta -fno-semantic-interposition'
 #+end_src
 
 
@@ -122,8 +126,9 @@ Unbind some defaults and bind some more keys
 #+begin_src emacs-lisp
 (keymap-global-unset "C-x C-c")            ; stop accidentally quitting emacs
 (keymap-global-unset "C-x C-z")            ; stop accidentally suspending emacs
-(keymap-global-unset "C-h g")              ; really
 (keymap-global-unset "C-z")                ; stop accidentally suspending emacs (other binding)
+(keymap-global-unset "C-x m")              ; stop accidentally composing mail
+(keymap-global-unset "C-h g")              ; really
 
 (keymap-global-set "M-o" #'other-window)
 (keymap-global-set "M-O" #'other-window-backward)
@@ -207,7 +212,7 @@ Very inspired by doom-modeline
 
 (setopt mode-line-default-help-echo nil
         mode-line-modes-delimiters nil
-        mode-line-position-column-line-format '(" %l:%c")
+        mode-line-position-column-line-format '("%l:%c")
         mode-line-collapse-minor-modes-to "")
 
 (dolist (mode '(auto-revert-mode
@@ -221,12 +226,6 @@ Very inspired by doom-modeline
      :weight bold
      :inherit warning))
   "Face for the name of a modified buffer in the mode line")
-
-(defface darius/mode-line-green
-  `((t
-     :weight bold
-     :inherit success))
-  "Bold and green face for the mode line")
 
 (defvar-local darius/mode-line-buffer-name
   '(:eval
@@ -650,7 +649,7 @@ Help popups, linting, documentation, ...
 ;; manual pages (colorschemes can override the colors)
 (use-package man
   :bind
-  ("C-c m" . man)
+  ("C-c m m" . man)
   :custom
   (Man-notify-method 'thrifty) ; reuse existing manpage window if possible
   :config
@@ -850,7 +849,16 @@ Read tldr pages in emacs
 #+begin_src emacs-lisp
 (use-package tldr
   :ensure t
-  :bind ("C-c t" . tldr))
+  :bind ("C-c m t" . tldr))
+#+end_src
+
+*** Devdocs
+Read ~devdocs.io~ inside emacs
+
+#+begin_src emacs-lisp
+(use-package devdocs
+  :ensure t
+  :bind ("C-c m d" . devdocs-lookup))
 #+end_src
 
 *** Nov mode
@@ -1065,9 +1073,9 @@ Some nice additional completing-read stuff
     (let* ((consult-ripgrep-args (s-concat consult-ripgrep-args " --hidden")))
       (call-interactively 'consult-ripgrep)))
   (defun darius/consult-fd-hidden ()
-    "Call fd with additional --hidden flag"
+    "Call fd with additional --hidden and --no-ignore flags"
     (interactive)
-    (let* ((consult-fd-args (s-concat consult-fd-args " --hidden")))
+    (let* ((consult-fd-args (append consult-fd-args '(" --hidden --no-ignore"))))
       (call-interactively 'consult-fd)))
   (with-eval-after-load 'em-prompt
     (keymap-set eshell-prompt-mode-map "M-r" #'consult-history))
@@ -1345,8 +1353,8 @@ Pretty icons, still not sure if I like this
 (use-package nerd-icons-corfu
   :ensure t
   :after corfu
-  :config
-  (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))
+  :hook (corfu-mode . (lambda ()
+                        (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))))
 #+end_src
 
 *** CAPE
@@ -1414,6 +1422,8 @@ The most important thing tbh.
     "Common tweaks for all catppuccin themes"
     (set-face-attribute 'line-number nil :foreground (catppuccin-color 'overlay0))
     (set-face-attribute 'link nil :underline nil :foreground (catppuccin-color 'blue))
+    (set-face-attribute 'mode-line nil :box '(:line-width -1 :style released-button))
+    (set-face-attribute 'mode-line-inactive nil :box '(:line-width -1 :style released-button))
     (set-face-attribute 'mode-line-highlight nil :box nil :foreground (catppuccin-color 'blue))
     (set-face-attribute 'minibuffer-nonselected nil :foreground (catppuccin-color 'red) :background 'unspecified)
     (with-eval-after-load 'font-latex
