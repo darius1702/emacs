@@ -201,6 +201,11 @@ Change default UI settings
   (whitespace-style '(face trailing tabs indentatinon
                            space-before-tab space-after-tab
                            tab-mark space-mark empty)))
+
+(use-package calendar
+  :custom
+  (calendar-date-style 'european)
+  (calendar-week-start-day 1))
 #+end_src
 
 *** Mode line
@@ -1172,8 +1177,7 @@ Settings for org-mode and related packages
   (org-todo-keywords '((sequence "TODO(t)" "IN-PROGRESS(p)" "WAITING(w)" "|" "DONE(d)")))
   (org-use-fast-todo-selection 'expert)
   (org-return-follows-link t)
-  (calendar-date-style 'european)
-  (calendar-week-start-day 1)
+  (org-deadline-warning-days 3)
   (org-imenu-depth 7)
   (org-highlight-latex-and-related '(latex))
   (org-hide-emphasis-markers t)    ; org-appear my beloved (see below)
@@ -1315,6 +1319,7 @@ Completion
 #+begin_src emacs-lisp
 (use-package corfu
   :ensure t
+  :after consult
   :custom
   (corfu-auto-delay 0.1)
   (corfu-cycle t)
@@ -1423,25 +1428,47 @@ The most important thing tbh.
     (set-face-attribute 'line-number nil :foreground (catppuccin-color 'overlay0))
     (set-face-attribute 'link nil :underline nil :foreground (catppuccin-color 'blue))
     (set-face-attribute 'mode-line nil :box '(:line-width -1 :style released-button))
-    (set-face-attribute 'mode-line-inactive nil :box '(:line-width -1 :style released-button))
+    (set-face-attribute 'mode-line-inactive nil :box `(:line-width -1 :color ,(catppuccin-color 'surface1)))
     (set-face-attribute 'mode-line-highlight nil :box nil :foreground (catppuccin-color 'blue))
     (set-face-attribute 'minibuffer-nonselected nil :foreground (catppuccin-color 'red) :background 'unspecified)
     (with-eval-after-load 'font-latex
       (set-face-attribute 'font-latex-sectioning-5-face nil :foreground (catppuccin-color 'red)))
     (with-eval-after-load 'org
-      (set-face-attribute 'org-block nil :foreground (face-foreground 'default))))
-  (defun darius/pick-theme ()
-    (interactive)
-    (let* ((themes '(("light"  . darius/catppuccin-load-light)
-                     ("dark" . darius/catppuccin-load-dark)))
-           (choice (completing-read "Load theme: " (mapcar #'car themes)))
-           (fn (cdr (assoc choice themes))))
-      (when fn
-        (funcall fn))))
-  ;; if I :bind this I also have to :demand t
-  ;; which is lame and causes a loop if it's not loaded
-  (keymap-global-set "<f12>" #'darius/pick-theme)
-  (darius/catppuccin-load-dark))
+      (set-face-attribute 'org-block nil :foreground (face-foreground 'default)))))
+
+(use-package standard-themes
+  :ensure t
+  :custom
+  (standard-themes-bold-constructs nil)
+  (standard-themes-italic-constructs nil)
+  :config
+  (defun darius/standard-themes-setup ()
+    (standard-themes-with-colors
+      (set-face-attribute 'font-lock-comment-face nil :foreground fg-dim)
+      (set-face-attribute 'font-lock-doc-face nil :foreground fg-dim)
+      (set-face-attribute 'font-lock-string-face nil :foreground fg-dim)
+      (with-eval-after-load 'org
+        (set-face-attribute 'org-block nil :background bg-inactive)
+        (set-face-attribute 'org-block-begin-line nil :foreground fg-dim :background bg-dim :extend t)
+        (set-face-attribute 'org-block-end-line nil :foreground fg-dim :background bg-dim :extend t))))
+  :hook
+  (standard-themes-post-load . darius/standard-themes-setup))
+
+(defun darius/pick-theme ()
+  (interactive)
+  (let* ((themes '(("catppuccin-light" . darius/catppuccin-load-light)
+                   ("catppuccin-dark" . darius/catppuccin-load-dark)
+                   ("standard-dark" . (lambda () (standard-themes-select 'standard-dark)))
+                   ("standard-dark-tinted" . (lambda () (standard-themes-select 'standard-dark-tinted)))
+                   ("standard-light" . (lambda () (standard-themes-select 'standard-light)))
+                   ("standard-light-tinted" . (lambda () (standard-themes-select 'standard-light-tinted)))))
+         (choice (completing-read "Load theme: " (mapcar #'car themes)))
+         (fn (cdr (assoc choice themes))))
+    (when fn
+      (funcall fn))))
+
+(standard-themes-select 'standard-light)
+(keymap-global-set "<f12>" #'darius/pick-theme)
 #+end_src
 
 * Languages
@@ -1938,7 +1965,8 @@ Most use-cases for semincolons are covered by ~comment-line~ and ~comment-dwim~
 (dolist (mode '(minibuffer-setup-hook
                 emacs-lisp-mode-hook
                 ielm-mode-hook
-                org-mode-hook))
+                org-mode-hook
+                haskell-mode-hook))
   (add-hook mode #'darius/dash-semicolon-minor-mode))
 #+end_src
 
@@ -1961,20 +1989,29 @@ With two prefixes call ~winner-undo~
     (call-interactively #'switch-to-buffer))))
 
 (keymap-global-set "C-;" #'darius/switch-buffer-or-delete-window)
+
+;; aaa
+(with-eval-after-load 'verilog-mode
+  (keymap-set verilog-mode-map "C-;" #'darius/switch-buffer-or-delete-window))
 #+end_src
 
-** Todo comments
-~hl-todo~ seems to have something similar called ~hl-todo-occur~
+** Move lines
+Shift lines up and down, yoinked from [[https://emacsredux.com/blog/2013/04/02/move-current-line-up-or-down/][here]].
 
 #+begin_src emacs-lisp
-(defvar darius/comment-keyword-list
-      '(("TODO") ("FIXME") ("NOTE") ("FAIL") ("HACK") ("XXX")))
-
-(defun darius/todo-occur ()
-  "List all lines containing a keyword from `darius/comment-keyword-list'"
+(defun darius/move-line-up ()
   (interactive)
-  (let ((keyword (completing-read "Occur keyword: " darius/comment-keyword-list)))
-    (occur keyword)))
+  (transpose-lines 1)
+  (forward-line -2)
+  (indent-according-to-mode))
 
-(keymap-global-set "M-s t" #'darius/todo-occur)
+(defun darius/move-line-down ()
+  (interactive)
+  (forward-line 1)
+  (transpose-lines 1)
+  (forward-line -1)
+  (indent-according-to-mode))
+
+(keymap-global-set "C-S-p" #'darius/move-line-up)
+(keymap-global-set "C-S-n" #'darius/move-line-down)
 #+end_src
