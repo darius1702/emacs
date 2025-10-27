@@ -31,6 +31,7 @@
 
  ("https://bernsteinbear.com/feed.xml" compiler)
  ("https://cybercat.institute/feed.xml" fp)
+ ("https://www.haskellforall.com/feeds/posts/default" fp)
  ("https://feeds.feedburner.com/incodeblog" fp)
  ("https://www.well-typed.com/blog/rss2.xml" fp)
  ("https://thomasjm.github.io/feed.xml" fp)

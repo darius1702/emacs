@@ -226,47 +226,65 @@ Very inspired by doom-modeline
                 eldoc-mode))
   (add-to-list 'mode-line-collapse-minor-modes mode))
 
-(defface darius/mode-line-buffer-modified
+(defface darius/mode-line-highlight
   `((t
-     :weight bold
+     :weight semibold
      :inherit warning))
-  "Face for the name of a modified buffer in the mode line")
+  "Face for highlighted text on the mode line")
+
+(defface darius/mode-line-bold
+  `((t
+     :weight semibold
+     :inherit fixed-pitch))
+  "Face bold text on the mode line")
+
+(defface darius/mode-line-text
+  `((t
+     :inherit fixed-pitch))
+  "Face for text on the mode line")
+
+(defface darius/mode-line-shadow
+  `((t
+     :inherit shadow))
+  "Face for text on the mode line that should not stand out too much")
 
 (defvar-local darius/mode-line-buffer-name
   '(:eval
     (if (mode-line-window-selected-p)
         (if (buffer-modified-p)
-            (propertize (buffer-name) 'face 'darius/mode-line-buffer-modified)
-          (propertize (buffer-name) 'face 'bold))
+            (propertize (buffer-name) 'face 'darius/mode-line-highlight)
+          (propertize (buffer-name) 'face 'darius/mode-line-bold))
       (buffer-name))))
-
-(defvar-local darius/mode-line-project-name
-  '(:eval
-    (when (project-current)
-      (if (mode-line-window-selected-p)
-          (propertize (format "[%s]" (project-name (project-current))) 'face 'shadow)
-        (format "[%s]" (project-name (project-current)))))))
 
 (defvar-local darius/mode-line-read-only-indicator
   '(:eval
     (when buffer-read-only
       (if (mode-line-window-selected-p)
-          (propertize " %%" 'face 'darius/mode-line-buffer-modified)
+          (propertize " %%" 'face 'darius/mode-line-highlight)
         " %%"))))
 
 (defvar-local darius/mode-line-narrow-indicator
   '(:eval
     (when (buffer-narrowed-p)
       (if (mode-line-window-selected-p)
-          (propertize " ><" 'face 'darius/mode-line-buffer-modified)
+          (propertize " ><" 'face 'darius/mode-line-highlight)
         " ><"))))
+
+(defvar-local darius/mode-line-project-name
+  '(:eval
+    (when (project-current)
+      (let ((project-str (format "[%s]" (project-name (project-current)))))
+        (if (mode-line-window-selected-p)
+            (propertize project-str 'face 'darius/mode-line-shadow)
+          project-str)))))
 
 (defvar-local darius/mode-line-git-status
   '(:eval
     (when vc-mode
       (if (mode-line-window-selected-p)
-          (propertize vc-mode 'face 'bold)
-        vc-mode))))
+          (propertize vc-mode 'face 'darius/mode-line-text)
+        ;; explicit shadow face here because standard-themes makes it italic otherwise
+        (propertize vc-mode 'face 'darius/mode-line-shadow)))))
 
 (dolist (var '(darius/mode-line-buffer-name
                darius/mode-line-read-only-indicator
@@ -314,7 +332,7 @@ Changes to default editing behavior
 
 ;; delete parens and quotes
 (setopt delete-pair-push-mark t
-        delete-pair-blink-delay 0.4)
+        delete-pair-blink-delay 0.3)
 (keymap-global-set "C-c d" #'delete-pair)
 
 ;; continue comment on new line
@@ -1172,9 +1190,9 @@ Settings for org-mode and related packages
   (org-refile-targets
    '((nil :maxlevel . 3)
      (org-agenda-files :maxlevel . 3)))
-  (org-agenda-span 'month)
+  (org-agenda-span 'week)
   (org-agenda-files '("~/Notes"))
-  (org-todo-keywords '((sequence "TODO(t)" "IN-PROGRESS(p)" "WAITING(w)" "|" "DONE(d)")))
+  (org-todo-keywords '((sequence "TODO(t)" "IN-PROGRESS(p)" "WAITING(w)" "HOLD(h)" "|" "DONE(d)")))
   (org-use-fast-todo-selection 'expert)
   (org-return-follows-link t)
   (org-deadline-warning-days 3)
@@ -1186,7 +1204,6 @@ Settings for org-mode and related packages
   (org-src-window-setup 'plain)
   (org-src-preserve-indentation nil)
   (org-edit-src-content-indentation 0)
-  (org-ellipsis "...") ; setting this explicitly makes it show in a different face
   :config
   (add-to-list 'mode-line-collapse-minor-modes 'org-cdlatex-mode)
   ;; follow links to files in the same window
@@ -1199,10 +1216,10 @@ Settings for org-mode and related packages
   ("C-c o A" . consult-org-agenda)
   ("C-c o t" . org-todo-list)
   ("C-c o c" . org-capture)
+  ("<f10>" . (lambda () (interactive) (org-agenda nil "a")))
   (:map org-mode-map
         ("C-c o s" . org-store-link)
         ("C-c o h" . consult-org-heading)))
-
 ;; builtin package to make org documents more readable
 (use-package org-indent
   :hook org-mode
@@ -1290,9 +1307,9 @@ RSS feeds
   (add-hook 'elfeed-new-entry-hook
           (elfeed-make-tagger :before "2 weeks ago"
                               :remove 'unread))
-  ;; make news post stand out less than blogs
-  (push '(news shadow)
-      elfeed-search-face-alist)
+  ;; make news post stand out less than blogs and highlight arch linux feed
+  (push '(news shadow) elfeed-search-face-alist)
+  (push '(arch warning) elfeed-search-face-alist)
   (darius/reload-elfeed-feeds)
   (elfeed-update)
   :bind
@@ -1448,6 +1465,9 @@ The most important thing tbh.
       (set-face-attribute 'font-lock-doc-face nil :foreground fg-dim)
       (set-face-attribute 'font-lock-string-face nil :foreground fg-dim)
       (with-eval-after-load 'org
+        (set-face-attribute 'org-level-1 nil :foreground fg-dim :background bg-blue-nuanced :height 1.1)
+        (dolist (level (number-sequence 2 8))
+          (set-face-attribute (intern (format "org-level-%s" level)) nil :foreground fg-dim :weight 'semibold))
         (set-face-attribute 'org-block nil :background bg-inactive)
         (set-face-attribute 'org-block-begin-line nil :foreground fg-dim :background bg-dim :extend t)
         (set-face-attribute 'org-block-end-line nil :foreground fg-dim :background bg-dim :extend t))))
@@ -2014,4 +2034,14 @@ Shift lines up and down, yoinked from [[https://emacsredux.com/blog/2013/04/02/m
 
 (keymap-global-set "C-S-p" #'darius/move-line-up)
 (keymap-global-set "C-S-n" #'darius/move-line-down)
+#+end_src
+
+** Org agenda
+Org-related stuff
+
+#+begin_src emacs-lisp
+(defun darius/org-agenda-fullscreen ()
+  (interactive)
+  (org-agenda nil "a")
+  (delete-other-windows))
 #+end_src
