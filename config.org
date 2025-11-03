@@ -116,8 +116,8 @@ Tweaks that don't fit the other categories
 ;; according to someone else's config this does something good
 (setopt pgtk-wait-for-event-timeout 0.001)
 
-;; render html using monospoace fonts
-(setopt shr-use-fonts nil)
+;; render html using variable pitch fonts
+(setopt shr-use-fonts t)
 #+end_src
 
 ** Default Keybindings
@@ -210,7 +210,7 @@ Change default UI settings
 
 *** Mode line
 Custom mode line config.
-Very inspired by doom-modeline
+Inspired by doom-modeline
 
 #+begin_src emacs-lisp
 (column-number-mode 1)
@@ -229,7 +229,7 @@ Very inspired by doom-modeline
 (defface darius/mode-line-highlight
   `((t
      :weight semibold
-     :inherit warning))
+     :inherit error))
   "Face for highlighted text on the mode line")
 
 (defface darius/mode-line-bold
@@ -512,6 +512,8 @@ Keep track of projects and run actions on them
 
 #+begin_src emacs-lisp
 (use-package project
+  :bind
+  ("C-M-;" . project-find-file)
   :config
   (add-to-list 'project-switch-commands '(project-dired "Dired")))
 #+end_src
@@ -734,7 +736,7 @@ For running in ~-nw~ mode
   (unless (display-graphic-p (selected-frame))
     (set-face-attribute 'default nil :background "unspecified-bg")))
 
-(add-hook 'window-setup-hook 'darius/disable-terminal-background)
+;; (add-hook 'window-setup-hook 'darius/disable-terminal-background)
 #+end_src
 
 ** Eshell
@@ -1032,6 +1034,9 @@ Font presets
       :fixed-pitch-weight nil ; falls back to :default-weight
       :bold-family nil
       :italic-family nil)
+     (sf-mono-medium
+      :inherit sf-mono
+      :default-height 135)
      (sf-mono-large
       :inherit sf-mono
       :default-height 165)
@@ -1044,7 +1049,7 @@ Font presets
   (fontaine-mode 1)
   (darius/reapply-fontaine)
   :bind
-  ("C-c f" . fontaine-set-preset)
+  ("<f11>" . fontaine-set-preset)
   :hook
   (server-mode . darius/reapply-fontaine))
 #+end_src
@@ -1416,12 +1421,73 @@ Set up vertico, orderless and tweak some emacs completion defaults
 	      completion-category-overrides '((file (styles partial-completion)))))
 #+end_src
 
-** Colorscheme
+** Colorscheme(s)
 The most important thing tbh.
 
 #+begin_src emacs-lisp
-;; (add-to-list 'default-frame-alist '(alpha-background . 98)) ; a little transparency
+;; (add-to-list 'default-frame-alist '(alpha-background . 98)) ; some transparency
+#+end_src
 
+*** Modus themes (built-in)
+[[https://protesilaos.com/emacs/modus-themes#h:6c1d1dea-5cbf-4d92-b7bb-570a7a23ffe9][Modus themes]]
+
+#+begin_src emacs-lisp
+(use-package emacs
+  :init
+  (require-theme 'modus-themes)
+  :custom
+  (modus-themes-italic-constructs nil)
+  (modus-themes-bold-constructs nil)
+  (modus-themes-mixed-fonts t)
+  (modus-themes-prompts '(medium))
+  (modus-themes-completions
+   '((matches . (medium))
+     (selection . (regular))))
+  (modus-themes-headings
+   '((1 . (1.2 regular))
+     (2 . (1.15 regular))
+     (3 . (1.1 regular))
+     (t . (1.05 regular))))
+  (modus-themes-common-palette-overrides
+   '((bg-hover bg-sage)
+     (bg-line-number-active bg-dim)
+     (fg-region unspecified)
+     (underline-link border)
+     (underline-link-visited border)
+     (underline-link-symbolic border)))
+  (modus-operandi-palette-overrides
+   '((bg-mode-line-active bg-blue-subtle)
+     (fg-mode-line-active fg-main)
+     (border-mode-line-active blue-intense)
+     (bg-region bg-blue-subtle)))
+  (modus-operandi-tinted-palette-overrides
+   '((bg-mode-line-active bg-blue-subtle)
+     (fg-mode-line-active fg-main)
+     (border-mode-line-active blue-intense)))
+  (modus-vivendi-palette-overrides
+   '((bg-mode-line-active bg-lavender)
+     (fg-mode-line-active fg-main)
+     (border-mode-line-active bg-magenta-intense)))
+  (modus-vivendi-tinted-palette-overrides
+   '((bg-mode-line-active bg-lavender)
+     (fg-mode-line-active fg-main)
+     (border-mode-line-active bg-magenta-intense)
+     (comment fg-dim)))
+  :config
+  (defun darius/modus-themes-setup ()
+    (set-face-attribute 'bold nil :weight 'semibold))
+  (modus-themes-load-theme 'modus-operandi)
+  :hook
+  (modus-themes-post-load . darius/modus-themes-setup)
+  (org-mode . variable-pitch-mode)
+  :bind
+  ("<f12>" . modus-themes-select))
+#+end_src
+
+*** COMMENT Catppuccin
+Just in case
+
+#+begin_src emacs-lisp
 (use-package catppuccin-theme
   :ensure t
   :config
@@ -1452,9 +1518,15 @@ The most important thing tbh.
       (set-face-attribute 'font-latex-sectioning-5-face nil :foreground (catppuccin-color 'red)))
     (with-eval-after-load 'org
       (set-face-attribute 'org-block nil :foreground (face-foreground 'default)))))
+#+end_src
 
+*** COMMENT Standard Themes
+Outdated right now
+
+#+begin_src emacs-lisp
 (use-package standard-themes
   :ensure t
+  :disabled
   :custom
   (standard-themes-bold-constructs nil)
   (standard-themes-italic-constructs nil)
@@ -1473,22 +1545,23 @@ The most important thing tbh.
         (set-face-attribute 'org-block-end-line nil :foreground fg-dim :background bg-dim :extend t))))
   :hook
   (standard-themes-post-load . darius/standard-themes-setup))
+#+end_src
 
-(defun darius/pick-theme ()
+*** COMMENT Custom load-theme prompt
+For modus-themes there's ~modus-themes-select~
+#+begin_src emacs-lisp
+(defun darius/load-theme ()
   (interactive)
   (let* ((themes '(("catppuccin-light" . darius/catppuccin-load-light)
                    ("catppuccin-dark" . darius/catppuccin-load-dark)
-                   ("standard-dark" . (lambda () (standard-themes-select 'standard-dark)))
-                   ("standard-dark-tinted" . (lambda () (standard-themes-select 'standard-dark-tinted)))
-                   ("standard-light" . (lambda () (standard-themes-select 'standard-light)))
-                   ("standard-light-tinted" . (lambda () (standard-themes-select 'standard-light-tinted)))))
+                   ("modus-operandi" . (lambda () (modus-themes-select 'modus-operandi)))
+                   ("modus-vivendi" . (lambda () (modus-themes-select 'modus-vivendi)))
+                   ("modus-operandi-tinted" . (lambda () (modus-themes-select 'modus-operandi-tinted)))
+                   ("modus-vivendi-tinted" . (lambda () (modus-themes-select 'modus-vivendi-tinted)))))
          (choice (completing-read "Load theme: " (mapcar #'car themes)))
          (fn (cdr (assoc choice themes))))
     (when fn
       (funcall fn))))
-
-(standard-themes-select 'standard-light)
-(keymap-global-set "<f12>" #'darius/pick-theme)
 #+end_src
 
 * Languages
@@ -1561,19 +1634,17 @@ Language server stuff
   (add-to-list 'eglot-server-programs
                `((scala-mode scala-ts-mode)
                  . ,(alist-get 'scala-mode eglot-server-programs)))
-  ;; (add-to-list 'eglot-server-programs
-  ;;              '((c-mode c++-mode c-ts-mode c++-ts-mode)
-  ;;                . ("clangd"
-  ;;                   "-j=16"
-  ;;                   "--log=error"
-  ;;                   "--malloc-trim"
-  ;;                   "--background-index"
-  ;;                   "--clang-tidy"
-  ;;                   "--cross-file-rename"
-  ;;                   "--completion-style=detailed"
-  ;;                   "--pch-storage=memory"
-  ;;                   "--header-insertion=never"
-  ;;                   "--header-insertion-decorators=0"))) ; I hope this does what I want it to
+  (add-to-list 'eglot-server-programs
+               '((c-mode c++-mode c-ts-mode c++-ts-mode)
+                 . ("clangd"
+                    "-j=16"
+                    "--log=error"
+                    "--malloc-trim"
+                    "--background-index"
+                    "--clang-tidy"
+                    "--cross-file-rename"
+                    "--completion-style=detailed"
+                    "--pch-storage=memory")))
   :hook (LaTeX-mode . eglot-ensure))
 #+end_src
 
@@ -1691,7 +1762,7 @@ For some reason this depends on flycheck which is very cringe
 (require 'z3-mode)
 #+end_src
 
-** Proof General
+** COMMENT Proof General
 Coqqq
 
 #+begin_src emacs-lisp

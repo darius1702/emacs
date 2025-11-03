@@ -37,6 +37,7 @@
  ("https://thomasjm.github.io/feed.xml" fp)
  ("https://blog.poisson.chat/rss.xml" fp)
  ("https://chrispenner.ca/atom.xml" fp)
+ ("https://quuxplusone.github.io/blog/feed" cpp)
 
  ("https://www.todepond.com/feed/index.xml" cg)
  ("https://jendrikillner.com/tags/weekly/index.xml" cg)
