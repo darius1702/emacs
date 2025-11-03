@@ -160,6 +160,9 @@ Change default UI settings
 (setopt frame-title-format '("%b")
         frame-resize-pixelwise t)
 
+;; add transparency to frame background
+;; (add-to-list 'default-frame-alist '(alpha-background . 98))
+
 (setopt scroll-preserve-screen-position t
         scroll-margin 0                 ; becuase of ultra-scroll
         scroll-conservatively 3
@@ -223,6 +226,7 @@ Inspired by doom-modeline
 (dolist (mode '(auto-revert-mode
                 visual-line-mode
                 view-mode
+                buffer-face-mode
                 eldoc-mode))
   (add-to-list 'mode-line-collapse-minor-modes mode))
 
@@ -259,16 +263,18 @@ Inspired by doom-modeline
 (defvar-local darius/mode-line-read-only-indicator
   '(:eval
     (when buffer-read-only
-      (if (mode-line-window-selected-p)
-          (propertize " %%" 'face 'darius/mode-line-highlight)
-        " %%"))))
+      (let ((read-only-indicator " %%"))
+        (if (mode-line-window-selected-p)
+            (propertize read-only-indicator 'face 'darius/mode-line-highlight)
+          read-only-indicator)))))
 
 (defvar-local darius/mode-line-narrow-indicator
   '(:eval
     (when (buffer-narrowed-p)
-      (if (mode-line-window-selected-p)
-          (propertize " ><" 'face 'darius/mode-line-highlight)
-        " ><"))))
+      (let ((narrow-indicator " ><"))
+        (if (mode-line-window-selected-p)
+            (propertize narrow-indicator 'face 'darius/mode-line-highlight)
+          narrow-indicator)))))
 
 (defvar-local darius/mode-line-project-name
   '(:eval
@@ -1424,12 +1430,8 @@ Set up vertico, orderless and tweak some emacs completion defaults
 ** Colorscheme(s)
 The most important thing tbh.
 
-#+begin_src emacs-lisp
-;; (add-to-list 'default-frame-alist '(alpha-background . 98)) ; some transparency
-#+end_src
-
-*** Modus themes (built-in)
-[[https://protesilaos.com/emacs/modus-themes#h:6c1d1dea-5cbf-4d92-b7bb-570a7a23ffe9][Modus themes]]
+*** Modus themes
+These are built-in!
 
 #+begin_src emacs-lisp
 (use-package emacs
@@ -1476,12 +1478,12 @@ The most important thing tbh.
   :config
   (defun darius/modus-themes-setup ()
     (set-face-attribute 'bold nil :weight 'semibold))
-  (modus-themes-load-theme 'modus-operandi)
   :hook
   (modus-themes-post-load . darius/modus-themes-setup)
   (org-mode . variable-pitch-mode)
   :bind
   ("<f12>" . modus-themes-select))
+(modus-themes-load-theme 'modus-operandi)
 #+end_src
 
 *** COMMENT Catppuccin
