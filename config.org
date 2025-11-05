@@ -510,7 +510,8 @@ File browsing on crack
       (dired-create-directory dir)))
   ;; Make `dired-do-shell-command' suggest better defaults for some filetypes
   (add-to-list 'dired-guess-shell-alist-user '("\\.pdf\\'" "zathura"))
-  (add-to-list 'dired-guess-shell-alist-user '("\\.mp4\\'" "mpv")))
+  (add-to-list 'dired-guess-shell-alist-user '("\\.mp4\\'" "mpv"))
+  (add-to-list 'dired-guess-shell-alist-user '("\\.\\(vcd\\|fst\\)\\'" "surfer")))
 #+end_src
 
 *** Projects
@@ -825,37 +826,6 @@ Version control integration for Ibuffer
         ("v" . ibuffer-vc-set-filter-groups-by-vc-root)))
 #+end_src
 
-*** Marginalia
-Usful info in the minibuffer
-
-#+begin_src emacs-lisp
-(use-package marginalia
-  :ensure t
-  :init (marginalia-mode))
-#+end_src
-
-*** Colorful-mode
-Colorize strings like #a7c080.
-Making the frame background transparent via ~alpha-background~ makes the colors a little transparent as well sadly
-
-#+begin_src emacs-lisp
-(use-package colorful-mode
-  :ensure t
-  :custom (css-fontify-colors nil)
-  :config
-  (global-colorful-mode)
-  (set-face-attribute 'colorful-base nil :box nil)) ; colors have a box around them by default which looks weird
-#+end_src
-
-*** hl-todo
-Highlight keywords like TODO and FIXME in comments in source code
-
-#+begin_src emacs-lisp
-(use-package hl-todo
-  :ensure t
-  :hook (prog-mode . hl-todo-mode))
-#+end_src
-
 *** Multiple cursors
 Easily place multiple cursors for edits
 
@@ -934,15 +904,6 @@ Still not 100% sure I get what it does
   :ensure t)
 #+end_src
 
-*** CSV-mode
-Prettier csv files
-
-#+begin_src emacs-lisp
-(use-package csv-mode
-  :ensure t
-  :hook (csv-mode . csv-align-mode))
-#+end_src
-
 *** TMR
 Set timers
 
@@ -987,6 +948,50 @@ Emulate a terminal
         ("M-o" . other-window)))
 #+end_src
 
+*** Dumb Jump
+Jump to definition.
+
+#+begin_src emacs-lisp
+(use-package dumb-jump
+  :ensure t
+  :config
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
+#+end_src
+
+** Eye candy
+21st century emacs
+
+*** Marginalia
+Usful info in the minibuffer
+
+#+begin_src emacs-lisp
+(use-package marginalia
+  :ensure t
+  :init (marginalia-mode))
+#+end_src
+
+*** Colorful-mode
+Colorize strings like #a7c080.
+Making the frame background transparent via ~alpha-background~ makes the colors a little transparent as well sadly
+
+#+begin_src emacs-lisp
+(use-package colorful-mode
+  :ensure t
+  :custom (css-fontify-colors nil)
+  :config
+  (global-colorful-mode)
+  (set-face-attribute 'colorful-base nil :box nil)) ; colors have a box around them by default which looks weird
+#+end_src
+
+*** hl-todo
+Highlight keywords like TODO and FIXME in comments in source code
+
+#+begin_src emacs-lisp
+(use-package hl-todo
+  :ensure t
+  :hook (prog-mode . hl-todo-mode))
+#+end_src
+
 *** Ultra-scroll
 Doesn't have this one annoying bug that pixel-scroll-precision-mode has that
 makes the page jump backwards when scrolling with the caret all the way at the
@@ -1000,16 +1005,6 @@ top of the screen.
 (use-package ultra-scroll
   :ensure t
   :config (ultra-scroll-mode 1))
-#+end_src
-
-*** Dumb Jump
-Jump to definition.
-
-#+begin_src emacs-lisp
-(use-package dumb-jump
-  :ensure t
-  :config
-  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
 #+end_src
 
 *** Eldoc-Box
@@ -1959,6 +1954,15 @@ Web stuff
 
 (use-package json-ts-mode
   :mode ("\\.jsonc\\'" . json-ts-mode))
+#+end_src
+
+** CSV-mode
+Edit csv files
+
+#+begin_src emacs-lisp
+(use-package csv-mode
+  :ensure t
+  :hook (csv-mode . csv-align-mode))
 #+end_src
 
 * Custom Functions
