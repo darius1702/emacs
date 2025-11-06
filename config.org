@@ -961,6 +961,111 @@ Jump to definition.
 ** Eye candy
 21st century emacs
 
+*** Colorscheme(s)
+The most important thing tbh.
+
+**** Modus themes
+These are built-in!
+
+#+begin_src emacs-lisp
+(use-package emacs
+  :init
+  (require-theme 'modus-themes)
+  :custom
+  (modus-themes-italic-constructs nil)
+  (modus-themes-bold-constructs nil)
+  (modus-themes-mixed-fonts t)
+  (modus-themes-prompts '(medium))
+  (modus-themes-completions
+   '((matches . (medium))
+     (selection . (regular))))
+  (modus-themes-headings
+   '((1 . (1.2 regular))
+     (2 . (1.15 regular))
+     (3 . (1.1 regular))
+     (t . (1.05 regular))))
+  (modus-themes-common-palette-overrides
+   '((bg-hover bg-sage)
+     (bg-line-number-active bg-dim)
+     (fg-region unspecified)
+     (underline-link border)
+     (underline-link-visited border)
+     (underline-link-symbolic border)
+     (fg-prose-code fg-alt)
+     (bg-prose-code bg-dim)))
+  (modus-operandi-palette-overrides
+   '((bg-mode-line-active bg-blue-subtle)
+     (border-mode-line-active blue-intense)
+     (bg-region bg-blue-subtle)))
+  (modus-operandi-tinted-palette-overrides
+   '((bg-mode-line-active bg-blue-subtle)
+     (border-mode-line-active blue-intense)))
+  (modus-vivendi-palette-overrides
+   '((bg-mode-line-active bg-lavender)
+     (border-mode-line-active bg-magenta-intense)))
+  (modus-vivendi-tinted-palette-overrides
+   '((bg-mode-line-active bg-lavender)
+     (border-mode-line-active bg-magenta-intense)
+     (comment fg-dim)))
+  :config
+  (defun darius/modus-themes-setup ()
+    (set-face-attribute 'bold nil :weight 'semibold))
+  (modus-themes-include-derivatives-mode t)
+  :hook
+  (modus-themes-post-load . darius/modus-themes-setup)
+  (org-mode . variable-pitch-mode)
+  :bind
+  ("<f12>" . modus-themes-select))
+(modus-themes-load-theme 'modus-operandi)
+#+end_src
+
+**** Modus Catppuccin
+A variant of catppuccin built on top of the new modus themes 5.0.0
+
+#+begin_src emacs-lisp
+(use-package modus-catppuccin
+  :ensure t
+  :vc (:url "https://gitlab.com/magus/modus-catppuccin" :rev :newest)
+  :custom
+  (catppuccin-mocha-palette-overrides
+   '((base  "#1c1c1e")
+     (mantle "#161618")
+     (crust "#070709")
+     (surface0 "#282830")
+     (surface1 "#404042")
+     (surface2 "#525254")
+     (fg-heading-2 mauve)
+     (string flamingo)
+     (border-mode-line-active overlay0))))
+#+end_src
+
+**** COMMENT Standard Themes
+Outdated right now
+
+#+begin_src emacs-lisp
+(use-package standard-themes
+  :ensure t
+  :disabled
+  :custom
+  (standard-themes-bold-constructs nil)
+  (standard-themes-italic-constructs nil)
+  :config
+  (defun darius/standard-themes-setup ()
+    (standard-themes-with-colors
+      (set-face-attribute 'font-lock-comment-face nil :foreground fg-dim)
+      (set-face-attribute 'font-lock-doc-face nil :foreground fg-dim)
+      (set-face-attribute 'font-lock-string-face nil :foreground fg-dim)
+      (with-eval-after-load 'org
+        (set-face-attribute 'org-level-1 nil :foreground fg-dim :background bg-blue-nuanced :height 1.1)
+        (dolist (level (number-sequence 2 8))
+          (set-face-attribute (intern (format "org-level-%s" level)) nil :foreground fg-dim :weight 'semibold))
+        (set-face-attribute 'org-block nil :background bg-inactive)
+        (set-face-attribute 'org-block-begin-line nil :foreground fg-dim :background bg-dim :extend t)
+        (set-face-attribute 'org-block-end-line nil :foreground fg-dim :background bg-dim :extend t))))
+  :hook
+  (standard-themes-post-load . darius/standard-themes-setup))
+#+end_src
+
 *** Marginalia
 Usful info in the minibuffer
 
@@ -1249,13 +1354,14 @@ Show emphasis markers like ** and some other things when point is inside them
 
 *** org-modern
 Nicer visuals
+
 #+begin_src emacs-lisp
 (use-package org-modern
   :ensure t
   :after org
   :custom
   (org-modern-star 'fold)
-  (org-modern-fold-stars '(("" . "")))
+  (org-modern-fold-stars '(("▹" . "▿")))
   (org-modern-block-fringe nil) ;; doesn't work with org-indent-mode
   (org-modern-checkbox
    '((88 . "󰄲")   ; done
@@ -1420,146 +1526,6 @@ Set up vertico, orderless and tweak some emacs completion defaults
   (setopt completion-styles '(substring orderless basic)
 	      completion-category-defaults nil
 	      completion-category-overrides '((file (styles partial-completion)))))
-#+end_src
-
-** Colorscheme(s)
-The most important thing tbh.
-
-*** Modus themes
-These are built-in!
-
-#+begin_src emacs-lisp
-(use-package emacs
-  :init
-  (require-theme 'modus-themes)
-  :custom
-  (modus-themes-italic-constructs nil)
-  (modus-themes-bold-constructs nil)
-  (modus-themes-mixed-fonts t)
-  (modus-themes-prompts '(medium))
-  (modus-themes-completions
-   '((matches . (medium))
-     (selection . (regular))))
-  (modus-themes-headings
-   '((1 . (1.2 regular))
-     (2 . (1.15 regular))
-     (3 . (1.1 regular))
-     (t . (1.05 regular))))
-  (modus-themes-common-palette-overrides
-   '((bg-hover bg-sage)
-     (bg-line-number-active bg-dim)
-     (fg-region unspecified)
-     (underline-link border)
-     (underline-link-visited border)
-     (underline-link-symbolic border)))
-  (modus-operandi-palette-overrides
-   '((bg-mode-line-active bg-blue-subtle)
-     (fg-mode-line-active fg-main)
-     (border-mode-line-active blue-intense)
-     (bg-region bg-blue-subtle)))
-  (modus-operandi-tinted-palette-overrides
-   '((bg-mode-line-active bg-blue-subtle)
-     (fg-mode-line-active fg-main)
-     (border-mode-line-active blue-intense)))
-  (modus-vivendi-palette-overrides
-   '((bg-mode-line-active bg-lavender)
-     (fg-mode-line-active fg-main)
-     (border-mode-line-active bg-magenta-intense)))
-  (modus-vivendi-tinted-palette-overrides
-   '((bg-mode-line-active bg-lavender)
-     (fg-mode-line-active fg-main)
-     (border-mode-line-active bg-magenta-intense)
-     (comment fg-dim)))
-  :config
-  (defun darius/modus-themes-setup ()
-    (set-face-attribute 'bold nil :weight 'semibold))
-  :hook
-  (modus-themes-post-load . darius/modus-themes-setup)
-  (org-mode . variable-pitch-mode)
-  :bind
-  ("<f12>" . modus-themes-select))
-(modus-themes-load-theme 'modus-operandi)
-#+end_src
-
-*** COMMENT Catppuccin
-Just in case
-
-#+begin_src emacs-lisp
-(use-package catppuccin-theme
-  :ensure t
-  :config
-  (defun darius/catppuccin-load-light ()
-    (mapc #'disable-theme custom-enabled-themes)
-    (catppuccin-load-flavor 'latte)
-    (darius/catppuccin-face-setup))
-  (defun darius/catppuccin-load-dark ()
-    (mapc #'disable-theme custom-enabled-themes)
-    (catppuccin-load-flavor 'mocha)
-    (catppuccin-set-color 'base     "#1c1c1c" 'mocha)
-    (catppuccin-set-color 'mantle   "#161616" 'mocha)
-    (catppuccin-set-color 'crust    "#070707" 'mocha)
-    (catppuccin-set-color 'surface0 "#282828" 'mocha)
-    (catppuccin-set-color 'surface1 "#404040" 'mocha)
-    (catppuccin-set-color 'surface2 "#525252" 'mocha)
-    (catppuccin-reload)
-    (darius/catppuccin-face-setup))
-  (defun darius/catppuccin-face-setup ()
-    "Common tweaks for all catppuccin themes"
-    (set-face-attribute 'line-number nil :foreground (catppuccin-color 'overlay0))
-    (set-face-attribute 'link nil :underline nil :foreground (catppuccin-color 'blue))
-    (set-face-attribute 'mode-line nil :box '(:line-width -1 :style released-button))
-    (set-face-attribute 'mode-line-inactive nil :box `(:line-width -1 :color ,(catppuccin-color 'surface1)))
-    (set-face-attribute 'mode-line-highlight nil :box nil :foreground (catppuccin-color 'blue))
-    (set-face-attribute 'minibuffer-nonselected nil :foreground (catppuccin-color 'red) :background 'unspecified)
-    (with-eval-after-load 'font-latex
-      (set-face-attribute 'font-latex-sectioning-5-face nil :foreground (catppuccin-color 'red)))
-    (with-eval-after-load 'org
-      (set-face-attribute 'org-block nil :foreground (face-foreground 'default)))))
-#+end_src
-
-*** COMMENT Standard Themes
-Outdated right now
-
-#+begin_src emacs-lisp
-(use-package standard-themes
-  :ensure t
-  :disabled
-  :custom
-  (standard-themes-bold-constructs nil)
-  (standard-themes-italic-constructs nil)
-  :config
-  (defun darius/standard-themes-setup ()
-    (standard-themes-with-colors
-      (set-face-attribute 'font-lock-comment-face nil :foreground fg-dim)
-      (set-face-attribute 'font-lock-doc-face nil :foreground fg-dim)
-      (set-face-attribute 'font-lock-string-face nil :foreground fg-dim)
-      (with-eval-after-load 'org
-        (set-face-attribute 'org-level-1 nil :foreground fg-dim :background bg-blue-nuanced :height 1.1)
-        (dolist (level (number-sequence 2 8))
-          (set-face-attribute (intern (format "org-level-%s" level)) nil :foreground fg-dim :weight 'semibold))
-        (set-face-attribute 'org-block nil :background bg-inactive)
-        (set-face-attribute 'org-block-begin-line nil :foreground fg-dim :background bg-dim :extend t)
-        (set-face-attribute 'org-block-end-line nil :foreground fg-dim :background bg-dim :extend t))))
-  :hook
-  (standard-themes-post-load . darius/standard-themes-setup))
-#+end_src
-
-*** COMMENT Custom load-theme prompt
-For modus-themes there's ~modus-themes-select~
-
-#+begin_src emacs-lisp
-(defun darius/load-theme ()
-  (interactive)
-  (let* ((themes '(("catppuccin-light" . darius/catppuccin-load-light)
-                   ("catppuccin-dark" . darius/catppuccin-load-dark)
-                   ("modus-operandi" . (lambda () (modus-themes-select 'modus-operandi)))
-                   ("modus-vivendi" . (lambda () (modus-themes-select 'modus-vivendi)))
-                   ("modus-operandi-tinted" . (lambda () (modus-themes-select 'modus-operandi-tinted)))
-                   ("modus-vivendi-tinted" . (lambda () (modus-themes-select 'modus-vivendi-tinted)))))
-         (choice (completing-read "Load theme: " (mapcar #'car themes)))
-         (fn (cdr (assoc choice themes))))
-    (when fn
-      (funcall fn))))
 #+end_src
 
 * Languages
@@ -2013,13 +1979,15 @@ If called with two C-u's, spawn a terminal window (foot) in the current director
 (keymap-global-set "M-g t" #'darius/spawn-terminal-here)
 #+end_src
 
-** Maybe wrap with asterisk
-Wrap the active region with a character, like '(' in electric-pair-mode
+** Maybe wrap with char
+Wrap the active region with a character, like ~'('~ in ~electric-pair-mode~.
+Adding chars to ~insert-pair-alist~ makes ~delete-pair~ work with them.
+Don't add them to ~electric-pair-pairs~ because I want to insert them only when the region is active.
 
 #+begin_src emacs-lisp
 (defun darius/maybe-wrap-with-char (char)
   "If region is active, wrap it with CHAR, else insert CHAR.
-   If called interactively, prompt for a character to use."
+If called interactively, prompt for a character to use."
   (interactive "cChar: ")
   (when (use-region-p)
     (let ((beg (region-beginning))
@@ -2029,17 +1997,28 @@ Wrap the active region with a character, like '(' in electric-pair-mode
       (goto-char beg)))
   (insert char))
 
-(defun darius/maybe-wrap-org-setup (key)
-  "Bind KEY in `org-mode-map' to maybe wrap."
-  (define-key org-mode-map key
-              (lambda () (interactive) (darius/maybe-wrap-with-char (string-to-char key)))))
+(defun darius/maybe-wrap-setup-keys (keymap keys)
+  "Bind each character in string KEYS to maybe wrap in KEYMAP
+and add it to `insert-pair-alist'"
+  (dolist (key (string-to-list keys))
+    (setq-local insert-pair-alist (cons (list key key) insert-pair-alist))
+    (keymap-set keymap (char-to-string key)
+                (lambda ()
+                  (interactive)
+                  (darius/maybe-wrap-with-char key)))))
 
-;; wrap with * and ~ for `org-mode'
+;; wrap chars from `org-emphasis-alist' in org-mode, usually "*/_=+~"
 (with-eval-after-load 'org
-  (add-hook 'org-mode-hook
+  (defun darius/maybe-wrap-org-setup ()
+    (let ((keys (mapconcat #'car org-emphasis-alist)))
+      (darius/maybe-wrap-setup-keys org-mode-map keys)))
+  (add-hook 'org-mode-hook #'darius/maybe-wrap-org-setup))
+
+;; markdown
+(with-eval-after-load 'markdown-mode
+  (add-hook 'markdown-mode-hook
             (lambda ()
-              (darius/maybe-wrap-org-setup "*")
-              (darius/maybe-wrap-org-setup "~"))))
+              (darius/maybe-wrap-setup-keys markdown-mode-map "*_"))))
 #+end_src
 
 ** Swap semicolon and dash
