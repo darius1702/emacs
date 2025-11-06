@@ -1026,7 +1026,7 @@ Font presets
   :demand t ; load fonts immediately
   :custom
   (fontaine-presets
-   '((sf-mono
+   '((SF
       :default-family "SFMono Nerd Font Mono"
       :fixed-pitch-family "SFMono Nerd Font Mono"
       :variable-pitch-family "SF Pro Text"
@@ -1035,18 +1035,18 @@ Font presets
       :fixed-pitch-weight nil ; falls back to :default-weight
       :bold-family nil
       :italic-family nil)
-     (sf-mono-medium
-      :inherit sf-mono
+     (SF-medium
+      :inherit SF
       :default-height 135)
-     (sf-mono-large
-      :inherit sf-mono
+     (SF-large
+      :inherit SF
       :default-height 165)
-     (sf-mono-larger
-      :inherit sf-mono
+     (SF-larger
+      :inherit SF
       :default-height 185)))
   :config
   (defun darius/reapply-fontaine ()
-    (fontaine-set-preset (or (fontaine-restore-latest-preset) 'sf-mono)))
+    (fontaine-set-preset (or (fontaine-restore-latest-preset) 'SF)))
   (fontaine-mode 1)
   (darius/reapply-fontaine)
   :bind
@@ -1546,6 +1546,7 @@ Outdated right now
 
 *** COMMENT Custom load-theme prompt
 For modus-themes there's ~modus-themes-select~
+
 #+begin_src emacs-lisp
 (defun darius/load-theme ()
   (interactive)
@@ -1737,8 +1738,8 @@ Aims to be a bit simpler than tuareg mode and highlighting looks better.
 #+begin_src emacs-lisp
 (use-package neocaml
   :ensure t
-  :vc (:url "https://github.com/bbatsov/neocaml" :branch "main")
-  :hook (neocaml-mode . neocaml-repl-minor-mode))
+  :vc (:url "https://github.com/bbatsov/neocaml" :rev :newest)
+  (add-to-list 'eglot-server-programs '((neocaml-mode :language-id "ocaml") . ("ocamllsp"))))
 #+end_src
 
 ** Zig
