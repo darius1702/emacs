@@ -65,9 +65,6 @@ Adjust some default settings,
 I don't know why I have this in the early-init but I moved it here at some point.
 
 #+begin_src emacs-lisp :tangle early-init.el
-(setopt use-dialog-box nil
-        use-short-answers t)
-
 (setopt native-comp-async-report-warnings-errors nil)
 
 (tool-bar-mode -1)
@@ -160,6 +157,9 @@ Change default UI settings
 (setopt frame-title-format '("%b")
         frame-resize-pixelwise t)
 
+(setopt use-dialog-box nil
+        use-short-answers t)
+
 ;; add transparency to frame background
 ;; (add-to-list 'default-frame-alist '(alpha-background . 98))
 
@@ -227,6 +227,7 @@ Inspired by doom-modeline
                 visual-line-mode
                 view-mode
                 buffer-face-mode
+                orgtbl-mode
                 eldoc-mode))
   (add-to-list 'mode-line-collapse-minor-modes mode))
 
@@ -278,7 +279,7 @@ Inspired by doom-modeline
 
 (defvar-local darius/mode-line-project-name
   '(:eval
-    (when (project-current)
+    (when (and (project-current) (buffer-file-name))
       (let ((project-str (format "[%s]" (project-name (project-current)))))
         (if (mode-line-window-selected-p)
             (propertize project-str 'face 'darius/mode-line-shadow)
@@ -288,9 +289,8 @@ Inspired by doom-modeline
   '(:eval
     (when vc-mode
       (if (mode-line-window-selected-p)
-          (propertize vc-mode 'face 'darius/mode-line-text)
-        ;; explicit shadow face here because standard-themes makes it italic otherwise
-        (propertize vc-mode 'face 'darius/mode-line-shadow)))))
+          (propertize vc-mode 'face 'darius/mode-line-shadow)
+        vc-mode))))
 
 (dolist (var '(darius/mode-line-buffer-name
                darius/mode-line-read-only-indicator
@@ -301,7 +301,7 @@ Inspired by doom-modeline
 
 (setq-default mode-line-format
               '("%e "
-                mode-line-client
+                ;; mode-line-client
                 mode-line-window-dedicated
                 mode-line-window-remote
                 darius/mode-line-narrow-indicator
@@ -685,8 +685,8 @@ Help popups, linting, documentation, ...
   :custom
   (Man-notify-method 'thrifty) ; reuse existing manpage window if possible
   :config
-  (set-face-attribute 'Man-overstrike nil :inherit font-lock-keyword-face :bold t)
-  (set-face-attribute 'Man-underline nil :inherit font-lock-string-face :underline t))
+  (set-face-attribute 'Man-overstrike nil :inherit 'font-lock-keyword-face :bold t)
+  (set-face-attribute 'Man-underline nil :inherit 'font-lock-string-face :underline t))
 
 #+end_src
 
@@ -958,6 +958,16 @@ Jump to definition.
   (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
 #+end_src
 
+*** Dired Subtree
+Better subdiretory viewing in dired.
+Dired can display subdirectories with ~i~ and remove them with ~C-u k~ but this is nicer.
+
+#+begin_src emacs-lisp
+(use-package dired-subtree
+  :ensure t
+  :bind (:map dired-mode-map ("TAB" . dired-subtree-toggle)))
+#+end_src
+
 ** Eye candy
 21st century emacs
 
@@ -1012,11 +1022,10 @@ These are built-in!
     (set-face-attribute 'bold nil :weight 'semibold))
   (modus-themes-include-derivatives-mode t)
   :hook
-  (modus-themes-post-load . darius/modus-themes-setup)
+  (modus-themes-after-load-theme . darius/modus-themes-setup)
   (org-mode . variable-pitch-mode)
   :bind
   ("<f12>" . modus-themes-select))
-(modus-themes-load-theme 'modus-operandi)
 #+end_src
 
 **** Modus Catppuccin
@@ -1025,7 +1034,7 @@ A variant of catppuccin built on top of the new modus themes 5.0.0
 #+begin_src emacs-lisp
 (use-package modus-catppuccin
   :ensure t
-  :vc (:url "https://gitlab.com/magus/modus-catppuccin" :rev :newest)
+  :vc (:url "https://gitlab.com/magus/modus-catppuccin.git" :rev :newest)
   :custom
   (catppuccin-mocha-palette-overrides
    '((base  "#1c1c1e")
@@ -1034,36 +1043,14 @@ A variant of catppuccin built on top of the new modus themes 5.0.0
      (surface0 "#282830")
      (surface1 "#404042")
      (surface2 "#525254")
+     (border-mode-line-inactive bg-mode-line-inactive)
      (fg-heading-2 mauve)
+     (fg-heading-3 maroon)
+     (fringe unspecified)
      (string flamingo)
-     (border-mode-line-active overlay0))))
-#+end_src
-
-**** COMMENT Standard Themes
-Outdated right now
-
-#+begin_src emacs-lisp
-(use-package standard-themes
-  :ensure t
-  :disabled
-  :custom
-  (standard-themes-bold-constructs nil)
-  (standard-themes-italic-constructs nil)
-  :config
-  (defun darius/standard-themes-setup ()
-    (standard-themes-with-colors
-      (set-face-attribute 'font-lock-comment-face nil :foreground fg-dim)
-      (set-face-attribute 'font-lock-doc-face nil :foreground fg-dim)
-      (set-face-attribute 'font-lock-string-face nil :foreground fg-dim)
-      (with-eval-after-load 'org
-        (set-face-attribute 'org-level-1 nil :foreground fg-dim :background bg-blue-nuanced :height 1.1)
-        (dolist (level (number-sequence 2 8))
-          (set-face-attribute (intern (format "org-level-%s" level)) nil :foreground fg-dim :weight 'semibold))
-        (set-face-attribute 'org-block nil :background bg-inactive)
-        (set-face-attribute 'org-block-begin-line nil :foreground fg-dim :background bg-dim :extend t)
-        (set-face-attribute 'org-block-end-line nil :foreground fg-dim :background bg-dim :extend t))))
-  :hook
-  (standard-themes-post-load . darius/standard-themes-setup))
+     (bg-line-number-active base)
+     (bg-line-number-inactive base))))
+(modus-themes-load-theme 'catppuccin-mocha)
 #+end_src
 
 *** Marginalia
@@ -1150,14 +1137,17 @@ Font presets
       :inherit SF
       :default-height 185)))
   :config
-  (defun darius/reapply-fontaine ()
-    (fontaine-set-preset (or (fontaine-restore-latest-preset) 'SF)))
   (fontaine-mode 1)
-  (darius/reapply-fontaine)
-  :bind
-  ("<f11>" . fontaine-set-preset)
+  (defun darius/load-fontaine ()
+    (when (display-graphic-p)
+      (fontaine-set-preset (or (fontaine-restore-latest-preset) 'SF))))
+  (darius/load-fontaine)
   :hook
-  (server-mode . darius/reapply-fontaine))
+  ;; probably not the proper way to do this but otherwise
+  ;; some frames spawn with the wrong preset
+  (server-after-make-frame . darius/load-fontaine)
+  :bind
+  ("<f11>" . fontaine-set-preset))
 #+end_src
 
 ** Git
@@ -1325,7 +1315,7 @@ Settings for org-mode and related packages
   :bind
   ("C-c o a" . org-agenda)
   ("C-c o A" . consult-org-agenda)
-  ("C-c o t" . org-todo-list)
+  ("C-c o t" . orgtbl-mode)
   ("C-c o c" . org-capture)
   ("<f10>" . (lambda () (interactive) (org-agenda nil "a")))
   (:map org-mode-map
@@ -1370,30 +1360,6 @@ Nicer visuals
   :hook (org-mode . org-modern-mode))
 #+end_src
 
-*** org-present
-Simple presentations from org-mode buffers
-
-#+begin_src emacs-lisp
-(use-package visual-fill-column
-  :ensure t
-  :custom
-  (visual-fill-column-center-text t)
-  (visual-fill-column-width 110))
-
-(use-package org-present
-  :ensure t
-  :after visual-fill-column
-  :config
-  (defun darius/org-present-start ()
-    (visual-fill-column-mode 1)
-    (read-only-mode 1))
-  (defun darius/org-present-end ()
-    (visual-fill-column-mode 0)
-    (read-only-mode 0))
-  ;; this doesn't work with :hook for some reason
-  :hook ((org-present-mode . darius/org-present-start)
-         (org-present-mode-quit . darius/org-present-end)))
-#+end_src
 
 ** Elfeed
 RSS feeds
@@ -1602,6 +1568,7 @@ Language server stuff
                '((c-mode c++-mode c-ts-mode c++-ts-mode)
                  . ("clangd"
                     "-j=16"
+                    "--std=c++26"
                     "--log=error"
                     "--malloc-trim"
                     "--background-index"
