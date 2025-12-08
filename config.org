@@ -1003,16 +1003,20 @@ These are built-in!
      (underline-link-symbolic border)
      (fg-prose-code fg-alt)
      (bg-prose-code bg-dim)))
+
   (modus-operandi-palette-overrides
    '((bg-mode-line-active bg-blue-subtle)
      (border-mode-line-active blue-intense)
      (bg-region bg-blue-subtle)))
+
   (modus-operandi-tinted-palette-overrides
    '((bg-mode-line-active bg-blue-subtle)
      (border-mode-line-active blue-intense)))
+
   (modus-vivendi-palette-overrides
    '((bg-mode-line-active bg-lavender)
      (border-mode-line-active bg-magenta-intense)))
+
   (modus-vivendi-tinted-palette-overrides
    '((bg-mode-line-active bg-lavender)
      (border-mode-line-active bg-magenta-intense)
@@ -1360,7 +1364,6 @@ Nicer visuals
   :hook (org-mode . org-modern-mode))
 #+end_src
 
-
 ** Elfeed
 RSS feeds
 
@@ -1419,7 +1422,7 @@ Completion
   (corfu-auto-delay 0.1)
   (corfu-cycle t)
   (corfu-auto t)
-  (corfu-auto-prefix 3)
+  (corfu-auto-prefix 2)
   (corfu-separator ?\s)
   (corfu-preview-current 'insert)
   (corfu-on-exact-match nil)
