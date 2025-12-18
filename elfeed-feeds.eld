@@ -50,5 +50,4 @@
  ("https://archlinux.org/feeds/news/" arch)
 
  ("https://chipsandcheese.com/feed" hw)
- ("https://www.copetti.org/index.xml" hw)
- ("https://www.cnx-software.com/feed" hw news))
+ ("https://www.copetti.org/index.xml" hw))

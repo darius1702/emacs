@@ -108,10 +108,9 @@ Tweaks that don't fit the other categories
 
 (setopt vc-follow-symlinks t)
 
-(setopt read-process-output-max (* 1024 1024 4))
-
 ;; according to someone else's config this does something good
-(setopt pgtk-wait-for-event-timeout 0.001)
+(setopt pgtk-wait-for-event-timeout 0.001
+        read-process-output-max (* 1024 1024 4))
 
 ;; render html using variable pitch fonts
 (setopt shr-use-fonts t)
@@ -121,11 +120,12 @@ Tweaks that don't fit the other categories
 Unbind some defaults and bind some more keys
 
 #+begin_src emacs-lisp
-(keymap-global-unset "C-x C-c")            ; stop accidentally quitting emacs
-(keymap-global-unset "C-x C-z")            ; stop accidentally suspending emacs
-(keymap-global-unset "C-z")                ; stop accidentally suspending emacs (other binding)
-(keymap-global-unset "C-x m")              ; stop accidentally composing mail
-(keymap-global-unset "C-h g")              ; really
+(mapc #'keymap-global-unset
+      '("C-x C-c" ; quit emacs
+        "C-x C-z" ; suspend emacs
+        "C-z"     ; suspend emacs (other binding)
+        "C-x m"   ; compose mail
+        "C-h g")) ; gnu website
 
 (keymap-global-set "M-o" #'other-window)
 (keymap-global-set "M-O" #'other-window-backward)
@@ -137,24 +137,29 @@ Make right click behave like left click and make the middle button only paste wi
 Also I keep accidentally triggering pinch-to-zoom and ctrl+mousewheel on my laptop
 
 #+begin_src emacs-lisp
-(keymap-global-set "<mouse-3>" #'mouse-set-point)
-(keymap-global-set "<down-mouse-3>" #'mouse-drag-region)
-(keymap-global-set "<drag-mouse-3>" #'mouse-set-region)
-
-(keymap-global-set "<mouse-2>"
-                   #'(lambda (arg) (interactive "P") (when arg (mouse-yank-primary))))
-
-(keymap-global-unset "C-<wheel-up>")
-(keymap-global-unset "C-<wheel-down>")
-(keymap-global-unset "<pinch>")
+(use-package mouse
+  :config
+  (mapc #'keymap-global-unset
+        '("C-<wheel-up>"
+          "C-<wheel-down>"
+          "<pinch>"))
+  (defun darius/copy-with-arg (arg)
+    "Insert text from the primary clipboard only with prefix argument"
+    (interactive "P")
+    (when arg
+      (mouse-yank-primary)))
+  :bind
+  ("<mouse-2>" . darius/copy-with-arg)
+  ("<mouse-3>" . mouse-set-point)
+  ("<down-mouse-3>" . mouse-drag-region)
+  ("<drag-mouse-3>" . mouse-set-region))
 #+end_src
 
 ** User interface
 Change default UI settings
 
 #+begin_src emacs-lisp
-;; remove the "GNU Emacs at [hostname]" part
-(setopt frame-title-format '("%b")
+(setopt frame-title-format '("%b") ; current buffer name
         frame-resize-pixelwise t)
 
 (setopt use-dialog-box nil
@@ -179,6 +184,9 @@ Change default UI settings
 
 (setopt tab-bar-show 1 ; only show tab bar when more than 1 tab
         tab-bar-close-button-show nil)
+
+;; 8px right, 0px left
+(fringe-mode '(nil . 0))
 
 ;; show active region in inactive windows
 (setopt highlight-nonselected-windows t)
@@ -279,11 +287,12 @@ Inspired by doom-modeline
 
 (defvar-local darius/mode-line-project-name
   '(:eval
-    (when (and (project-current) (buffer-file-name))
-      (let ((project-str (format "[%s]" (project-name (project-current)))))
-        (if (mode-line-window-selected-p)
-            (propertize project-str 'face 'darius/mode-line-shadow)
-          project-str)))))
+    (if (and (project-current) (buffer-file-name))
+        (let ((project-str (format "%s/" (project-name (project-current)))))
+          (if (mode-line-window-selected-p)
+              (propertize project-str 'face 'darius/mode-line-shadow)
+            project-str)))
+    ""))
 
 (defvar-local darius/mode-line-git-status
   '(:eval
@@ -301,18 +310,16 @@ Inspired by doom-modeline
 
 (setq-default mode-line-format
               '("%e "
-                ;; mode-line-client
                 mode-line-window-dedicated
                 mode-line-window-remote
                 darius/mode-line-narrow-indicator
                 darius/mode-line-read-only-indicator
                 " "
+                darius/mode-line-project-name
                 darius/mode-line-buffer-name
                 "  "
                 mode-line-position
                 mode-line-format-right-align
-                darius/mode-line-project-name
-                " "
                 darius/mode-line-git-status
                 "  "
                 mode-line-modes
@@ -995,22 +1002,22 @@ These are built-in!
      (3 . (1.1 regular))
      (t . (1.05 regular))))
   (modus-themes-common-palette-overrides
-   '((bg-hover bg-sage)
-     (bg-line-number-active bg-dim)
+   '((bg-line-number-active bg-dim)
      (fg-region unspecified)
      (underline-link border)
      (underline-link-visited border)
      (underline-link-symbolic border)
-     (fg-prose-code fg-alt)
-     (bg-prose-code bg-dim)))
+     (fg-prose-code fg-alt)))
 
   (modus-operandi-palette-overrides
    '((bg-mode-line-active bg-blue-subtle)
      (border-mode-line-active blue-intense)
+     (bg-prose-code bg-dim)
      (bg-region bg-blue-subtle)))
 
   (modus-operandi-tinted-palette-overrides
    '((bg-mode-line-active bg-blue-subtle)
+     (bg-prose-code bg-dim)
      (border-mode-line-active blue-intense)))
 
   (modus-vivendi-palette-overrides
@@ -1052,9 +1059,20 @@ A variant of catppuccin built on top of the new modus themes 5.0.0
      (fg-heading-3 maroon)
      (fringe unspecified)
      (string flamingo)
+     (bg-prose-code bg-dim)
      (bg-line-number-active base)
      (bg-line-number-inactive base))))
-(modus-themes-load-theme 'catppuccin-mocha)
+#+end_src
+
+**** Standard Themes
+Standard themes
+
+#+begin_src emacs-lisp
+(use-package standard-themes
+  :ensure t
+  :custom
+  (standard-dark-palette-overrides '((comment fg-dim))))
+(modus-themes-load-theme 'standard-dark)
 #+end_src
 
 *** Marginalia
@@ -1479,7 +1497,11 @@ Set up vertico, orderless and tweak some emacs completion defaults
 #+begin_src emacs-lisp
 (use-package vertico
   :ensure t
-  :init (vertico-mode))
+  :init
+  (vertico-mode)
+  (vertico-multiform-mode)
+  (add-to-list 'vertico-multiform-categories
+	       '(buffer (vertico-sort-function . nil))))
 
 (use-package vertico-directory
   :after vertico
@@ -1645,6 +1667,14 @@ The one and only
   :after haskell-mode
   :hook (haskell-mode . hindent-mode)
   :config (add-to-list 'mode-line-collapse-minor-modes 'hindent-mode))
+#+end_src
+
+** Verilog
+~M-x verilog-mode~ is part of emacs!
+
+#+begin_src emacs-lisp
+(use-package verilog-mode
+  :custom (verilog-auto-newline nil))
 #+end_src
 
 ** Scala
