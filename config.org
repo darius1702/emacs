@@ -1696,6 +1696,9 @@ Funny orange crab
 ** Haskell
 The one and only
 
+*** Haskell mode
+The original
+
 #+begin_src emacs-lisp
 (use-package haskell-mode
   :ensure t
@@ -1723,12 +1726,25 @@ The one and only
       (forward-char end)))
   :bind (:map haskell-interactive-mode-map
               ("C-a" . darius/haskell-interactive-beginning-of-line)))
+#+end_src
 
+*** Hindent
+Haskell indentation
+
+#+begin_src emacs-lisp
 (use-package hindent
   :ensure t
-  :after haskell-mode
-  :hook (haskell-mode . hindent-mode)
+  :after haskell-ts-mode
+  :hook (haskell-ts-mode . hindent-mode)
   :config (add-to-list 'mode-line-collapse-minor-modes 'hindent-mode))
+#+end_src
+
+*** COMMENT Haskell-ts mode
+Treesitter, not nearly as bloated as ~haskell-mode~ but also has less features, and the repl isn't as nice.
+
+#+begin_src emacs-lisp
+(use-package haskell-ts-mode
+  :ensure t)
 #+end_src
 
 ** Verilog
