@@ -127,9 +127,15 @@ Unbind some defaults and bind some more keys
         "C-x m"   ; compose mail
         "C-h g")) ; gnu website
 
-(keymap-global-set "M-o" #'other-window)
-(keymap-global-set "M-O" #'other-window-backward)
-(keymap-global-set "C-M-S-o" #'window-layout-transpose)
+(defun darius/set-global-keys (binds)
+  "Wrapper around `keymap-global-set' that takes multiple bindings"
+  (dolist (b binds)
+    (keymap-global-set (car b) (cadr b))))
+
+(darius/set-global-keys
+ '(("M-o" other-window)
+   ("M-O" other-window-backward)
+   ("C-M-S-o" window-layout-transpose)))
 #+end_src
 
 *** Mouse and Trackpad
@@ -333,17 +339,16 @@ Inspired by doom-modeline
 Changes to default editing behavior
 
 #+begin_src emacs-lisp
-;; this is `zap-to-char' by default
-(keymap-global-set "M-z" #'zap-up-to-char)
-
-;; Act on region if active, otherwise on line/word
-(keymap-global-set "M-D" #'duplicate-dwim)
-(keymap-global-set "M-u" #'upcase-dwim)
-(keymap-global-set "M-l" #'downcase-dwim)
-(keymap-global-set "M-c" #'capitalize-dwim)
-
-;; join line with line above
-(keymap-global-set "C-c j" #'join-line)
+(darius/set-global-keys
+ '(;; Act on region if active, otherwise on line/word
+   ("M-D" duplicate-dwim)
+   ("M-u" upcase-dwim)
+   ("M-l" downcase-dwim)
+   ("M-c" capitalize-dwim)
+   ;; `zap-to-char' by default
+   ("M-z" zap-up-to-char)
+   ;; join line with line above
+   ("C-c j" join-line)))
 
 ;; delete parens and quotes
 (setopt delete-pair-push-mark t
@@ -566,9 +571,14 @@ Grep
 
 #+begin_src emacs-lisp
 (use-package grep
+  :config
+  (grep-apply-setting
+   'grep-find-command
+   '("rg --no-heading --with-filename '' --glob='' " . 34))
   :custom
   (grep-use-headings t)
   :bind
+  ("M-s f" . grep-find)
   (:map grep-mode-map
         ("F" . next-error-follow-minor-mode)))
 #+end_src
@@ -726,12 +736,18 @@ Open query in browser
                    ("Hoogle"
                     . [simple-query "https://hoogle.haskell.org"
                                     "https://hoogle.haskell.org/?hoogle=" ""])
+                   ("Hackage"
+                    . [simple-query "https://hackage.haskell.org"
+                                    "https://hackage.haskell.org/packages/browse?terms=" ""])
                    ("Rust docs"
                     . [simple-query "https://doc.rust-lang.org"
                                     "https://doc.rust-lang.org/stable/std/index.html?search=" ""])
                    ("Lib.rs"
                     . [simple-query "https://lib.rs"
-                                    "https://lib.rs/search?q=" ""]))))
+                                    "https://lib.rs/search?q=" ""])
+                   ("MDN"
+                    . [simple-query "https://developer.mozilla.org"
+                                    "https://developer.mozilla.org/search?q=" ""]))))
 #+end_src
 
 ** Proced
@@ -1101,6 +1117,7 @@ A variant of catppuccin built on top of the new modus themes 5.0.0
 
      (fg-heading-2 mauve)
      (fg-heading-3 maroon)
+     (fg-heading-4 blue)
      (fringe unspecified)
      (string flamingo)
      (bg-prose-code bg-dim)
@@ -1448,8 +1465,8 @@ RSS feeds
                 (read (current-buffer))))))
   ;; mark new entries older than two weeks as read automatically
   (add-hook 'elfeed-new-entry-hook
-          (elfeed-make-tagger :before "2 weeks ago"
-                              :remove 'unread))
+            (elfeed-make-tagger :before "2 weeks ago"
+                                :remove 'unread))
   ;; make news post stand out less than blogs and highlight arch linux feed
   (push '(news shadow) elfeed-search-face-alist)
   (push '(arch warning) elfeed-search-face-alist)
@@ -1546,7 +1563,7 @@ Set up vertico, orderless and tweak some emacs completion defaults
   (vertico-multiform-mode)
   ;; keep default recent buffer sorting
   (add-to-list 'vertico-multiform-categories
-	       '(buffer (vertico-sort-function . nil))))
+	           '(buffer (vertico-sort-function . nil))))
 
 (use-package vertico-directory
   :after vertico
