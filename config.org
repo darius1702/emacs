@@ -139,6 +139,7 @@ Also I keep accidentally triggering pinch-to-zoom and ctrl+mousewheel on my lapt
 #+begin_src emacs-lisp
 (use-package mouse
   :config
+  (mouse-shift-adjust-mode 1) ; extend region with shift+drag
   (mapc #'keymap-global-unset
         '("C-<wheel-up>"
           "C-<wheel-down>"
@@ -179,6 +180,7 @@ Change default UI settings
   (show-paren-when-point-inside-paren t)
   (show-paren-when-point-in-periphery t)
   (show-paren-context-when-offscreen  'overlay)
+  (show-paren-not-in-comments-or-strings 'on-mismatch)
   :config
   (show-paren-mode 1))
 
@@ -240,24 +242,24 @@ Inspired by doom-modeline
   (add-to-list 'mode-line-collapse-minor-modes mode))
 
 (defface darius/mode-line-highlight
-  `((t
+  '((t
      :weight semibold
      :inherit error))
   "Face for highlighted text on the mode line")
 
 (defface darius/mode-line-bold
-  `((t
+  '((t
      :weight semibold
      :inherit fixed-pitch))
   "Face bold text on the mode line")
 
 (defface darius/mode-line-text
-  `((t
+  '((t
      :inherit fixed-pitch))
   "Face for text on the mode line")
 
 (defface darius/mode-line-shadow
-  `((t
+  '((t
      :inherit shadow))
   "Face for text on the mode line that should not stand out too much")
 
@@ -626,7 +628,7 @@ Help popups, linting, documentation, ...
 ;; make apropos search more extensively
 (setopt apropos-do-all t)
 
-;; show character name in  C-x =
+;; show character name in C-x =
 (setopt what-cursor-show-names t)
 
 ;; make mouse side buttons go back and forth in help and info buffers
@@ -635,28 +637,6 @@ Help popups, linting, documentation, ...
   (:map help-mode-map
         ("<mouse-8>" . help-go-back)
         ("<mouse-9>" . help-go-forward)))
-
-(use-package info
-  :custom
-  (Info-fontify-visited-nodes nil)
-  :bind
-  (:map Info-mode-map
-        ("<mouse-8>" . Info-history-back)
-        ("<mouse-9>" . Info-history-forward)))
-
-;; syntax checking
-(use-package flymake
-  :custom
-  (flymake-wrap-around nil)
-  :bind
-  ("M-n" . flymake-goto-next-error)
-  ("M-p" . flymake-goto-prev-error))
-
-;; jumping to definition etc.
-(use-package xref
-  :custom
-  (xref-history-storage 'xref-window-local-history)
-  (xref-search-program 'ripgrep))
 
 ;; help in the echo area
 (use-package eldoc
@@ -677,15 +657,35 @@ Help popups, linting, documentation, ...
   ;; setting this with :custom doesn't work for some reason?
   (setopt which-func-unknown ":3"))
 
-;; spell check
-;; Arch linux provides /usr/share/dict/words in the extra/words package
+;; jumping to definition etc.
+(use-package xref
+  :custom
+  (xref-history-storage 'xref-window-local-history)
+  (xref-search-program 'ripgrep))
+#+end_src
+
+*** Linting and Spell Check
+Arch linux provides ~/usr/share/dict/words~ in the ~extra/words~ package.
+
+#+begin_src emacs-lisp
+(use-package flymake
+  :custom
+  (flymake-wrap-around nil)
+  :bind
+  ("M-n" . flymake-goto-next-error)
+  ("M-p" . flymake-goto-prev-error))
+
 (use-package ispell
   :custom
   (ispell-dictionary "en_US")
   (ispell-program-name "hunspell")
   (spell-alternate-dictionary "/usr/share/dict/words"))
+#+end_src
 
-;; manual pages (colorschemes can override the colors)
+*** Manuals
+Manpages and info pages
+
+#+begin_src emacs-lisp
 (use-package man
   :bind
   ("C-c m m" . man)
@@ -695,6 +695,43 @@ Help popups, linting, documentation, ...
   (set-face-attribute 'Man-overstrike nil :inherit 'font-lock-keyword-face :bold t)
   (set-face-attribute 'Man-underline nil :inherit 'font-lock-string-face :underline t))
 
+(use-package info
+  :custom
+  (Info-fontify-visited-nodes nil)
+  :bind
+  (:map Info-mode-map
+        ("<mouse-8>" . Info-history-back)
+        ("<mouse-9>" . Info-history-forward)))
+#+end_src
+
+*** Webjump
+Open query in browser
+
+#+begin_src emacs-lisp
+(use-package webjump
+  :bind ("C-c m w" . webjump)
+  :custom
+  (webjump-sites '(("Wikipedia"
+                    . [simple-query "https://wikipedia.org"
+                                    "https://wikipedia.org/wiki/" ""])
+                   ("Archwiki"
+                    . [simple-query "https://wiki.archlinux.org"
+                                    "https://wiki.archlinux.org/index.php?search=" ""])
+                   ("Google"
+                    . [simple-query "https://www.google.com"
+                                    "https://www.google.com/search?q=" ""])
+                   ("YouTube"
+                    . [simple-query "https://www.youtube.com"
+                                    "https://www.youtube.com/results?search_query=" ""])
+                   ("Hoogle"
+                    . [simple-query "https://hoogle.haskell.org"
+                                    "https://hoogle.haskell.org/?hoogle=" ""])
+                   ("Rust docs"
+                    . [simple-query "https://doc.rust-lang.org"
+                                    "https://doc.rust-lang.org/stable/std/index.html?search=" ""])
+                   ("Lib.rs"
+                    . [simple-query "https://lib.rs"
+                                    "https://lib.rs/search?q=" ""]))))
 #+end_src
 
 ** Proced
@@ -1052,9 +1089,16 @@ A variant of catppuccin built on top of the new modus themes 5.0.0
      (mantle "#161618")
      (crust "#070709")
      (surface0 "#282830")
-     (surface1 "#404042")
+     (surface1 "#383840")
      (surface2 "#525254")
-     (border-mode-line-inactive bg-mode-line-inactive)
+
+     (fg-mode-line-active       fg-main)
+     (bg-mode-line-active       surface1)
+     (border-mode-line-active   overlay2)
+     (fg-mode-line-inactive     subtext0)
+     (bg-mode-line-inactive     base)
+     (border-mode-line-inactive surface1)
+
      (fg-heading-2 mauve)
      (fg-heading-3 maroon)
      (fringe unspecified)
@@ -1062,6 +1106,7 @@ A variant of catppuccin built on top of the new modus themes 5.0.0
      (bg-prose-code bg-dim)
      (bg-line-number-active base)
      (bg-line-number-inactive base))))
+(modus-themes-load-theme 'catppuccin-mocha)
 #+end_src
 
 **** Standard Themes
@@ -1072,7 +1117,6 @@ Standard themes
   :ensure t
   :custom
   (standard-dark-palette-overrides '((comment fg-dim))))
-(modus-themes-load-theme 'standard-dark)
 #+end_src
 
 *** Marginalia
@@ -1500,6 +1544,7 @@ Set up vertico, orderless and tweak some emacs completion defaults
   :init
   (vertico-mode)
   (vertico-multiform-mode)
+  ;; keep default recent buffer sorting
   (add-to-list 'vertico-multiform-categories
 	       '(buffer (vertico-sort-function . nil))))
 
