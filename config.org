@@ -1073,14 +1073,8 @@ These are built-in!
      (bg-prose-code bg-dim)
      (border-mode-line-active blue-intense)))
 
-  (modus-vivendi-palette-overrides
-   '((bg-mode-line-active bg-lavender)
-     (border-mode-line-active bg-magenta-intense)))
-
   (modus-vivendi-tinted-palette-overrides
-   '((bg-mode-line-active bg-lavender)
-     (border-mode-line-active bg-magenta-intense)
-     (comment fg-dim)))
+   '((comment fg-dim)))
   :config
   (defun darius/modus-themes-setup ()
     (set-face-attribute 'bold nil :weight 'semibold))
@@ -1108,21 +1102,19 @@ A variant of catppuccin built on top of the new modus themes 5.0.0
      (surface1 "#383840")
      (surface2 "#525254")
 
-     (fg-mode-line-active       fg-main)
-     (bg-mode-line-active       surface1)
-     (border-mode-line-active   overlay2)
-     (fg-mode-line-inactive     subtext0)
+     (bg-mode-line-active       surface0)
+     (border-mode-line-active   surface1)
      (bg-mode-line-inactive     base)
-     (border-mode-line-inactive surface1)
+     (border-mode-line-inactive surface0)
 
-     (fg-heading-2 mauve)
-     (fg-heading-3 maroon)
-     (fg-heading-4 blue)
-     (fringe unspecified)
      (string flamingo)
+     (fringe unspecified)
      (bg-prose-code bg-dim)
      (bg-line-number-active base)
-     (bg-line-number-inactive base))))
+     (bg-line-number-inactive base)
+     (fg-heading-2 mauve)
+     (fg-heading-3 maroon)
+     (fg-heading-4 blue))))
 (modus-themes-load-theme 'catppuccin-mocha)
 #+end_src
 
@@ -1655,12 +1647,10 @@ Language server stuff
                '((c-mode c++-mode c-ts-mode c++-ts-mode)
                  . ("clangd"
                     "-j=16"
-                    "--std=c++26"
                     "--log=error"
                     "--malloc-trim"
                     "--background-index"
                     "--clang-tidy"
-                    "--cross-file-rename"
                     "--completion-style=detailed"
                     "--pch-storage=memory")))
   :hook (LaTeX-mode . eglot-ensure))
@@ -1959,15 +1949,13 @@ Requires ~sail-mode.el~ somewhere in the load-path
 (add-hook 'sail-mode-hook #'(lambda () (setq-local tab-width 2)))
 #+end_src
 
-** COMMENT Lean
+** Lean
 I love lean.
 The default lean4 mode depends on lsp-mode, so until they do eglot or none at all, pull in [[https://codeberg.org/mekeor/nael][this fork]].
-For some reason the repo contains three different packages and I can't figure out how to pull only one,
-so it's also banished to the COMMENT realm until I think of something.
 
 #+begin_src emacs-lisp
-(use-package nael-mode
-  :vc (:url "https://codeberg.org/mekeor/nael" :branch "release"))
+(use-package nael
+  :ensure t)
 #+end_src
 
 ** Web stuff
