@@ -116,7 +116,7 @@ Tweaks that don't fit the other categories
 (setopt shr-use-fonts t)
 #+end_src
 
-** Default Keybindings
+** Keybindings
 Unbind some defaults and bind some more keys
 
 #+begin_src emacs-lisp
@@ -160,6 +160,139 @@ Also I keep accidentally triggering pinch-to-zoom and ctrl+mousewheel on my lapt
   ("<mouse-3>" . mouse-set-point)
   ("<down-mouse-3>" . mouse-drag-region)
   ("<drag-mouse-3>" . mouse-set-region))
+#+end_src
+
+*** Custom functions
+Define some utility functions and bind them to keys.
+
+**** Open file from zoxide database
+Querying the zoxide database for all entries returns them in a sorted order, so we can just pass it to completing read.
+The ~table~ thing makes completing-read keep the original order of the list passed to it
+
+#+begin_src emacs-lisp
+(defun darius/zoxide-find-file ()
+  "Find a file from your zoxide database"
+  (interactive)
+  (let* ((db (shell-command-to-string "zoxide query -l"))
+         (entries (split-string db "\n" t))
+         (table (lambda (string pred action)
+                  (if (eq action 'metadata)
+                      `(metadata (display-sort-function . identity))
+                    (complete-with-action action entries string pred))))
+         (selection (completing-read "Jump: " table nil t)))
+    (find-file selection)))
+
+(keymap-global-set "M-g z" #'darius/zoxide-find-file)
+#+end_src
+
+**** Maybe wrap with char
+Wrap the active region with a character, like ~'('~ in ~electric-pair-mode~.
+Adding chars to ~insert-pair-alist~ makes ~delete-pair~ work with them.
+Don't add them to ~electric-pair-pairs~ because I want to insert them only when the region is active.
+
+#+begin_src emacs-lisp
+(defun darius/maybe-wrap-with-char (char)
+  "If region is active, wrap it with CHAR, else insert CHAR.
+If called interactively, prompt for a character to use."
+  (interactive "cChar: ")
+  (when (use-region-p)
+    (let ((beg (region-beginning))
+          (end (region-end)))
+      (goto-char end)
+      (insert char)
+      (goto-char beg)))
+  (insert char))
+
+(defun darius/maybe-wrap-setup-keys (keymap keys)
+  "Bind each character in string KEYS to maybe wrap in KEYMAP
+and add it to `insert-pair-alist'"
+  (dolist (key (string-to-list keys))
+    (setq-local insert-pair-alist (cons (list key key) insert-pair-alist))
+    (keymap-set keymap (char-to-string key)
+                (lambda ()
+                  (interactive)
+                  (darius/maybe-wrap-with-char key)))))
+
+;; wrap chars from `org-emphasis-alist' in org-mode, usually "*/_=+~"
+(with-eval-after-load 'org
+  (defun darius/maybe-wrap-org-setup ()
+    (let ((keys (mapconcat #'car org-emphasis-alist)))
+      (darius/maybe-wrap-setup-keys org-mode-map keys)))
+  (add-hook 'org-mode-hook #'darius/maybe-wrap-org-setup))
+
+;; markdown
+(with-eval-after-load 'markdown-mode
+  (add-hook 'markdown-mode-hook
+            (lambda ()
+              (darius/maybe-wrap-setup-keys markdown-mode-map "*_"))))
+#+end_src
+
+**** Swap semicolon and dash
+In lisp-based modes and the minibuffer, I type ~-~ a lot more than ~;~.
+Most use-cases for semincolons are covered by ~comment-line~ and ~comment-dwim~
+
+#+begin_src emacs-lisp
+(defun darius/insert-dash-or-semicolon (arg)
+  (interactive "P")
+  (if (not arg)
+      (insert "-")
+    (insert ";")))
+
+(define-minor-mode darius/dash-semicolon-minor-mode
+  "When pressing the ; key, insert a - unless called with a prefix argument"
+  :global nil
+  :initial-value nil
+  :lighter " :3"
+  :keymap '((";" . darius/insert-dash-or-semicolon)))
+
+(dolist (mode '(minibuffer-setup-hook
+                emacs-lisp-mode-hook
+                ielm-mode-hook
+                org-mode-hook))
+  (add-hook mode #'darius/dash-semicolon-minor-mode))
+#+end_src
+
+**** Switch buffer or delete window
+Use ~C-;~ to bring up a buffer prompt or delete the current window with prefix argument.
+With two prefixes call ~winner-undo~
+
+#+begin_src emacs-lisp
+(defun darius/switch-buffer-or-delete-window (arg)
+  "Call `switch-to-buffer' or `delete-window'/`winnder-undo' if called with one/two C-u presses"
+  (interactive "P")
+  (cond
+   ((null arg)
+    (call-interactively #'switch-to-buffer))
+   ((equal arg '(4))
+    (delete-window))
+   ((equal arg '(16))
+    (winner-undo))
+   (t ; fallback
+    (call-interactively #'switch-to-buffer))))
+
+(keymap-global-set "C-;" #'darius/switch-buffer-or-delete-window)
+#+end_src
+
+**** Move lines up/down
+Shift lines up and down, yoinked from [[https://emacsredux.com/blog/2013/04/02/move-current-line-up-or-down/][here]].
+
+#+begin_src emacs-lisp
+(defun darius/move-line-up ()
+  (interactive)
+  (transpose-lines 1)
+  (forward-line -2)
+  (indent-according-to-mode))
+
+(defun darius/move-line-down ()
+  (interactive)
+  (forward-line 1)
+  (transpose-lines 1)
+  (forward-line -1)
+  (indent-according-to-mode))
+
+(darius/set-global-keys
+ '(("C-S-p" darius/move-line-up)
+   ("C-S-n" darius/move-line-down)))
 #+end_src
 
 ** User interface
@@ -398,7 +531,7 @@ Isearch, ibuffer, imenu, ...
 As the heading suggests
 
 #+begin_src emacs-lisp
-(keymap-global-set "C-<tab>" #'mode-line-other-buffer)
+(keymap-set tab-bar-mode-map "C-<tab>" #'mode-line-other-buffer)
 
 (use-package window
   :custom
@@ -1003,7 +1136,23 @@ Emulate a terminal
   (add-to-list 'display-buffer-alist
                '("\\(?:\\*-eat\\*\\|.*eat.*\\)"
                  (display-buffer-reuse-mode-window)))
+  (defun darius/spawn-terminal-here (arg)
+    "Open an *eat* buffer in the current project if called without prefix.
+If called with one C-u open a regular *eat* in the other window.
+If called with two C-u's, spawn a terminal window (foot) in the current directory."
+    (interactive "P")
+    (cond
+     ((null arg)
+      (eat-project-other-window))
+     ((equal arg '(4))
+      (eat-other-window))
+     ((equal arg '(16))
+      (if-let* ((foot-path (executable-find "foot")))
+          (call-process foot-path nil 0 nil "-D" (expand-file-name default-directory))))
+     (t ; fallback
+      (eat-other-window))))
   :bind
+  ("M-g t" . darius/spawn-terminal-here)
   (:map eat-semi-char-mode-map
         ("M-o" . other-window)))
 #+end_src
@@ -1387,6 +1536,11 @@ Settings for org-mode and related packages
   ;; remove some decoration from links
   (set-face-attribute 'org-cite-key nil :underline nil)
   (set-face-attribute 'org-cite nil :underline nil :inherit 'shadow)
+  (defun darius/org-agenda-fullscreen ()
+    "Open the org agenda and make it the only window in this frame"
+    (interactive)
+    (org-agenda nil "a")
+    (delete-other-windows))
   :bind
   ("C-c o a" . org-agenda)
   ("C-c o A" . consult-org-agenda)
@@ -1742,7 +1896,9 @@ Treesitter, not nearly as bloated as ~haskell-mode~ but also has less features, 
 
 #+begin_src emacs-lisp
 (use-package verilog-mode
-  :custom (verilog-auto-newline nil))
+  :custom (verilog-auto-newline nil)
+  :bind
+  (:map verilog-mode-map ("C-;" . darius/switch-buffer-or-delete-window)))
 #+end_src
 
 ** Scala
@@ -1996,175 +2152,4 @@ Edit csv files
 (use-package csv-mode
   :ensure t
   :hook (csv-mode . csv-align-mode))
-#+end_src
-
-* Custom Functions
-Various cringe
-
-** Zoxide
-Querying the zoxide database for all entries returns them in a sorted order, so we can just pass it to completing read.
-The ~table~ thing makes completing-read keep the original order of the list passed to it
-
-#+begin_src emacs-lisp
-(defun darius/zoxide-find-file ()
-  "Find a file from your zoxide database"
-  (interactive)
-  (let* ((db (shell-command-to-string "zoxide query -l"))
-         (entries (split-string db "\n" t))
-         (table (lambda (string pred action)
-                  (if (eq action 'metadata)
-                      `(metadata (display-sort-function . identity))
-                    (complete-with-action action entries string pred))))
-         (selection (completing-read "Jump: " table nil t)))
-    (find-file selection)))
-
-(keymap-global-set "M-g z" #'darius/zoxide-find-file)
-#+end_src
-
-** Spawn terminal here
-Spawn a terminal in the current directory.
-This is hardcoded to foot because wayland is obviously superior
-
-#+begin_src emacs-lisp
-(defun darius/spawn-terminal-here (arg)
-  "Open an *eat* buffer in the current project if called without prefix.
-If called with one C-u open a regular *eat* in the other window.
-If called with two C-u's, spawn a terminal window (foot) in the current directory."
-  (interactive "P")
-  (cond
-   ((null arg)
-    (eat-project-other-window))
-   ((equal arg '(4))
-    (eat-other-window))
-   ((equal arg '(16))
-    (if-let* ((foot-path (executable-find "foot")))
-        (call-process foot-path nil 0 nil "-D" (expand-file-name default-directory))))
-   (t ; fallback
-    (eat-other-window))))
-
-(keymap-global-set "M-g t" #'darius/spawn-terminal-here)
-#+end_src
-
-** Maybe wrap with char
-Wrap the active region with a character, like ~'('~ in ~electric-pair-mode~.
-Adding chars to ~insert-pair-alist~ makes ~delete-pair~ work with them.
-Don't add them to ~electric-pair-pairs~ because I want to insert them only when the region is active.
-
-#+begin_src emacs-lisp
-(defun darius/maybe-wrap-with-char (char)
-  "If region is active, wrap it with CHAR, else insert CHAR.
-If called interactively, prompt for a character to use."
-  (interactive "cChar: ")
-  (when (use-region-p)
-    (let ((beg (region-beginning))
-          (end (region-end)))
-      (goto-char end)
-      (insert char)
-      (goto-char beg)))
-  (insert char))
-
-(defun darius/maybe-wrap-setup-keys (keymap keys)
-  "Bind each character in string KEYS to maybe wrap in KEYMAP
-and add it to `insert-pair-alist'"
-  (dolist (key (string-to-list keys))
-    (setq-local insert-pair-alist (cons (list key key) insert-pair-alist))
-    (keymap-set keymap (char-to-string key)
-                (lambda ()
-                  (interactive)
-                  (darius/maybe-wrap-with-char key)))))
-
-;; wrap chars from `org-emphasis-alist' in org-mode, usually "*/_=+~"
-(with-eval-after-load 'org
-  (defun darius/maybe-wrap-org-setup ()
-    (let ((keys (mapconcat #'car org-emphasis-alist)))
-      (darius/maybe-wrap-setup-keys org-mode-map keys)))
-  (add-hook 'org-mode-hook #'darius/maybe-wrap-org-setup))
-
-;; markdown
-(with-eval-after-load 'markdown-mode
-  (add-hook 'markdown-mode-hook
-            (lambda ()
-              (darius/maybe-wrap-setup-keys markdown-mode-map "*_"))))
-#+end_src
-
-** Swap semicolon and dash
-In lisp-based modes and the minibuffer, I type ~-~ a lot more than ~;~.
-Most use-cases for semincolons are covered by ~comment-line~ and ~comment-dwim~
-
-#+begin_src emacs-lisp
-(defun darius/insert-dash-or-semicolon (arg)
-  (interactive "P")
-  (if (not arg)
-      (insert "-")
-    (insert ";")))
-
-(define-minor-mode darius/dash-semicolon-minor-mode
-  "When pressing the ; key, insert a - unless called with a prefix argument"
-  :global nil
-  :initial-value nil
-  :lighter " :3"
-  :keymap '((";" . darius/insert-dash-or-semicolon)))
-
-(dolist (mode '(minibuffer-setup-hook
-                emacs-lisp-mode-hook
-                ielm-mode-hook
-                org-mode-hook
-                haskell-mode-hook))
-  (add-hook mode #'darius/dash-semicolon-minor-mode))
-#+end_src
-
-** Switch buffer or delete window
-Use ~C-;~ to bring up a buffer prompt or delete the current window with prefix argument.
-With two prefixes call ~winner-undo~
-
-#+begin_src emacs-lisp
-(defun darius/switch-buffer-or-delete-window (arg)
-  "Call `switch-to-buffer' or `delete-window'/`winnder-undo' if called with one/two C-u presses"
-  (interactive "P")
-  (cond
-   ((null arg)
-    (call-interactively #'switch-to-buffer))
-   ((equal arg '(4))
-    (delete-window))
-   ((equal arg '(16))
-    (winner-undo))
-   (t ; fallback
-    (call-interactively #'switch-to-buffer))))
-
-(keymap-global-set "C-;" #'darius/switch-buffer-or-delete-window)
-
-;; aaa
-(with-eval-after-load 'verilog-mode
-  (keymap-set verilog-mode-map "C-;" #'darius/switch-buffer-or-delete-window))
-#+end_src
-
-** Move lines
-Shift lines up and down, yoinked from [[https://emacsredux.com/blog/2013/04/02/move-current-line-up-or-down/][here]].
-
-#+begin_src emacs-lisp
-(defun darius/move-line-up ()
-  (interactive)
-  (transpose-lines 1)
-  (forward-line -2)
-  (indent-according-to-mode))
-
-(defun darius/move-line-down ()
-  (interactive)
-  (forward-line 1)
-  (transpose-lines 1)
-  (forward-line -1)
-  (indent-according-to-mode))
-
-(keymap-global-set "C-S-p" #'darius/move-line-up)
-(keymap-global-set "C-S-n" #'darius/move-line-down)
-#+end_src
-
-** Org agenda
-Org-related stuff
-
-#+begin_src emacs-lisp
-(defun darius/org-agenda-fullscreen ()
-  (interactive)
-  (org-agenda nil "a")
-  (delete-other-windows))
 #+end_src
