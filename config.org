@@ -405,7 +405,7 @@ Inspired by doom-modeline
 (defvar-local darius/mode-line-buffer-name
   '(:eval
     (if (mode-line-window-selected-p)
-        (if (buffer-modified-p)
+        (if (and (buffer-modified-p) (buffer-file-name))
             (propertize (buffer-name) 'face 'darius/mode-line-highlight)
           (propertize (buffer-name) 'face 'darius/mode-line-bold))
       (buffer-name))))
@@ -1473,8 +1473,13 @@ Some improvements over DocView
                  (display-buffer-reuse-window)
                  (reusable-frames . t)
                  (inhibit-switch-frame . t)))
+  ;; this breaks mouse scrolling in continuous view mode
+  (with-eval-after-load 'ultra-scroll
+      (add-hook 'pdf-view-mode-hook (lambda () (ultra-scroll-mode -1))))
   :hook
   (pdf-view-mode . (lambda () (display-line-numbers-mode -1)))
+  (pdf-view-mode . pixel-scroll-precision-mode)
+  (pdf-view-mode . pdf-view-roll-minor-mode) ; continuous scrolling
   (pdf-outline-buffer-mode . pdf-outline-follow-mode)
   :bind (:map pdf-view-mode-map
               ("C" . pdf-view-center-in-window)
@@ -1536,11 +1541,6 @@ Settings for org-mode and related packages
   ;; remove some decoration from links
   (set-face-attribute 'org-cite-key nil :underline nil)
   (set-face-attribute 'org-cite nil :underline nil :inherit 'shadow)
-  (defun darius/org-agenda-fullscreen ()
-    "Open the org agenda and make it the only window in this frame"
-    (interactive)
-    (org-agenda nil "a")
-    (delete-other-windows))
   :bind
   ("C-c o a" . org-agenda)
   ("C-c o A" . consult-org-agenda)
@@ -1550,6 +1550,16 @@ Settings for org-mode and related packages
   (:map org-mode-map
         ("C-c o s" . org-store-link)
         ("C-c o h" . consult-org-heading)))
+
+(defun darius/org-agenda-fullscreen ()
+  "Open the org agenda and make it the only window in this frame.
+This requires org manually because I bind it to a key in Hyprland and this fails if
+the emacs server hasn't loaded org yet."
+  (interactive)
+  (require 'org)
+  (org-agenda nil "a")
+  (delete-other-windows))
+
 ;; builtin package to make org documents more readable
 (use-package org-indent
   :hook org-mode
@@ -1878,8 +1888,8 @@ Haskell indentation
 #+begin_src emacs-lisp
 (use-package hindent
   :ensure t
-  :after haskell-ts-mode
-  :hook (haskell-ts-mode . hindent-mode)
+  :after haskell-mode
+  :hook (haskell-mode . hindent-mode)
   :config (add-to-list 'mode-line-collapse-minor-modes 'hindent-mode))
 #+end_src
 

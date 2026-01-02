@@ -31,6 +31,7 @@
  ("https://golem.ph.utexas.edu/category/atom10.xml" math)
 
  ("https://bernsteinbear.com/feed.xml" compiler)
+ ("https://cfbolz.de/rss.xml" compiler)
  ("https://cybercat.institute/feed.xml" fp)
  ("https://www.haskellforall.com/feeds/posts/default" fp)
  ("https://feeds.feedburner.com/incodeblog" fp)
@@ -38,6 +39,7 @@
  ("https://thomasjm.github.io/feed.xml" fp)
  ("https://blog.poisson.chat/rss.xml" fp)
  ("https://chrispenner.ca/atom.xml" fp)
+ ("https://okmij.org/ftp/rss.xml" fp)
  ("https://quuxplusone.github.io/blog/feed" cpp)
 
  ("https://www.todepond.com/feed/index.xml" cg)
