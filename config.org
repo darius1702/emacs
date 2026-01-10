@@ -341,6 +341,9 @@ Change default UI settings
   :hook
   (prog-mode . display-line-numbers-mode))
 
+;; kind of broken in org rn
+;; (global-visual-wrap-prefix-mode 1)
+
 ;; zoom text in smaller increments
 (setopt text-scale-mode-step 1.05)
 
@@ -428,8 +431,9 @@ Inspired by doom-modeline
 
 (defvar-local darius/mode-line-project-name
   '(:eval
-    (if (and (project-current) (buffer-file-name))
-        (let ((project-str (format "%s/" (project-name (project-current)))))
+    (if (and (project-current)
+             (not (equal (buffer-name) (project-name (project-current)))))
+        (let ((project-str (format "%s  " (project-name (project-current)))))
           (if (mode-line-window-selected-p)
               (propertize project-str 'face 'darius/mode-line-shadow)
             project-str)))
@@ -508,7 +512,9 @@ Changes to default editing behavior
 
 (setopt require-final-newline t)
 
-(global-visual-line-mode 1)
+(dolist (mode '(prog-mode-hook
+                text-mode-hook))
+  (add-hook mode #'visual-line-mode))
 
 ;; make C-w delete a word backwards when no region is active
 (setopt kill-region-dwim 'emacs-word)
@@ -781,6 +787,12 @@ Help popups, linting, documentation, ...
         ("<mouse-8>" . help-go-back)
         ("<mouse-9>" . help-go-forward)))
 
+;; install and enable the dictd service
+;; and download a dictionary like gcide or freedict.
+(use-package dictionary
+  :custom (dictionary-server "localhost")
+  :bind ("C-c m d" . dictionary-search))
+
 ;; help in the echo area
 (use-package eldoc
   :custom
@@ -889,7 +901,6 @@ Process management
 #+begin_src emacs-lisp
 (use-package proced
   :commands proced
-  :hook (proced-post-display . (lambda () (toggle-truncate-lines 1)))
   :custom
   (proced-auto-update-flag t)
   (proced-goal-attribute nil)
@@ -1052,7 +1063,7 @@ Read ~devdocs.io~ inside emacs
 #+begin_src emacs-lisp
 (use-package devdocs
   :ensure t
-  :bind ("C-c m d" . devdocs-lookup))
+  :bind ("C-c m c" . devdocs-lookup))
 #+end_src
 
 *** Nov mode
@@ -1174,7 +1185,23 @@ Dired can display subdirectories with ~i~ and remove them with ~C-u k~ but this 
 #+begin_src emacs-lisp
 (use-package dired-subtree
   :ensure t
+  :after dired
   :bind (:map dired-mode-map ("TAB" . dired-subtree-toggle)))
+#+end_src
+
+*** Substitute
+Substitute things in buffer or defun.
+
+#+begin_src emacs-lisp
+(use-package substitute
+  :ensure t
+  :custom
+  (substitute-fixed-letter-case t)
+  (substitute-ignore-narrowing nil)
+  :config
+  (add-hook 'substitute-post-replace-functions #'substitute-report-operation)
+  ;; if I do this in a :bind it doesn't load properly for some reason
+  (define-key global-map (kbd "C-c s") #'substitute-prefix-map))
 #+end_src
 
 ** Eye candy
@@ -1464,6 +1491,7 @@ Some improvements over DocView
   (pdf-annot-default-annotation-properties '((t (label . "Darius Schefer")) (text (icon . "Comment"))))
   (pdf-view-use-scaling t)
   (pdf-view-resize-factor 1.1)
+  (pdf-roll-margin-color (face-background 'default))
   :config
   (setq-default pdf-view-display-size 'fit-page)
   (add-to-list 'revert-without-query ".pdf")
@@ -1480,7 +1508,7 @@ Some improvements over DocView
   (pdf-view-mode . (lambda () (display-line-numbers-mode -1)))
   (pdf-view-mode . pixel-scroll-precision-mode)
   (pdf-view-mode . pdf-view-roll-minor-mode) ; continuous scrolling
-  (pdf-outline-buffer-mode . pdf-outline-follow-mode)
+  ;; (pdf-outline-buffer-mode . pdf-outline-follow-mode)
   :bind (:map pdf-view-mode-map
               ("C" . pdf-view-center-in-window)
               ("C-=" . pdf-view-enlarge)
