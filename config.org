@@ -472,7 +472,7 @@ Inspired by doom-modeline
                 " "))
 #+end_src
 
-** Editing and Formatting
+** Editing and formatting
 Changes to default editing behavior
 
 #+begin_src emacs-lisp
@@ -495,8 +495,8 @@ Changes to default editing behavior
 ;; continue comment on new line
 (keymap-set prog-mode-map "M-RET" #'comment-indent-new-line)
 
-;; indentation+completion with TAB
-(setopt tab-always-indent 'complete)
+;; do not complete on TAB, only indent
+(setopt tab-always-indent t)
 
 (use-package dabbrev
   :custom
@@ -528,6 +528,10 @@ Changes to default editing behavior
 
 (setopt sentence-end-double-space nil
         sentence-end "[.\",;!?*:'] ")
+
+;; narrowing
+(put 'narrow-to-region 'disabled nil)
+(setopt narrow-to-defun-include-comments t)
 #+end_src
 
 ** Buffers
@@ -653,6 +657,7 @@ File browsing on crack
   (:map dired-mode-map
         ("+" . darius/dired-create-directory)
         ("<mouse-2>" . dired-mouse-find-file)
+        ("j" . find-file)
         ("SPC" . dired-jump)
         ("b" . dired-jump))
   :config
@@ -766,7 +771,7 @@ Changes to compile and comint buffers
   (comint-prompt-read-only t))
 #+end_src
 
-** Help and Docs
+** Help and docs
 Help popups, linting, documentation, ...
 
 #+begin_src emacs-lisp
@@ -924,7 +929,7 @@ Diff files
   (ediff-window-setup-function 'ediff-setup-windows-plain))
 #+end_src
 
-** Remote Editing
+** Remote editing
 Remote editing with TRAMP
 
 #+begin_src emacs-lisp
@@ -981,7 +986,7 @@ Also disable auto-save messages
 ;; (setopt create-lockfiles nil)
 #+end_src
 
-* External Packages
+* External packages
 ** Setup
 Load lisp files from ~[user-emacs-directory]/external~.
 Configure ~package.el~ and ~use-package~
