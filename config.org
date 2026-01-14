@@ -373,6 +373,7 @@ Inspired by doom-modeline
 (setopt mode-line-default-help-echo nil
         mode-line-modes-delimiters nil
         mode-line-position-column-line-format '("%l:%c")
+        mode-line-percent-position nil
         mode-line-collapse-minor-modes-to "")
 
 (dolist (mode '(auto-revert-mode
@@ -462,7 +463,7 @@ Inspired by doom-modeline
                 " "
                 darius/mode-line-project-name
                 darius/mode-line-buffer-name
-                "  "
+                "   "
                 mode-line-position
                 mode-line-format-right-align
                 darius/mode-line-git-status
@@ -2038,6 +2039,14 @@ GFM mode seems to work better than markdown-ts-mode for me.
   :mode
   ("README\\.md\\'" . gfm-mode)
   ("\\.md\\'" . gfm-mode))
+#+end_src
+
+** GLSL
+Shaders
+
+#+begin_src emacs-lisp
+(use-package glsl-mode
+  :ensure t)
 #+end_src
 
 ** Nix
