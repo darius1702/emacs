@@ -132,10 +132,28 @@ Unbind some defaults and bind some more keys
   (dolist (b binds)
     (keymap-global-set (car b) (cadr b))))
 
+(defun darius/scroll-down-command (arg)
+  "Scroll window down by half, or ARG if present"
+  (interactive "P")
+  (let ((amount (if arg
+                    (prefix-numeric-value arg)
+                  (/ (window-body-height) 2))))
+    (scroll-down-command amount)))
+
+(defun darius/scroll-up-command (arg)
+  "Scroll window up by half, or ARG if present"
+  (interactive "P")
+  (let ((amount (if arg
+                    (prefix-numeric-value arg)
+                  (/ (window-body-height) 2))))
+    (scroll-up-command amount)))
+
 (darius/set-global-keys
  '(("M-o" other-window)
    ("M-O" other-window-backward)
-   ("C-M-S-o" window-layout-transpose)))
+   ("C-M-S-o" window-layout-transpose)
+   ("<remap> <scroll-up-command>" darius/scroll-up-command)
+   ("<remap> <scroll-down-command>" darius/scroll-down-command)))
 #+end_src
 
 *** Mouse and Trackpad
@@ -308,9 +326,9 @@ Change default UI settings
 ;; add transparency to frame background
 ;; (add-to-list 'default-frame-alist '(alpha-background . 98))
 
-(setopt scroll-preserve-screen-position t
+(setopt scroll-preserve-screen-position 'always
         scroll-margin 0                 ; becuase of ultra-scroll
-        scroll-conservatively 3
+        scroll-conservatively 101
         next-screen-context-lines 10)
 
 (use-package paren
@@ -1291,6 +1309,7 @@ A variant of catppuccin built on top of the new modus themes 5.0.0
 
      (string flamingo)
      (fringe unspecified)
+     (fg-paren-match red)
      (bg-prose-code bg-dim)
      (bg-line-number-active base)
      (bg-line-number-inactive base)
@@ -1769,6 +1788,33 @@ Set up vertico, orderless and tweak some emacs completion defaults
   (setopt completion-styles '(substring orderless basic)
 	      completion-category-defaults nil
 	      completion-category-overrides '((file (styles partial-completion)))))
+#+end_src
+
+** Slop
+At this point, why not.
+
+#+begin_src emacs-lisp
+(use-package copilot
+  :defer t
+  :vc (:url "https://github.com/copilot-emacs/copilot.el"
+            :rev :newest
+            :branch "main")
+  :custom
+  ;; don't autosuggest
+  (copilot-disable-predicates '(always))
+  :bind
+  ("C-M-<return>" . copilot-complete)
+  (:map copilot-completion-map
+        ("C-c C-i C-i" . copilot-accept-completion)
+        ("C-c C-i C-l" . copilot-accept-completion-by-line)
+        ("C-c C-i C-w" . copilot-accept-completion-by-word)
+        ("C-c C-i C-n" . copilot-next-completion)
+        ("C-c C-i C-p" . copilot-previous-completion)
+        ("C-c C-i C-o" . copilot-panel-complete)))
+
+(use-package copilot-chat
+  :defer t
+  :ensure t)
 #+end_src
 
 * Languages
