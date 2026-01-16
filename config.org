@@ -374,11 +374,44 @@ Change default UI settings
   (whitespace-style '(face trailing tabs indentatinon
                            space-before-tab space-after-tab
                            tab-mark space-mark empty)))
+#+end_src
 
+*** Calendar and Diary
+This is very neat.
+
+#+begin_src emacs-lisp
 (use-package calendar
+  :bind
+  ("<f7>" . calendar)
+  :config
+  (add-hook
+   'diary-mode-hook
+   (lambda ()
+     (font-lock-add-keywords nil
+                             '(("#.*" . font-lock-comment-face)))))
   :custom
+  (diary-file "~/Notes/diary")
+  (diary-comment-start "#")
   (calendar-date-style 'european)
-  (calendar-week-start-day 1))
+  (calendar-week-start-day 1)
+  (calendar-mark-diary-entries-flag t))
+
+(use-package appt
+  :config
+  (appt-activate 1)
+  (require 'notifications)
+  (defun darius/send-appt-notification (min-until new-time appt-msg)
+    (notifications-notify
+     :title "Upcoming Appointment"
+     :body (format "In %s min: %s" min-until appt-msg)
+     :urgency 'critical
+     :timeout 0))
+  (setq appt-disp-window-function #'darius/send-appt-notification)
+  :custom
+  (appt-display-diary nil)
+  (appt-audible nil)
+  (appt-display-interval 5)
+  (appt-message-warning-time 10))
 #+end_src
 
 *** Mode line
@@ -504,12 +537,12 @@ Changes to default editing behavior
    ;; `zap-to-char' by default
    ("M-z" zap-up-to-char)
    ;; join line with line above
-   ("C-c j" join-line)))
+   ("C-c j" join-line)
+   ;; delete parens or quotes
+   ("C-c d" delete-pair)))
 
-;; delete parens and quotes
 (setopt delete-pair-push-mark t
         delete-pair-blink-delay 0.3)
-(keymap-global-set "C-c d" #'delete-pair)
 
 ;; continue comment on new line
 (keymap-set prog-mode-map "M-RET" #'comment-indent-new-line)
@@ -1575,6 +1608,7 @@ Settings for org-mode and related packages
      (org-agenda-files :maxlevel . 3)))
   (org-agenda-span 'week)
   (org-agenda-files '("~/Notes"))
+  (org-agenda-include-diary t)
   (org-todo-keywords '((sequence "TODO(t)" "IN-PROGRESS(p)" "WAITING(w)" "HOLD(h)" "|" "DONE(d)")))
   (org-use-fast-todo-selection 'expert)
   (org-return-follows-link t)
@@ -1945,6 +1979,8 @@ The original
 
 (use-package haskell-interactive-mode
   :after haskell-mode
+  :custom
+  (haskell-interactive-mode-eval-mode haskell-mode)
   :config
   ;; TODO this requires inf-haskell to be loaded for `haskell-prompt-regexp'
   ;; which is required neither by haskell mode nor by haskell interaction mode
