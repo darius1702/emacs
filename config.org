@@ -1309,11 +1309,8 @@ These are built-in!
   (modus-vivendi-tinted-palette-overrides
    '((comment fg-dim)))
   :config
-  (defun darius/modus-themes-setup ()
-    (set-face-attribute 'bold nil :weight 'semibold))
   (modus-themes-include-derivatives-mode t)
   :hook
-  (modus-themes-after-load-theme . darius/modus-themes-setup)
   (org-mode . variable-pitch-mode)
   :bind
   ("<f12>" . modus-themes-select))
@@ -1434,6 +1431,7 @@ Font presets
       :default-weight regular
       :default-height 110
       :fixed-pitch-weight nil ; falls back to :default-weight
+      :bold-weight semibold
       :bold-family nil
       :italic-family nil)
      (SF-medium
@@ -1447,14 +1445,22 @@ Font presets
       :default-height 185)))
   :config
   (fontaine-mode 1)
+  (defvar darius/fontaine-loaded nil)
   (defun darius/load-fontaine ()
     (when (display-graphic-p)
       (fontaine-set-preset (or (fontaine-restore-latest-preset) 'SF))))
+  (defun darius/load-fontaine-once ()
+    "Apply fontaine preset only once since fonts with daemon mode are weird."
+    (unless darius/fontaine-loaded
+      (darius/load-fontaine)
+      (setq darius/fontaine-loaded t)))
+  ;; for non-daemon mode
   (darius/load-fontaine)
   :hook
   ;; probably not the proper way to do this but otherwise
-  ;; some frames spawn with the wrong preset
-  (server-after-make-frame . darius/load-fontaine)
+  ;; the fonts don't get set correctly for client frames
+  ;; and I don't want to call set-preset for every new frame
+  (server-after-make-frame . darius/load-fontaine-once)
   :bind
   ("<f11>" . fontaine-set-preset))
 #+end_src
