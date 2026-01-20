@@ -382,7 +382,7 @@ This is very neat.
 #+begin_src emacs-lisp
 (use-package calendar
   :bind
-  ("<f7>" . calendar)
+  ("<f10>" . calendar)
   :config
   (add-hook
    'diary-mode-hook
@@ -1008,8 +1008,15 @@ For running in ~-nw~ mode
 #+end_src
 
 ** Eshell
-Emacs shell aliases
+The emacs shell!
 
+#+begin_src emacs-lisp
+(use-package eshell
+  :custom
+  (eshell-banner-message ""))
+#+end_src
+
+Aliases:
 #+begin_src sh :tangle eshell/alias
 alias ff find-file $1
 alias d dired $1
@@ -1178,9 +1185,25 @@ Set timers
                                   tmr-print-message-for-finished-timer
                                   tmr-acknowledge-minibuffer))
   :bind
-  ("<f9>" . tmr)
+  ("C-c t t" . tmr)
   :config
   (tmr-mode-line-mode 1))
+#+end_src
+
+*** Pomm
+Pomodoro timers
+
+#+begin_src emacs-lisp
+(use-package pomm
+  :ensure t
+  :custom
+  (pomm-ask-before-work t)
+  ;; for the waybar module
+  ;; :hook
+  ;; (pomm-on-tick . pomm-update-mode-line-string)
+  ;; (pomm-on-status-changed . pomm-update-mode-line-string)
+  :bind
+  ("C-c t p" . pomm))
 #+end_src
 
 *** Expand region
@@ -1259,6 +1282,17 @@ Substitute things in buffer or defun.
   (add-hook 'substitute-post-replace-functions #'substitute-report-operation)
   ;; if I do this in a :bind it doesn't load properly for some reason
   (define-key global-map (kbd "C-c s") #'substitute-prefix-map))
+#+end_src
+
+*** Textsize
+Make client frame font size consistent across multiple monitors with different resolutions.
+
+#+begin_src emacs-lisp
+(use-package textsize
+  :ensure t
+  :demand t
+  :config (textsize-mode)
+  :bind ("<f11>" . textsize-fix-frame))
 #+end_src
 
 ** Eye candy
@@ -1460,9 +1494,7 @@ Font presets
   ;; probably not the proper way to do this but otherwise
   ;; the fonts don't get set correctly for client frames
   ;; and I don't want to call set-preset for every new frame
-  (server-after-make-frame . darius/load-fontaine-once)
-  :bind
-  ("<f11>" . fontaine-set-preset))
+  (server-after-make-frame . darius/load-fontaine-once))
 #+end_src
 
 ** Git
@@ -1567,7 +1599,7 @@ Some improvements over DocView
                  (inhibit-switch-frame . t)))
   ;; this breaks mouse scrolling in continuous view mode
   (with-eval-after-load 'ultra-scroll
-      (add-hook 'pdf-view-mode-hook (lambda () (ultra-scroll-mode -1))))
+    (add-hook 'pdf-view-mode-hook (lambda () (ultra-scroll-mode -1))))
   :hook
   (pdf-view-mode . (lambda () (display-line-numbers-mode -1)))
   (pdf-view-mode . pixel-scroll-precision-mode)
@@ -1639,7 +1671,6 @@ Settings for org-mode and related packages
   ("C-c o A" . consult-org-agenda)
   ("C-c o t" . orgtbl-mode)
   ("C-c o c" . org-capture)
-  ("<f10>" . (lambda () (interactive) (org-agenda nil "a")))
   (:map org-mode-map
         ("C-c o s" . org-store-link)
         ("C-c o h" . consult-org-heading)))
@@ -1722,7 +1753,7 @@ RSS feeds
   (darius/reload-elfeed-feeds)
   (elfeed-update)
   :bind
-  ("<f8>" . elfeed))
+  ("<f9>" . elfeed))
 #+end_src
 
 ** Spell checking
