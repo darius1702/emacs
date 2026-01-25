@@ -73,8 +73,10 @@ I don't know why I have this in the early-init but I moved it here at some point
 (tooltip-mode -1)
 (blink-cursor-mode -1)
 
-(winner-mode 1)                         ; window layout history
 (undelete-frame-mode 1)
+
+;; window layout history, see `tab-bar-history-mode'
+;; (winner-mode 1)
 #+end_src
 
 * Builtin stuff
@@ -111,9 +113,6 @@ Tweaks that don't fit the other categories
 ;; according to someone else's config this does something good
 (setopt pgtk-wait-for-event-timeout 0.001
         read-process-output-max (* 1024 1024 4))
-
-;; render html using variable pitch fonts
-(setopt shr-use-fonts t)
 #+end_src
 
 ** Keybindings
@@ -323,6 +322,9 @@ Change default UI settings
 (setopt use-dialog-box nil
         use-short-answers t)
 
+;; send alerts via libnotify instead of using messages
+(setopt alert-default-style 'libnotify)
+
 ;; add transparency to frame background
 ;; (add-to-list 'default-frame-alist '(alpha-background . 98))
 
@@ -341,8 +343,41 @@ Change default UI settings
   :config
   (show-paren-mode 1))
 
-(setopt tab-bar-show 1 ; only show tab bar when more than 1 tab
-        tab-bar-close-button-show nil)
+
+(use-package time
+  :config
+  (display-time-mode 1)
+  :custom
+  (display-time-24hr-format t)
+  (display-time-default-load-average nil))
+
+(use-package battery
+  :config
+  (display-battery-mode 1)
+  :custom
+  (battery-mode-line-format " %b%p%% "))
+
+(use-package tab-bar
+  :init
+  (tab-bar-mode 1)
+  :custom
+  (tab-bar-show 1) ; only show tab bar when more than 1 tab
+  (tab-bar-close-button-show nil)
+  (tab-bar-new-button-show nil)
+  (tab-bar-auto-width-max '((150) 15))
+  (tab-bar-format '(tab-bar-format-history
+                    tab-bar-format-tabs tab-bar-separator
+                    tab-bar-format-add-tab
+                    tab-bar-format-align-right
+                    tab-bar-format-global))
+  :config
+  (tab-bar-history-mode t)
+  :bind
+  (:map tab-bar-history-mode-map
+        ("C-c <left>" . tab-bar-history-back)
+        ("C-c <right>" . tab-bar-history-forward)))
+  ;; (:map tab-bar-mode-map
+        ;; ("C-<tab>" . mode-line-other-buffer)))
 
 ;; 8px right, 0px left
 (fringe-mode '(nil . 0))
@@ -550,6 +585,8 @@ Changes to default editing behavior
 ;; do not complete on TAB, only indent
 (setopt tab-always-indent t)
 
+(delete-selection-mode)
+
 (use-package dabbrev
   :custom
   (dabbrev-case-replace nil))
@@ -593,8 +630,6 @@ Isearch, ibuffer, imenu, ...
 As the heading suggests
 
 #+begin_src emacs-lisp
-(keymap-set tab-bar-mode-map "C-<tab>" #'mode-line-other-buffer)
-
 (use-package window
   :custom
   (split-window-preferred-direction 'longest)
@@ -916,10 +951,19 @@ Manpages and info pages
         ("<mouse-9>" . Info-history-forward)))
 #+end_src
 
-*** Webjump
-Open query in browser
+*** Web browsing
+HTML rendering and URL browsing.
 
 #+begin_src emacs-lisp
+;; render html using variable pitch fonts
+(setopt shr-use-fonts t)
+
+(use-package browse-url
+  :custom
+  (browse-url-generic-program "xdg-open")
+  (browse-url-browser-function #'eww-browse-url)
+  (browse-url-secondary-browser-function #'browse-url-xdg-open))
+
 (use-package webjump
   :bind ("C-c m w" . webjump)
   :custom
@@ -977,8 +1021,8 @@ Diff files
   (ediff-keep-variants nil)
   (ediff-make-buffers-readonly-at-startup t)
   (ediff-show-clashes-only t)
-  (ediff-split-window-function 'split-window-horizontally)
-  (ediff-window-setup-function 'ediff-setup-windows-plain))
+  (ediff-split-window-function #'split-window-horizontally)
+  (ediff-window-setup-function #'ediff-setup-windows-plain))
 #+end_src
 
 ** Remote editing
@@ -1186,6 +1230,7 @@ Set timers
                                   tmr-acknowledge-minibuffer))
   :bind
   ("C-c t t" . tmr)
+  ("C-c t l" . tmr-list-timers)
   :config
   (tmr-mode-line-mode 1))
 #+end_src
@@ -1291,6 +1336,7 @@ Make client frame font size consistent across multiple monitors with different r
 (use-package textsize
   :ensure t
   :demand t
+  :after fontaine
   :config (textsize-mode)
   :bind ("<f11>" . textsize-fix-frame))
 #+end_src
@@ -1447,6 +1493,18 @@ Eldoc in a popup frame
   :ensure t
   ;; override `view-hello-file'
   :bind ("C-h h" . #'eldoc-box-help-at-point))
+#+end_src
+
+*** Shr tag pre highlight
+Make shr highlight code.
+
+#+begin_src emacs-lisp
+(use-package shr-tag-pre-highlight
+  :ensure t
+  :after shr
+  :config
+  (add-to-list 'shr-external-rendering-functions
+               '(pre . shr-tag-pre-highlight)))
 #+end_src
 
 ** Fontaine
@@ -1653,6 +1711,7 @@ Settings for org-mode and related packages
   (org-deadline-warning-days 3)
   (org-imenu-depth 7)
   (org-highlight-latex-and-related '(latex))
+  (org-use-sub-superscripts '{})
   (org-hide-emphasis-markers t)    ; org-appear my beloved (see below)
   (org-M-RET-may-split-line '((default . nil)))
   (org-bookmark-names-plist nil) ; stop org-capture from creating bookmarks
@@ -1886,6 +1945,42 @@ At this point, why not.
 (use-package copilot-chat
   :defer t
   :ensure t)
+#+end_src
+
+** Vulpea
+Notes database
+
+#+begin_src emacs-lisp
+(use-package vulpea
+  :ensure t
+  :custom
+  (vulpea-db-sync-directories '("~/Notes/fox"))
+  (vulpea-db-index-heading-level t)
+  :config
+  (vulpea-db-autosync-mode 1)
+  :bind
+  ("C-c n f" . vulpea-find)
+  ("C-c n f" . vulpea-find)
+  ("C-c n b" . vulpea-find-backlink)
+  ("C-c n t" . vulpea-buffer-tags-add)
+  ("C-c n r" . vulpea-buffer-tags-remove))
+
+(use-package vulpea-journal
+  :ensure t
+  :after (vulpea vulpea-ui)
+  :custom
+  (vulpea-directory "~/Notes/fox")
+  (vulpea-journal-ui-created-today-exclude-journal nil)
+  (vulpea-journal-default-template
+   '(:file-name "journal/%Y-%m-%d.org"
+                :title "%d.%m.%Y - %a"
+                :tags ("journal")
+                :head "#+created: %<[%Y-%m-%d]>"
+                :body "* Morning\n\n* Evening\n"))
+  :config
+  (vulpea-journal-setup)
+  :bind
+  ("C-c n j" . vulpea-journal))
 #+end_src
 
 * Languages
@@ -2234,7 +2329,7 @@ Work with citations, also requires auctex.
 (use-package citar-embark
   :ensure t
   :after citar embark
-  :custom (citar-at-point-function 'embark-act)
+  :custom (citar-at-point-function #'embark-act)
   :config
   (add-to-list 'mode-line-collapse-minor-modes 'citar-embark-mode)
   (citar-embark-mode)

@@ -20,6 +20,7 @@
  "https://nibblestew.blogspot.com/feeds/posts/default"
  "https://herbsutter.com/feed"
  "https://matklad.github.io/feed.xml"
+ "https://xania.org/feed"
 
  ("https://nullprogram.com/feed/" emacs)
  ("https://xenodium.com/feed" emacs)
