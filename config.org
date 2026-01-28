@@ -283,7 +283,7 @@ With two prefixes call ~winner-undo~
    ((equal arg '(4))
     (delete-window))
    ((equal arg '(16))
-    (winner-undo))
+    (tab-bar-history-back))
    (t ; fallback
     (call-interactively #'switch-to-buffer))))
 
@@ -342,7 +342,6 @@ Change default UI settings
   (show-paren-not-in-comments-or-strings 'on-mismatch)
   :config
   (show-paren-mode 1))
-
 
 (use-package time
   :config
@@ -500,63 +499,40 @@ Inspired by doom-modeline
           (propertize (buffer-name) 'face 'darius/mode-line-bold))
       (buffer-name))))
 
-(defvar-local darius/mode-line-read-only-indicator
-  '(:eval
-    (when buffer-read-only
-      (let ((read-only-indicator " %%"))
-        (if (mode-line-window-selected-p)
-            (propertize read-only-indicator 'face 'darius/mode-line-highlight)
-          read-only-indicator)))))
-
-(defvar-local darius/mode-line-narrow-indicator
-  '(:eval
-    (when (buffer-narrowed-p)
-      (let ((narrow-indicator " ><"))
-        (if (mode-line-window-selected-p)
-            (propertize narrow-indicator 'face 'darius/mode-line-highlight)
-          narrow-indicator)))))
-
 (defvar-local darius/mode-line-project-name
   '(:eval
-    (if (and (project-current)
+    (when (and (project-current)
              (not (equal (buffer-name) (project-name (project-current)))))
-        (let ((project-str (format "%s  " (project-name (project-current)))))
+        (let ((project-str (format "%s/" (project-name (project-current)))))
           (if (mode-line-window-selected-p)
               (propertize project-str 'face 'darius/mode-line-shadow)
-            project-str)))
-    ""))
+            project-str)))))
 
-(defvar-local darius/mode-line-git-status
-  '(:eval
-    (when vc-mode
-      (if (mode-line-window-selected-p)
-          (propertize vc-mode 'face 'darius/mode-line-shadow)
-        vc-mode))))
-
-(dolist (var '(darius/mode-line-buffer-name
-               darius/mode-line-read-only-indicator
-               darius/mode-line-narrow-indicator
-               darius/mode-line-project-name
-               darius/mode-line-git-status))
+(dolist (var '(darius/mode-line-buffer-name ; unused
+               darius/mode-line-project-name))
   (put var 'risky-local-variable t))
 
 (setq-default mode-line-format
-              '("%e "
-                mode-line-window-dedicated
-                mode-line-window-remote
-                darius/mode-line-narrow-indicator
-                darius/mode-line-read-only-indicator
-                " "
+              '("%e" mode-line-front-space
+                (:propertize
+                 (""
+                  mode-line-mule-info
+                  mode-line-client
+                  mode-line-modified
+                  mode-line-remote
+                  mode-line-window-dedicated)
+                 display (min-width (6.0)))
+                mode-line-frame-identification
                 darius/mode-line-project-name
-                darius/mode-line-buffer-name
+                mode-line-buffer-identification
                 "   "
                 mode-line-position
-                mode-line-format-right-align
-                darius/mode-line-git-status
+                (project-mode-line project-mode-line-format)
+                (vc-mode vc-mode)
                 "  "
                 mode-line-modes
                 mode-line-misc-info
-                " "))
+                mode-line-end-spaces))
 #+end_src
 
 ** Editing and formatting
@@ -709,6 +685,7 @@ The *vc-status* format below depends on [[*Ibuffer-vc][Ibuffer-vc]].
                (mode . eat-mode)))
       ("Git" (name . "^magit"))
       ("Help" (or (mode . help-mode) (mode . Man-mode) (mode . Info-mode)))
+      ("Log" (filename . "\\.log$"))
       ("Misc" (name . "^\\*.**\\*$")))))
   (ibuffer-formats
    '((mark modified read-only vc-status-mini " "
@@ -733,7 +710,7 @@ File browsing on crack
   (dired-recursive-deletes 'top) ; this is the default but I'm paranoid
   (dired-dwim-target t)
   (dired-listing-switches "-alh")
-  (dired-kill-when-opening-new-dired-buffer t)
+  (dired-kill-when-opening-new-dired-buffer nil)
   (dired-auto-revert-buffer t)
   (dired-do-revert-buffer t)
   (dired-hide-details-hide-symlink-targets nil)
@@ -1337,7 +1314,7 @@ Make client frame font size consistent across multiple monitors with different r
   :ensure t
   :demand t
   :after fontaine
-  :config (textsize-mode)
+  :init (textsize-mode)
   :bind ("<f11>" . textsize-fix-frame))
 #+end_src
 
@@ -1524,7 +1501,6 @@ Font presets
       :default-height 110
       :fixed-pitch-weight nil ; falls back to :default-weight
       :bold-weight semibold
-      :bold-family nil
       :italic-family nil)
      (SF-medium
       :inherit SF
@@ -1548,6 +1524,8 @@ Font presets
       (setq darius/fontaine-loaded t)))
   ;; for non-daemon mode
   (darius/load-fontaine)
+  (with-eval-after-load 'modus-themes
+    (add-hook 'modus-themes-after-load-theme-hook #'darius/load-fontaine))
   :hook
   ;; probably not the proper way to do this but otherwise
   ;; the fonts don't get set correctly for client frames
@@ -1619,6 +1597,7 @@ Some nice additional completing-read stuff
    ("M-s R"     . darius/consult-ripgrep-hidden)
    ("M-s u"     . consult-focus-lines)
    ("M-s k"     . consult-keep-lines)
+   ("M-s M-b"   . consult-buffer)
    ;; M-g `goto-map'
    ("M-g g"     . consult-goto-line)
    ("M-g M-g"   . consult-goto-line)
@@ -1686,7 +1665,9 @@ Settings for org-mode and related packages
 (use-package org
   :ensure t
   :mode ("\\.org\\'" . org-mode)
-  :hook (org-mode . turn-on-org-cdlatex)
+  :hook
+  (org-mode . turn-on-org-cdlatex)
+  (org-mode . org-display-inline-images)
   :custom
   (org-directory "~/Notes")
   (org-default-notes-file (concat org-directory "/index.org"))
@@ -1710,6 +1691,7 @@ Settings for org-mode and related packages
   (org-return-follows-link t)
   (org-deadline-warning-days 3)
   (org-imenu-depth 7)
+  (org-pretty-entities t)
   (org-highlight-latex-and-related '(latex))
   (org-use-sub-superscripts '{})
   (org-hide-emphasis-markers t)    ; org-appear my beloved (see below)
@@ -1780,6 +1762,27 @@ Nicer visuals
      (45 . "󰡖")   ; in-progress
      (32 . ""))) ; todo
   :hook (org-mode . org-modern-mode))
+#+end_src
+
+*** org-download
+Paste images into emacs.
+Installing this fails because of a package called ~buttercup~ not being present?
+
+#+begin_src emacs-lisp
+(use-package org-download
+  :ensure t
+  :after org
+  :custom
+  (org-download-method 'directory)
+  (org-download-image-dir "./org-images")
+  (org-download-screenshot-method "/home/darius/Dotfiles/scripts/screenshot %s")
+  :bind
+  (:map org-mode-map
+        ("C-c o d c" . org-download-clipboard)
+        ("C-c o d e" . org-download-edit)
+        ("C-c o d r" . org-download-rename-at-point)
+        ("C-c o d s" . org-download-screenshot)
+        ("C-c o d y" . org-download-yank)))
 #+end_src
 
 ** Elfeed
@@ -1953,23 +1956,32 @@ Notes database
 #+begin_src emacs-lisp
 (use-package vulpea
   :ensure t
+  :demand t
   :custom
   (vulpea-db-sync-directories '("~/Notes/fox"))
   (vulpea-db-index-heading-level t)
   :config
   (vulpea-db-autosync-mode 1)
   :bind
-  ("C-c n f" . vulpea-find)
-  ("C-c n f" . vulpea-find)
   ("C-c n b" . vulpea-find-backlink)
-  ("C-c n t" . vulpea-buffer-tags-add)
-  ("C-c n r" . vulpea-buffer-tags-remove))
+  ("C-c n f" . vulpea-find)
+  ("C-c n i" . vulpea-insert)
+  ("C-c n r" . vulpea-buffer-tags-remove)
+  ("C-c n t" . vulpea-buffer-tags-add))
+
+(use-package vulpea-ui
+  :ensure t
+  :demand t
+  :after vulpea
+  :bind ("C-c n s" . vulpea-ui-sidebar-toggle))
 
 (use-package vulpea-journal
   :ensure t
-  :after (vulpea vulpea-ui)
+  :demand t
+  :after vulpea
+  :init
+  (setopt vulpea-directory "~/Notes/fox")
   :custom
-  (vulpea-directory "~/Notes/fox")
   (vulpea-journal-ui-created-today-exclude-journal nil)
   (vulpea-journal-default-template
    '(:file-name "journal/%Y-%m-%d.org"
@@ -2112,7 +2124,7 @@ The original
 (use-package haskell-interactive-mode
   :after haskell-mode
   :custom
-  (haskell-interactive-mode-eval-mode haskell-mode)
+  (haskell-interactive-mode-eval-mode 'haskell-mode)
   :config
   ;; TODO this requires inf-haskell to be loaded for `haskell-prompt-regexp'
   ;; which is required neither by haskell mode nor by haskell interaction mode
