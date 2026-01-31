@@ -166,6 +166,8 @@ Also I keep accidentally triggering pinch-to-zoom and ctrl+mousewheel on my lapt
   (mapc #'keymap-global-unset
         '("C-<wheel-up>"
           "C-<wheel-down>"
+          "C-M-<mouse-4>"
+          "C-M-<mouse-5>"
           "<pinch>"))
   (defun darius/copy-with-arg (arg)
     "Insert text from the primary clipboard only with prefix argument"
@@ -274,20 +276,20 @@ Use ~C-;~ to bring up a buffer prompt or delete the current window with prefix a
 With two prefixes call ~winner-undo~
 
 #+begin_src emacs-lisp
-(defun darius/switch-buffer-or-delete-window (arg)
-  "Call `switch-to-buffer' or `delete-window'/`winnder-undo' if called with one/two C-u presses"
+(defun darius/switch-buffer-or-delete-other-windows (arg)
+  "Call `switch-to-buffer' or `delete-other-window'/`tab-bar-history-back' if called with one/two C-u presses"
   (interactive "P")
   (cond
    ((null arg)
     (call-interactively #'switch-to-buffer))
    ((equal arg '(4))
-    (delete-window))
+    (delete-other-windows))
    ((equal arg '(16))
     (tab-bar-history-back))
    (t ; fallback
     (call-interactively #'switch-to-buffer))))
 
-(keymap-global-set "C-;" #'darius/switch-buffer-or-delete-window)
+(keymap-global-set "C-;" #'darius/switch-buffer-or-delete-other-windows)
 #+end_src
 
 **** Move lines up/down
@@ -683,8 +685,9 @@ The *vc-status* format below depends on [[*Ibuffer-vc][Ibuffer-vc]].
                (mode . eshell-mode)
                (mode . compilation-mode)
                (mode . eat-mode)))
-      ("Git" (name . "^magit"))
       ("Help" (or (mode . help-mode) (mode . Man-mode) (mode . Info-mode)))
+      ("Eww" (name . "^\\*eww"))
+      ("Git" (name . "^magit"))
       ("Log" (filename . "\\.log$"))
       ("Misc" (name . "^\\*.**\\*$")))))
   (ibuffer-formats
@@ -934,6 +937,12 @@ HTML rendering and URL browsing.
 #+begin_src emacs-lisp
 ;; render html using variable pitch fonts
 (setopt shr-use-fonts t)
+
+(use-package eww
+  :custom
+  (eww-search-prefix "https://lite.duckduckgo.com/lite/?q=")
+  :bind
+  ("C-c m e" . eww))
 
 (use-package browse-url
   :custom
