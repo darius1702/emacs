@@ -85,7 +85,7 @@ Lexical bindings and set+load custom file
 
 #+begin_src emacs-lisp
 ;; -*- lexical-binding: t -*-
-(setq custom-file (locate-user-emacs-file "custom.el"))
+(setopt custom-file (locate-user-emacs-file "custom.el"))
 (when (file-exists-p custom-file)
   (load custom-file))
 #+end_src
@@ -507,7 +507,7 @@ Inspired by doom-modeline
              (not (equal (buffer-name) (project-name (project-current)))))
         (let ((project-str (format "%s/" (project-name (project-current)))))
           (if (mode-line-window-selected-p)
-              (propertize project-str 'face 'darius/mode-line-shadow)
+              (propertize project-str 'face 'darius/mode-line-text)
             project-str)))))
 
 (dolist (var '(darius/mode-line-buffer-name ; unused
@@ -621,7 +621,7 @@ As the heading suggests
   (auto-revert-avoid-polling t)
   (auto-revert-check-vc-info t)
   :config
-  (auto-revert-mode 1))
+  (global-auto-revert-mode 1))
 #+end_src
 
 *** Isearch
@@ -919,6 +919,7 @@ Manpages and info pages
   :custom
   (Man-notify-method 'thrifty) ; reuse existing manpage window if possible
   :config
+  (setenv "MANROFFOPT" "-c") ; otherwise formatting is messed up
   (set-face-attribute 'Man-overstrike nil :inherit 'font-lock-keyword-face :bold t)
   (set-face-attribute 'Man-underline nil :inherit 'font-lock-string-face :underline t))
 
@@ -1175,7 +1176,13 @@ Grep in pdfs
 #+begin_src emacs-lisp
 (use-package pdfgrep
   :ensure t
-  :config (pdfgrep-mode))
+  :custom
+  (pdfgrep-options " -H -R -n ")
+  (pdfgrep-ignore-case t)
+  :config
+  (pdfgrep-mode)
+  :bind (:map dired-mode-map
+              ("M-s p" . pdfgrep)))
 #+end_src
 
 *** ace-window
@@ -1324,7 +1331,17 @@ Make client frame font size consistent across multiple monitors with different r
   :demand t
   :after fontaine
   :init (textsize-mode)
+  :custom (textsize-default-points 14)
   :bind ("<f11>" . textsize-fix-frame))
+#+end_src
+
+*** Breadcrumb
+Where am I
+
+#+begin_src emacs-lisp
+(use-package breadcrumb
+  :ensure t
+  :hook (prog-mode . breadcrumb-local-mode))
 #+end_src
 
 ** Eye candy
@@ -1332,6 +1349,11 @@ Make client frame font size consistent across multiple monitors with different r
 
 *** Colorscheme(s)
 The most important thing tbh.
+
+#+begin_src emacs-lisp
+;; load custom themes from here
+(add-to-list 'custom-theme-load-path (locate-user-emacs-file "custom-themes/"))
+#+end_src
 
 **** Modus themes
 These are built-in!
@@ -1422,7 +1444,14 @@ Standard themes
 (use-package standard-themes
   :ensure t
   :custom
-  (standard-dark-palette-overrides '((comment fg-dim))))
+  (standard-light-palette-overrides
+   '((bg-completion bg-hl-line)))
+  (standard-dark-palette-overrides
+   '((comment fg-dim)
+     (fringe unspecified)))
+  (standard-dark-tinted-palette-overrides
+   '((comment fg-dim)
+     (fringe unspecified))))
 #+end_src
 
 *** Marginalia
@@ -1444,7 +1473,8 @@ Making the frame background transparent via ~alpha-background~ makes the colors 
   :custom (css-fontify-colors nil)
   :config
   (global-colorful-mode)
-  (set-face-attribute 'colorful-base nil :box nil)) ; colors have a box around them by default which looks weird
+  ; colors have a box around them by default which looks weird
+  (set-face-attribute 'colorful-base nil :box nil))
 #+end_src
 
 *** hl-todo
@@ -1502,7 +1532,7 @@ Font presets
   :demand t ; load fonts immediately
   :custom
   (fontaine-presets
-   '((SF
+   '((regular
       :default-family "SFMono Nerd Font Mono"
       :fixed-pitch-family "SFMono Nerd Font Mono"
       :variable-pitch-family "SF Pro Text"
@@ -1511,21 +1541,16 @@ Font presets
       :fixed-pitch-weight nil ; falls back to :default-weight
       :bold-weight semibold
       :italic-family nil)
-     (SF-medium
-      :inherit SF
-      :default-height 135)
-     (SF-large
-      :inherit SF
-      :default-height 165)
-     (SF-larger
-      :inherit SF
-      :default-height 185)))
+     (adwaita
+      :inherit regular
+      :default-family "AdwaitaMono Nerd Font Mono"
+      :fixed-pitch-family "AdwaitaMono Nerd Font Mono")))
   :config
   (fontaine-mode 1)
   (defvar darius/fontaine-loaded nil)
   (defun darius/load-fontaine ()
     (when (display-graphic-p)
-      (fontaine-set-preset (or (fontaine-restore-latest-preset) 'SF))))
+      (fontaine-set-preset (or (fontaine-restore-latest-preset) 'regular))))
   (defun darius/load-fontaine-once ()
     "Apply fontaine preset only once since fonts with daemon mode are weird."
     (unless darius/fontaine-loaded
@@ -1649,9 +1674,9 @@ Some improvements over DocView
   :hook
   (pdf-view-mode . (lambda () (display-line-numbers-mode -1)))
   (pdf-view-mode . pixel-scroll-precision-mode)
-  (pdf-view-mode . pdf-view-roll-minor-mode) ; continuous scrolling
   ;; (pdf-outline-buffer-mode . pdf-outline-follow-mode)
   :bind (:map pdf-view-mode-map
+              ("c" . pdf-view-roll-minor-mode)
               ("C" . pdf-view-center-in-window)
               ("C-=" . pdf-view-enlarge)
               ("C--" . pdf-view-shrink)
