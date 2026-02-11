@@ -324,9 +324,6 @@ Change default UI settings
 (setopt use-dialog-box nil
         use-short-answers t)
 
-;; send alerts via libnotify instead of using messages
-(setopt alert-default-style 'libnotify)
-
 ;; add transparency to frame background
 ;; (add-to-list 'default-frame-alist '(alpha-background . 98))
 
@@ -1242,6 +1239,10 @@ Pomodoro timers
   ;; (pomm-on-status-changed . pomm-update-mode-line-string)
   :bind
   ("C-c t p" . pomm))
+
+(use-package alert
+  :ensure t ; pomm depends on alert anyway
+  :custom (alert-default-style 'notifications))
 #+end_src
 
 *** Expand region
@@ -1734,6 +1735,9 @@ Settings for org-mode and related packages
   (org-src-window-setup 'plain)
   (org-src-preserve-indentation nil)
   (org-edit-src-content-indentation 0)
+  (org-babel-load-languages '((emacs-lisp . t)
+                              (python . t)
+                              (haskell . t)))
   :config
   (add-to-list 'mode-line-collapse-minor-modes 'org-cdlatex-mode)
   ;; follow links to files in the same window
@@ -1786,7 +1790,6 @@ Nicer visuals
 #+begin_src emacs-lisp
 (use-package org-modern
   :ensure t
-  :after org
   :custom
   (org-modern-star 'fold)
   (org-modern-fold-stars '(("▹" . "▿")))
