@@ -374,8 +374,6 @@ Change default UI settings
   (:map tab-bar-history-mode-map
         ("C-c <left>" . tab-bar-history-back)
         ("C-c <right>" . tab-bar-history-forward)))
-  ;; (:map tab-bar-mode-map
-        ;; ("C-<tab>" . mode-line-other-buffer)))
 
 ;; 8px right, 0px left
 (fringe-mode '(nil . 0))
@@ -385,12 +383,11 @@ Change default UI settings
 
 ;; (relative) line numbers
 (use-package display-line-numbers
+  :hook prog-mode
   :custom
   (display-line-numbers-type 'relative)
   (display-line-numbers-width 3)
-  (display-line-numbers-grow-only t)
-  :hook
-  (prog-mode . display-line-numbers-mode))
+  (display-line-numbers-grow-only t))
 
 ;; kind of broken in org rn
 ;; (global-visual-wrap-prefix-mode 1)
@@ -1097,18 +1094,26 @@ Configure ~package.el~ and ~use-package~
 ** Useful random stuff
 Some packages that don't require much configuration
 
+*** Exec path from shell
+Make emacs read my zsh path even if I start it via hyprland or systemd.
+This allows emacs to find nix, coursier, ghc, ...
+
+#+begin_src emacs-lisp
+(use-package exec-path-from-shell
+  :ensure t
+  :config
+  (when (daemonp)
+    (exec-path-from-shell-initialize)))
+#+end_src
+
 *** Envrc
 Load ~.envrc~ files from ~direnv~
 
 #+begin_src emacs-lisp
-(let ((nix-bin-path "/home/darius/.nix-profile/bin/"))
-  (use-package envrc
-    :ensure t
-    :init
-    (add-to-list 'exec-path nix-bin-path)
-    (setenv "PATH" (concat nix-bin-path ":" (getenv "PATH")))
-    :custom (envrc-none-lighter nil)
-    :hook (after-init . envrc-global-mode)))
+(use-package envrc
+  :ensure t
+  :custom (envrc-none-lighter nil)
+  :hook (after-init . envrc-global-mode))
 #+end_src
 
 *** Ibuffer-vc
@@ -1484,7 +1489,7 @@ Highlight keywords like TODO and FIXME in comments in source code
 #+begin_src emacs-lisp
 (use-package hl-todo
   :ensure t
-  :hook (prog-mode . hl-todo-mode))
+  :hook prog-mode)
 #+end_src
 
 *** Ultra-scroll
@@ -1588,7 +1593,6 @@ Show uncommitted changes in the fringe
   :ensure t
   :hook
   (magit-post-refresh . diff-hl-magit-post-refresh)
-  :hook
   (prog-mode . diff-hl-mode)
   :bind
   ("C-c v n" . diff-hl-next-hunk)
@@ -1681,7 +1685,7 @@ Some improvements over DocView
               ("C" . pdf-view-center-in-window)
               ("C-=" . pdf-view-enlarge)
               ("C--" . pdf-view-shrink)
-              ;; this also makes `scroll-other-window' work for PDFView buffers
+              ;; this makes `scroll-other-window' work for PDFView buffers
               ([remap scroll-up-command] . pdf-view-scroll-up-or-next-page)
               ([remap scroll-down-command] . pdf-view-scroll-down-or-previous-page)
               ("<up>" . pdf-view-previous-line-or-previous-page)
@@ -1776,12 +1780,12 @@ Show emphasis markers like ** and some other things when point is inside them
 #+begin_src emacs-lisp
 (use-package org-appear
   :ensure t
+  :hook org-mode
   :custom
   (org-appear-autoemphasis t)
   (org-appear-autoentities t)
   (org-appear-autosubmarkers t)
-  (org-appear-inside-latex t)
-  :hook (org-mode . org-appear-mode))
+  (org-appear-inside-latex t))
 #+end_src
 
 *** org-modern
@@ -1790,6 +1794,7 @@ Nicer visuals
 #+begin_src emacs-lisp
 (use-package org-modern
   :ensure t
+  :hook org-mode
   :custom
   (org-modern-star 'fold)
   (org-modern-fold-stars '(("▹" . "▿")))
@@ -1797,8 +1802,7 @@ Nicer visuals
   (org-modern-checkbox
    '((88 . "󰄲")   ; done
      (45 . "󰡖")   ; in-progress
-     (32 . ""))) ; todo
-  :hook (org-mode . org-modern-mode))
+     (32 . "")))) ; todo
 #+end_src
 
 *** org-download
@@ -2131,6 +2135,11 @@ C++ and C
 #+begin_src emacs-lisp
 (use-package c-ts-mode
   :custom (c-ts-mode-enable-doxygen t))
+
+;; just in case
+(use-package simpc-mode
+  :ensure t
+  :vc (:url "https://github.com/rexim/simpc-mode" :rev :newest))
 #+end_src
 
 ** Rust
@@ -2186,7 +2195,7 @@ Haskell indentation
 (use-package hindent
   :ensure t
   :after haskell-mode
-  :hook (haskell-mode . hindent-mode)
+  :hook haskell-mode
   :config (add-to-list 'mode-line-collapse-minor-modes 'hindent-mode))
 #+end_src
 
@@ -2213,16 +2222,12 @@ why
 This assumes metals is installed in ~./local/bin/metals-emacs~.
 
 #+begin_src emacs-lisp
-(let ((coursier-bin-path "/home/darius/.local/share/coursier/bin/"))
   (use-package scala-mode
     :ensure t
-    :interpreter ("scala" . scala-mode)
-    :init
-    (add-to-list 'exec-path coursier-bin-path)
-    (setenv "PATH" (concat coursier-bin-path ":" (getenv "PATH")))
+    :interpreter "scala"
     :bind (:map scala-mode-map
                 ("C-c c" . scala-compile)
-                ("C-c r" . scala-compile))))
+                ("C-c r" . scala-compile)))
 
 (use-package scala-ts-mode
   :ensure t)
@@ -2280,7 +2285,7 @@ I guess?
 #+begin_src emacs-lisp
 (use-package cider
   :ensure t
-  :hook (clojure-mode . cider-mode))
+  :hook clojure-mode)
 #+end_src
 
 ** Python
@@ -2318,7 +2323,7 @@ Shaders
 #+begin_src emacs-lisp
 (use-package nix-ts-mode
   :ensure t
-  :mode ("\\.nix\\'" . nix-ts-mode))
+  :mode "\\.nix\\'")
 #+end_src
 
 ** LaTeX and Citar
@@ -2436,14 +2441,13 @@ Web stuff
 (use-package web-mode
   :ensure t
   :custom
-  (web-mode-auto-close-style 2) ;; auto-close tags on '>'
+  (web-mode-auto-close-style 2) ;; auto-close tags on closing bracket
   (web-mode-markup-indent-offset 2)
   (web-mode-css-indent-offset 2)
   (web-mode-code-indent-offset 2)
   (web-mode-enable-auto-expanding t)
   (web-mode-enable-comment-annotation t)
-  :mode (("\\.html\\'" . web-mode)
-         ("\\.css\\'" . web-mode)))
+  :mode ("\\.html\\'" "\\.css\\'"))
 
 (use-package jtsx
   :ensure t
@@ -2457,7 +2461,7 @@ Web stuff
   :hook ((jtsx-tsx-mode jtsx-jsx-mode) . biomejs-format-mode))
 
 (use-package json-ts-mode
-  :mode ("\\.jsonc\\'" . json-ts-mode))
+  :mode "\\.jsonc\\'")
 #+end_src
 
 ** CSV-mode
