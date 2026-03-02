@@ -389,8 +389,7 @@ Change default UI settings
   (display-line-numbers-width 3)
   (display-line-numbers-grow-only t))
 
-;; kind of broken in org rn
-;; (global-visual-wrap-prefix-mode 1)
+(global-visual-wrap-prefix-mode 1)
 
 ;; zoom text in smaller increments
 (setopt text-scale-mode-step 1.05)
@@ -862,7 +861,7 @@ Help popups, linting, documentation, ...
 ;; help in the echo area
 (use-package eldoc
   :custom
-  (eldoc-idle-delay 0.3)
+  (eldoc-idle-delay 0.1)
   (eldoc-echo-area-use-multiline-p nil))
 
 ;; show help for key bindings
@@ -881,6 +880,8 @@ Help popups, linting, documentation, ...
 ;; jumping to definition etc.
 (use-package xref
   :custom
+  ;; disabled in favor of `consult-xref'
+  ;; (xref-show-definitions-function #'xref-show-definitions-completing-read)
   (xref-history-storage 'xref-window-local-history)
   (xref-search-program 'ripgrep))
 #+end_src
@@ -1604,9 +1605,6 @@ Show uncommitted changes in the fringe
 Some nice additional completing-read stuff
 
 #+begin_src emacs-lisp
-;; builtin alternative for consult-xref
-;;(setopt xref-show-definitions-function #'xref-show-definitions-completing-read)
-
 (use-package consult
   :ensure t
   :custom
@@ -1627,26 +1625,26 @@ Some nice additional completing-read stuff
     (keymap-set eshell-prompt-mode-map "M-r" #'consult-history))
   :bind
   (("C-S-Y"     . consult-yank-from-kill-ring)
-   ;; M-s `search-map'
-   ("M-s d"     . consult-fd)
-   ("M-s D"     . darius/consult-fd-hidden)
-   ("M-s l"     . consult-line)
-   ("M-s L"     . consult-line-multi)
-   ("M-s r"     . consult-ripgrep)
-   ("M-s R"     . darius/consult-ripgrep-hidden)
-   ("M-s u"     . consult-focus-lines)
-   ("M-s k"     . consult-keep-lines)
-   ("M-s M-b"   . consult-buffer)
-   ;; M-g `goto-map'
-   ("M-g g"     . consult-goto-line)
-   ("M-g M-g"   . consult-goto-line)
-   ("M-g e"     . consult-compile-error)
-   ("M-g f"     . consult-flymake)
-   ("M-g o"     . consult-outline)
-   ("M-g m"     . consult-mark)
-   ("M-g k"     . consult-global-mark)
-   ("M-g i"     . consult-imenu)
-   ("M-g I"     . consult-imenu-multi)
+   :map search-map
+   ("d"     . consult-fd)
+   ("D"     . darius/consult-fd-hidden)
+   ("l"     . consult-line)
+   ("L"     . consult-line-multi)
+   ("r"     . consult-ripgrep)
+   ("R"     . darius/consult-ripgrep-hidden)
+   ("u"     . consult-focus-lines)
+   ("k"     . consult-keep-lines)
+   ("M-b"   . consult-buffer)
+   :map goto-map
+   ("g"     . consult-goto-line)
+   ("M-g"   . consult-goto-line)
+   ("e"     . consult-compile-error)
+   ("f"     . consult-flymake)
+   ("o"     . consult-outline)
+   ("m"     . consult-mark)
+   ("k"     . consult-global-mark)
+   ("i"     . consult-imenu)
+   ("I"     . consult-imenu-multi)
    :map minibuffer-local-map ("M-r" . consult-history)))
 #+end_src
 
@@ -2212,9 +2210,15 @@ Treesitter, not nearly as bloated as ~haskell-mode~ but also has less features, 
 
 #+begin_src emacs-lisp
 (use-package verilog-mode
-  :custom (verilog-auto-newline nil)
+  :custom
+  (verilog-auto-newline nil)
+  (verilog-indent-level 2)
+  (verilog-indent-level-module 2)
+  (verilog-indent-level-behavioral 2)
+  (verilog-indent-level-declaration 2)
+  (verilog-indent-level-directive 2)
   :bind
-  (:map verilog-mode-map ("C-;" . darius/switch-buffer-or-delete-window)))
+  (:map verilog-mode-map ("C-;" . darius/switch-buffer-or-delete-other-windows)))
 #+end_src
 
 ** Scala
@@ -2234,14 +2238,26 @@ This assumes metals is installed in ~./local/bin/metals-emacs~.
 #+end_src
 
 ** OCaml
-Neocaml downloads a treesitter grammar for .ml and .mli files automatically.
-Aims to be a bit simpler than tuareg mode and highlighting looks better.
+Neocaml aims to be simpler than tuareg mode, highlighting looks better and it uses treesitter.
 
 #+begin_src emacs-lisp
 (use-package neocaml
   :ensure t
-  :vc (:url "https://github.com/bbatsov/neocaml" :rev :newest)
-  (add-to-list 'eglot-server-programs '((neocaml-mode :language-id "ocaml") . ("ocamllsp"))))
+  :config
+  (with-eval-after-load 'org
+    (add-to-list 'org-src-lang-modes
+                 '("ocaml" . neocaml)))
+  (with-eval-after-load 'eglot
+    (add-to-list 'eglot-server-programs
+                 '((neocaml-mode neocaml-interface-mode) . ("ocamllsp")))))
+
+;; better lsp integration
+(use-package ocaml-eglot
+  :disabled t
+  :ensure t
+  :hook
+  ((neocaml-mode neocaml-interface-mode) . ocaml-eglot)
+  (ocaml-eglot . eglot-ensure))
 #+end_src
 
 ** Zig
@@ -2351,14 +2367,13 @@ Work with citations, also requires auctex.
   :config
   (setq-default TeX-master 'shared)
   (setq-default TeX-command-extra-options "--shell-escape")
+  (setq-default TeX-command-default "LaTeXmk")
+  (add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
   :hook
   (LaTeX-mode . hl-line-mode)
   (LaTeX-mode . darius/LaTeX-mode-setup)
   (LaTeX-mode . turn-on-reftex))
 
-;; don't ask why this needs an extra hook, I don't know either
-(add-hook 'LaTeX-mode-hook (lambda () (setq TeX-command-default "LaTeXmk")))
-(add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
 
 (use-package citar
   :ensure t
