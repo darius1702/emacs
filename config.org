@@ -319,7 +319,8 @@ Change default UI settings
 
 #+begin_src emacs-lisp
 (setopt frame-title-format '("%b") ; current buffer name
-        frame-resize-pixelwise t)
+        frame-resize-pixelwise t
+        window-resize-pixelwise t)
 
 (setopt use-dialog-box nil
         use-short-answers t)
@@ -454,7 +455,8 @@ Inspired by doom-modeline
         mode-line-modes-delimiters nil
         mode-line-position-column-line-format '("%l:%c")
         mode-line-percent-position nil
-        mode-line-collapse-minor-modes-to "")
+        mode-line-collapse-minor-modes-to ""
+        mode-line-compact 'long)
 
 (dolist (mode '(auto-revert-mode
                 visual-line-mode
@@ -1039,7 +1041,10 @@ The emacs shell!
 #+begin_src emacs-lisp
 (use-package eshell
   :custom
-  (eshell-banner-message ""))
+  (eshell-history-size 1024)
+  (eshell-hist-ignoredups t)
+  (eshell-banner-message "")
+  (eshell-scroll-show-maximum-output nil))
 #+end_src
 
 Aliases:
@@ -1255,9 +1260,15 @@ Pomodoro timers
 Expand the region
 
 #+begin_src emacs-lisp
-(use-package expand-region
+;; (use-package expand-region
+;;   :ensure t
+;;   :bind ("M-j" . er/expand-region))
+
+(use-package expreg
   :ensure t
-  :bind ("M-j" . er/expand-region))
+    :bind
+    ("M-j" . expreg-expand)
+    ("M-J" . expreg-contract))
 #+end_src
 
 *** EAT
@@ -1962,7 +1973,7 @@ Set up vertico, orderless and tweak some emacs completion defaults
 	      completion-category-overrides '((file (styles partial-completion)))))
 #+end_src
 
-** Slop
+** COMMENT Slop
 At this point, why not.
 
 #+begin_src emacs-lisp
