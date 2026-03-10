@@ -49,15 +49,25 @@ This makes emacs start a little faster, or maybe I am just imagining things.
 #+end_src
 
 ** Garbage collection
-I find it really annoying when I have tiny stutters while scrolling due to GC.
-This is probably a very ugly solution but it has worked for me so far:
-Set ~gc-cons-threshold~ really high to make emacs not consider doing GC on its own.
-When emacs is idle for 2 seconds, manually trigger a GC.
-This way the GC pause doesn't happen while I am interacting with the UI.
+I copied this from somewhere on the internet.
 
 #+begin_src emacs-lisp :tangle early-init.el
-(setopt gc-cons-threshold (eval-when-compile (* 5 1024 1024 1024)))
-(run-with-idle-timer 2 t (lambda () (garbage-collect)))
+;; old solution, but keeping it around just in case
+;; (setopt gc-cons-threshold (eval-when-compile (* 5 1024 1024 1024)))
+;; (run-with-idle-timer 2 t (lambda () (garbage-collect)))
+
+;; Set garbage collector (from doom emacs)
+;; About 0.02 faster
+(setopt gc-cons-threshold (* 1024 1024 128)  ;; 128mb
+      gc-cons-percentage 1.0) ;; Disable the dynamic percentage trigger to ensure GC frequency is fixed.
+
+;; Runtime performance
+;; Dial the GC threshold back down so that garbage collection happens more frequently but in less time.
+;; Make gc pauses faster by decreasing the threshold.
+;; About 0.02 faster
+(add-hook 'emacs-startup-hook (lambda ()
+                                (setopt gc-cons-threshold (* 1024 1024 2) ;; 2mb
+                                      gc-cons-percentage 0.2)))
 #+end_src
 
 ** Default clutter
@@ -558,7 +568,8 @@ Changes to default editing behavior
 ;; do not complete on TAB, only indent
 (setopt tab-always-indent t)
 
-(delete-selection-mode)
+;; delete active region when typing
+;; (delete-selection-mode)
 
 (use-package dabbrev
   :custom
@@ -1086,6 +1097,8 @@ Configure ~package.el~ and ~use-package~
 
 (use-package package
   :custom
+  (package-review-policy t)
+  (package-review-diff-command '("git" "diff" "--no-index" "--color=never" "--diff-filter=d"))
   (package-native-compile t) ; this will just be ignored if native-comp isn't available
   (package-archives
    '(("elpa" . "https://elpa.gnu.org/packages/")
