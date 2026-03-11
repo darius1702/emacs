@@ -1097,7 +1097,6 @@ Configure ~package.el~ and ~use-package~
 
 (use-package package
   :custom
-  (package-review-policy t)
   (package-review-diff-command '("git" "diff" "--no-index" "--color=never" "--diff-filter=d"))
   (package-native-compile t) ; this will just be ignored if native-comp isn't available
   (package-archives
@@ -1107,7 +1106,15 @@ Configure ~package.el~ and ~use-package~
      ("melpa" . "https://melpa.org/packages/")))
   (package-archive-priorities ; prefer stable elpa over devel
    '(("elpa" . 2)
-     ("elpa-devel" . 1))))
+     ("elpa-devel" . 1)))
+  :config
+  (defun darius/package-upgrade-all ()
+    "Temporarily enable manual reviews. If I enable package-review-policy
+  globally emacs will also ask the first time it installs a package which
+  is a pain when starting the bg-daemon with a keybind."
+    (interactive)
+    (let ((package-review-policy t))
+      (call-interactively #'package-upgrade-all))))
 #+end_src
 
 ** Useful random stuff
