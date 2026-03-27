@@ -126,7 +126,7 @@ Tweaks that don't fit the other categories
 #+end_src
 
 ** Keybindings
-Unbind some defaults and bind some more keys
+I paid for the whole keyboard so I'm gonna use the whole keyboard
 
 #+begin_src emacs-lisp
 (mapc #'keymap-global-unset
@@ -135,11 +135,6 @@ Unbind some defaults and bind some more keys
         "C-z"     ; suspend emacs (other binding)
         "C-x m"   ; compose mail
         "C-h g")) ; gnu website
-
-(defun darius/set-global-keys (binds)
-  "Wrapper around `keymap-global-set' that takes multiple bindings"
-  (dolist (b binds)
-    (keymap-global-set (car b) (cadr b))))
 
 (defun darius/scroll-down-command (arg)
   "Scroll window down by half, or ARG if present"
@@ -156,6 +151,11 @@ Unbind some defaults and bind some more keys
                     (prefix-numeric-value arg)
                   (/ (window-body-height) 2))))
     (scroll-up-command amount)))
+
+(defun darius/set-global-keys (binds)
+  "Wrapper around `keymap-global-set' that takes multiple bindings"
+  (dolist (b binds)
+    (keymap-global-set (car b) (cadr b))))
 
 (darius/set-global-keys
  '(("M-o" other-window)
@@ -324,6 +324,38 @@ Shift lines up and down, yoinked from [[https://emacsredux.com/blog/2013/04/02/m
    ("C-S-n" darius/move-line-down)))
 #+end_src
 
+**** Delete surrounding pair
+From [[https://emacsredux.com/blog/2026/03/14/removing-paired-delimiters-in-emacs/][Emacs Redux]]
+
+#+begin_src emacs-lisp
+(defun darius/delete-surrounding-pair (char)
+  "Delete the nearest surrounding pair of CHAR.
+CHAR should be an opening delimiter like (, [, {, or \".
+Works by searching backward for the opener and forward for the closer."
+  (interactive "cDelete surrounding pair: ")
+  (let* ((pairs '((?( . ?))
+                  (?[ . ?])
+                  (?< . ?>)
+                  (?{ . ?})
+                  (?\" . ?\")
+                  (?\' . ?\')
+                  (?\` . ?\`)))
+         (closer (or (alist-get char pairs)
+                     (error "Unknown pair character: %c" char))))
+    (save-excursion
+      (let ((orig (point)))
+        ;; Find and delete the opener
+        (when (search-backward (char-to-string char) nil t)
+          (let ((open-pos (point)))
+            (delete-char 1)
+            ;; Find and delete the closer (adjust for removed char)
+            (goto-char (1- orig))
+            (when (search-forward (char-to-string closer) nil t)
+              (delete-char -1))))))))
+
+(keymap-global-set "C-c D" #'darius/delete-surrounding-pair)
+#+end_src
+
 ** User interface
 Change default UI settings
 
@@ -473,7 +505,8 @@ Inspired by doom-modeline
                 view-mode
                 buffer-face-mode
                 orgtbl-mode
-                eldoc-mode))
+                eldoc-mode
+                hs-minor-mode))
   (add-to-list 'mode-line-collapse-minor-modes mode))
 
 (defface darius/mode-line-highlight
@@ -545,6 +578,30 @@ Inspired by doom-modeline
 ** Editing and formatting
 Changes to default editing behavior
 
+*** Misc
+Settings that don't fit the other categories
+
+#+begin_src emacs-lisp
+(dolist (mode '(prog-mode-hook
+                text-mode-hook))
+  (add-hook mode #'visual-line-mode))
+
+;; save system clipboard to kill ring before overwriting it
+(setopt save-interprogram-paste-before-kill t)
+
+(setopt mouse-yank-at-point t)
+
+(setopt sentence-end-double-space nil
+        sentence-end "[.\",;!?*:'] ")
+
+(use-package dabbrev
+  :custom
+  (dabbrev-case-replace nil))
+#+end_src
+
+*** Keybindings
+Text editing keybinds and related settings
+
 #+begin_src emacs-lisp
 (darius/set-global-keys
  '(;; Act on region if active, otherwise on line/word
@@ -560,24 +617,25 @@ Changes to default editing behavior
    ("C-c d" delete-pair)
    ("C-c a" align-regexp)))
 
-(setopt delete-pair-push-mark t
-        delete-pair-blink-delay 0.3)
-
 ;; continue comment on new line
 (keymap-set prog-mode-map "M-RET" #'comment-indent-new-line)
 
-;; do not complete on TAB, only indent
-(setopt tab-always-indent t)
+(setopt delete-pair-push-mark t
+        delete-pair-blink-delay 0.3)
 
 ;; delete active region when typing
 ;; (delete-selection-mode)
 
-(use-package dabbrev
-  :custom
-  (dabbrev-case-replace nil))
+;; make C-w delete a word backwards when no region is active
+(setopt kill-region-dwim 'emacs-word)
+#+end_src
 
-;; read .editorconfig if present
-(editorconfig-mode 1)
+*** Indentation, formatting
+All kinds of whitespace, auto-pairs, editorconfig, narrowing, ...
+
+#+begin_src emacs-lisp
+;; do not complete on TAB, only indent
+(setopt tab-always-indent t)
 
 (setq-default indent-tabs-mode nil
               tab-width 4)
@@ -586,26 +644,31 @@ Changes to default editing behavior
 
 (setopt require-final-newline t)
 
-(dolist (mode '(prog-mode-hook
-                text-mode-hook))
-  (add-hook mode #'visual-line-mode))
-
-;; make C-w delete a word backwards when no region is active
-(setopt kill-region-dwim 'emacs-word)
-
-(electric-pair-mode 1)
-
-;; save system clipboard to kill ring before overwriting it
-(setopt save-interprogram-paste-before-kill t)
-
-(setopt mouse-yank-at-point t)
-
-(setopt sentence-end-double-space nil
-        sentence-end "[.\",;!?*:'] ")
+;; read .editorconfig if present
+(editorconfig-mode 1)
 
 ;; narrowing
 (put 'narrow-to-region 'disabled nil)
 (setopt narrow-to-defun-include-comments t)
+#+end_src
+
+*** Code folding
+Hideshow can fold based on indentation now
+
+#+begin_src emacs-lisp
+(use-package hideshow
+  :hook
+  (prog-mode . hs-minor-mode)
+  :custom
+  (hs-indentation-respect-end-block nil)
+  (hs-display-lines-hidden t)
+  (hs-show-indicators t)
+  (hs-indicator-type 'margin)
+  :config
+  (hs-indentation-mode 1)
+  :bind
+  (:map hs-minor-mode-map
+        ("C-z" . hs-toggle-hiding)))
 #+end_src
 
 ** Buffers
@@ -718,7 +781,7 @@ File browsing on crack
 (use-package dired
   :custom
   (dired-recursive-deletes 'top) ; this is the default but I'm paranoid
-  (dired-dwim-target t)
+  ;; (dired-dwim-target t) ; press M-n to select other dired window as target
   (dired-listing-switches "-alh")
   (dired-kill-when-opening-new-dired-buffer nil)
   (dired-auto-revert-buffer t)
@@ -821,8 +884,8 @@ Setup minibuffer and ~completing-read~
 (minibuffer-depth-indicate-mode 1)
 #+end_src
 
-** Compilation and Comint
-Changes to compile and comint buffers
+** Compilation and Comint and Shell
+Changes to terminal-like things
 
 #+begin_src emacs-lisp
 (use-package compile
@@ -897,7 +960,10 @@ Help popups, linting, documentation, ...
   ;; disabled in favor of `consult-xref'
   ;; (xref-show-definitions-function #'xref-show-definitions-completing-read)
   (xref-history-storage 'xref-window-local-history)
-  (xref-search-program 'ripgrep))
+  (xref-search-program 'ripgrep)
+  :hook
+  ;; C-mouse1 to go to definition
+  (prog-mode . xref-mouse-mode))
 #+end_src
 
 *** Linting and Spell Check
@@ -1086,6 +1152,28 @@ Also disable auto-save messages
 
 ;; Enable when lockfiles become annoying
 ;; (setopt create-lockfiles nil)
+#+end_src
+
+** ERC
+IRC in emacs, see also [[*ERC enhancements][ERC enhancements]]
+
+#+begin_src emacs-lisp
+;; TODO look into erc-fill-wrap when it doesn't segfault anymore
+(use-package erc
+  :custom
+  (erc-interactive-display 'buffer)
+  (erc-hide-list '("JOIN" "PART" "QUIT"))
+  (erc-kill-buffer-on-quit t)
+  (erc-kill-server-buffer-on-quit t)
+  (erc-fill-function 'erc-fill-static)
+  ;; (erc-fill-wrap-merge-indicator '(?> . erc-fill-wrap-merge-indicator-face))
+  (erc-fill-static-center 20)
+  ;; (erc-scrolltobottom-all t)
+  :config
+  (add-to-list 'erc-modules 'nicks)
+  (add-to-list 'erc-modules 'notifications)
+  ;; (add-to-list 'erc-modules 'scrolltobottom)
+  (erc-update-modules))
 #+end_src
 
 * External packages
@@ -1383,6 +1471,27 @@ Where am I
   :hook (prog-mode . breadcrumb-local-mode))
 #+end_src
 
+*** ERC enhancements
+Images, bridge nicknames, ...
+
+#+begin_src emacs-lisp
+(use-package erc-image
+  :ensure t
+  :after erc
+  :config
+  (add-to-list 'erc-modules 'image)
+  (erc-update-modules))
+
+(use-package erc-bridge-nicks
+  :ensure t
+  :after erc
+  :vc (:url "https://git.sr.ht/~technomancy/erc-bridge-nicks" :rev :newest)
+  :config
+  (add-to-list 'erc-bridge-nicks-alist '("#cyberspace" "discord"))
+  (add-to-list 'erc-modules 'bridge-nicks)
+  (erc-update-modules))
+#+end_src
+
 ** Eye candy
 21st century emacs
 
@@ -1562,6 +1671,20 @@ Make shr highlight code.
                '(pre . shr-tag-pre-highlight)))
 #+end_src
 
+*** Olivetti
+Center text in window
+
+#+begin_src emacs-lisp
+(use-package olivetti
+  :ensure t
+  :custom
+  (olivetti-body-width 0.65)
+  (olivetti-style 'fancy)
+  (olivetti-lighter " 🟢")
+  :bind
+  ("<f8>" . olivetti-mode))
+#+end_src
+
 ** Fontaine
 Font presets
 
@@ -1687,7 +1810,7 @@ Some improvements over DocView
 (use-package pdf-tools
   :ensure t
   :init
-  (pdf-loader-install t) ; don't whether ask to build epdinfo
+  (pdf-loader-install t) ; don't ask whether to build epdinfo
   :custom
   (pdf-view-continuous nil) ;; don't auto-switch to the next/previous page when scrolling
   (pdf-annot-default-annotation-properties '((t (label . "Darius Schefer")) (text (icon . "Comment"))))
@@ -1704,11 +1827,10 @@ Some improvements over DocView
                  (reusable-frames . t)
                  (inhibit-switch-frame . t)))
   ;; this breaks mouse scrolling in continuous view mode
-  (with-eval-after-load 'ultra-scroll
-    (add-hook 'pdf-view-mode-hook (lambda () (ultra-scroll-mode -1))))
+  ;; (with-eval-after-load 'ultra-scroll
+  ;;   (add-hook 'pdf-view-mode-hook (lambda () (ultra-scroll-mode -1))))
   :hook
   (pdf-view-mode . (lambda () (display-line-numbers-mode -1)))
-  (pdf-view-mode . pixel-scroll-precision-mode)
   ;; (pdf-outline-buffer-mode . pdf-outline-follow-mode)
   :bind (:map pdf-view-mode-map
               ("c" . pdf-view-roll-minor-mode)
@@ -2245,6 +2367,14 @@ Treesitter, not nearly as bloated as ~haskell-mode~ but also has less features, 
   (:map verilog-mode-map ("C-;" . darius/switch-buffer-or-delete-other-windows)))
 #+end_src
 
+** TCL
+🪶
+
+#+begin_src emacs-lisp
+(use-package tcl
+  :mode ("\\.\\([sx]dc\\)\\'" . tcl-mode)) ; design constraints
+#+end_src
+
 ** Scala
 why
 This assumes metals is installed in ~./local/bin/metals-emacs~.
@@ -2371,33 +2501,34 @@ Work with citations, also requires auctex.
 ~citar-open-entry-in-zotero~ relies on the BetterBibTex plugin for Zotero
 
 #+begin_src emacs-lisp
-(defun darius/LaTeX-mode-setup ()
-  (progn
-    (add-to-list 'TeX-view-program-selection '(output-pdf "PDF Tools"))
-    (add-to-list 'reftex-ref-style-default-list "Hyperref")
-    (TeX-source-correlate-mode 1)
-    (define-key LaTeX-mode-map (kbd "C-c C-r") 'reftex-reference)
-    (define-key LaTeX-mode-map (kbd "C-M-i") 'complete-symbol)
-    (font-latex-add-keywords '(("autoref" "*{") ("Autoref" "{")) 'reference)))
-
 (use-package tex
   :ensure auctex
   :custom
   (TeX-parse-self t)
   (TeX-auto-save t)
+  (TeX-master 'shared)
+  (TeX-command-extra-options "--shell-escape")
   (LaTeX-electric-left-right-brace t)
-  (reftex-plug-into-AUCTeX t)
-  (reftex-default-bibliography '("~/Documents/library.bib"))
-  :config
-  (setq-default TeX-master 'shared)
-  (setq-default TeX-command-extra-options "--shell-escape")
-  (setq-default TeX-command-default "LaTeXmk")
-  (add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
+  (LaTeX-includegraphics-read-file 'LaTeX-includegraphics-read-file-relative)
   :hook
-  (LaTeX-mode . hl-line-mode)
-  (LaTeX-mode . darius/LaTeX-mode-setup)
-  (LaTeX-mode . turn-on-reftex))
+  (LaTeX-mode . turn-on-reftex)
+  (LaTeX-mode . TeX-source-correlate-mode)
+  :config
+  (add-to-list 'TeX-view-program-selection '(output-pdf "PDF Tools"))
+  (add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
+  ;; otherwise we get errors because of package load order
+  (with-eval-after-load 'latex
+    (keymap-set LaTeX-mode-map "C-c C-r" #'reftex-reference)
+    (keymap-set LaTeX-mode-map "C-M-i" #'complete-symbol)))
 
+(use-package reftex
+  :after tex
+  :custom
+  (reftex-default-bibliography '("~/Documents/library.bib"))
+  (reftex-plug-into-AUCTeX t)
+  :config
+  (add-to-list 'reftex-ref-style-default-list "Cleveref")
+  (add-to-list 'reftex-ref-style-default-list "Hyperref"))
 
 (use-package citar
   :ensure t
