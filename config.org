@@ -104,19 +104,9 @@ Lexical bindings and set+load custom file
 Tweaks that don't fit the other categories
 
 #+begin_src emacs-lisp
-;; ask before exiting
-(setopt confirm-kill-emacs 'yes-or-no-p)
-
-;; make all the things case insensitive
-(setopt read-buffer-completion-ignore-case t
-        read-file-name-completion-ignore-case t
-        completion-ignore-case t)
-
 ;; make read-only buffers use `view-mode'
 (setopt view-read-only t
         view-inhibit-help-message t)
-
-(setopt shell-command-prompt-show-cwd t)
 
 (setopt vc-follow-symlinks t)
 
@@ -360,20 +350,27 @@ Works by searching backward for the opener and forward for the closer."
 Change default UI settings
 
 #+begin_src emacs-lisp
-(setopt frame-title-format '("%b") ; current buffer name
-        frame-resize-pixelwise t
-        window-resize-pixelwise t)
+(use-package emacs
+  :config
+  (fringe-mode '(nil . 0)) ; 8px right, 0px left
+  (global-visual-wrap-prefix-mode 1)
+  :custom
+  (confirm-kill-emacs 'yes-or-no-p) ; ask before exiting
+  (use-short-answers t)
+  (use-dialog-box nil)
 
-(setopt use-dialog-box nil
-        use-short-answers t)
+  (frame-title-format '("%b"))      ; current buffer name
+  (window-resize-pixelwise t)
+  (frame-resize-pixelwise t)
 
-;; add transparency to frame background
-;; (add-to-list 'default-frame-alist '(alpha-background . 98))
+  (scroll-preserve-screen-position 'always)
+  (scroll-conservatively 101)
+  (scroll-margin 0)                 ; because of ultra-scroll
+  (next-screen-context-lines 10)
 
-(setopt scroll-preserve-screen-position 'always
-        scroll-margin 0                 ; becuase of ultra-scroll
-        scroll-conservatively 101
-        next-screen-context-lines 10)
+  (text-scale-mode-step 1.05)       ; zoom text in smaller increments
+  (highlight-nonselected-windows t) ; always show region
+  (display-fill-column-indicator-warning t))
 
 (use-package paren
   :custom
@@ -384,6 +381,14 @@ Change default UI settings
   (show-paren-not-in-comments-or-strings 'on-mismatch)
   :config
   (show-paren-mode 1))
+
+;; (relative) line numbers
+(use-package display-line-numbers
+  :hook prog-mode
+  :custom
+  (display-line-numbers-type 'relative)
+  (display-line-numbers-width 3)
+  (display-line-numbers-grow-only t))
 
 (use-package time
   :config
@@ -398,6 +403,18 @@ Change default UI settings
   :custom
   (battery-mode-line-format " %b%p%% "))
 
+(use-package whitespace
+  :custom
+  (whitespace-line-column nil) ; use `fill-column'
+  (whitespace-style '(face trailing tabs indentatinon
+                           space-before-tab space-after-tab
+                           tab-mark space-mark empty)))
+#+end_src
+
+*** Tab bar
+Tab bar with time and battery status
+
+#+begin_src emacs-lisp
 (use-package tab-bar
   :init
   (tab-bar-mode 1)
@@ -417,35 +434,6 @@ Change default UI settings
   (:map tab-bar-history-mode-map
         ("C-c <left>" . tab-bar-history-back)
         ("C-c <right>" . tab-bar-history-forward)))
-
-;; 8px right, 0px left
-(fringe-mode '(nil . 0))
-
-;; show active region in inactive windows
-(setopt highlight-nonselected-windows t)
-
-;; (relative) line numbers
-(use-package display-line-numbers
-  :hook prog-mode
-  :custom
-  (display-line-numbers-type 'relative)
-  (display-line-numbers-width 3)
-  (display-line-numbers-grow-only t))
-
-(global-visual-wrap-prefix-mode 1)
-
-;; zoom text in smaller increments
-(setopt text-scale-mode-step 1.05)
-
-;; indicate lines exceeding fill-colum
-(setopt display-fill-column-indicator-warning t)
-
-(use-package whitespace
-  :custom
-  (whitespace-line-column nil) ; use `fill-column'
-  (whitespace-style '(face trailing tabs indentatinon
-                           space-before-tab space-after-tab
-                           tab-mark space-mark empty)))
 #+end_src
 
 *** Calendar and Diary
@@ -640,6 +628,7 @@ All kinds of whitespace, auto-pairs, editorconfig, narrowing, ...
 (setq-default indent-tabs-mode nil
               tab-width 4)
 
+;; there's `delete-trailing-whitespace-mode' but that's only buffer-local
 (add-to-list 'write-file-functions #'delete-trailing-whitespace)
 
 (setopt require-final-newline t)
@@ -674,24 +663,8 @@ Hideshow can fold based on indentation now
 ** Buffers
 Isearch, ibuffer, imenu, ...
 
-*** Keybinds and misc
-As the heading suggests
-
 #+begin_src emacs-lisp
-(use-package window
-  :custom
-  (split-window-preferred-direction 'longest)
-  (switch-to-buffer-obey-display-actions nil)
-  (switch-to-buffer-in-dedicated-window 'pop))
-
-;; automatically revert buffers that change on disk
-(use-package autorevert
-  :custom
-  (global-auto-revert-non-file-buffers t)
-  (auto-revert-avoid-polling t)
-  (auto-revert-check-vc-info t)
-  :config
-  (global-auto-revert-mode 1))
+(setopt read-buffer-completion-ignore-case t)
 #+end_src
 
 *** Isearch
@@ -771,8 +744,32 @@ The *vc-status* format below depends on [[*Ibuffer-vc][Ibuffer-vc]].
            (vc-status 16 16 :left)))))
 #+end_src
 
+*** Misc
+As the heading suggests
+
+#+begin_src emacs-lisp
+(use-package window
+  :custom
+  (split-window-preferred-direction 'longest)
+  (switch-to-buffer-obey-display-actions nil)
+  (switch-to-buffer-in-dedicated-window 'pop))
+
+;; automatically revert buffers that change on disk
+(use-package autorevert
+  :custom
+  (global-auto-revert-non-file-buffers t)
+  (auto-revert-avoid-polling t)
+  (auto-revert-check-vc-info t)
+  :config
+  (global-auto-revert-mode 1))
+#+end_src
+
 ** File navigation
 File browsing, projects, recent files, bookmarks
+
+#+begin_src emacs-lisp
+(setopt read-file-name-completion-ignore-case t)
+#+end_src
 
 *** Dired
 File browsing on crack
@@ -882,12 +879,19 @@ Setup minibuffer and ~completing-read~
 
 (minibuffer-electric-default-mode 1)
 (minibuffer-depth-indicate-mode 1)
+
+(setopt completion-ignore-case t
+        completion-category-defaults nil
+	    completion-category-overrides '((file (styles partial-completion)))
+        completion-pcm-leading-wildcard t)
 #+end_src
 
 ** Compilation and Comint and Shell
 Changes to terminal-like things
 
 #+begin_src emacs-lisp
+(setopt shell-command-prompt-show-cwd t)
+
 (use-package compile
   :custom
   (compilation-max-output-line-length 800)
@@ -2088,7 +2092,7 @@ Makes corfu also complete filenames and consider dabbrev
 #+end_src
 
 ** Minibuffer completion
-Set up vertico, orderless and tweak some emacs completion defaults
+Set up vertico and orderless
 
 #+begin_src emacs-lisp
 (use-package vertico
@@ -2110,10 +2114,8 @@ Set up vertico, orderless and tweak some emacs completion defaults
 
 (use-package orderless
   :ensure t
-  :init
-  (setopt completion-styles '(substring orderless basic)
-	      completion-category-defaults nil
-	      completion-category-overrides '((file (styles partial-completion)))))
+  :custom
+  (completion-styles '(orderless basic)))
 #+end_src
 
 ** COMMENT Slop
@@ -2508,18 +2510,21 @@ Work with citations, also requires auctex.
   (TeX-auto-save t)
   (TeX-master 'shared)
   (TeX-command-extra-options "--shell-escape")
+  :config
+  (add-to-list 'TeX-view-program-selection '(output-pdf "PDF Tools"))
+  (add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer))
+
+(use-package latex
+  :after tex
+  :custom
   (LaTeX-electric-left-right-brace t)
   (LaTeX-includegraphics-read-file 'LaTeX-includegraphics-read-file-relative)
   :hook
   (LaTeX-mode . turn-on-reftex)
   (LaTeX-mode . TeX-source-correlate-mode)
-  :config
-  (add-to-list 'TeX-view-program-selection '(output-pdf "PDF Tools"))
-  (add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
-  ;; otherwise we get errors because of package load order
-  (with-eval-after-load 'latex
-    (keymap-set LaTeX-mode-map "C-c C-r" #'reftex-reference)
-    (keymap-set LaTeX-mode-map "C-M-i" #'complete-symbol)))
+  :bind (:map LaTeX-mode-map
+              ("C-c C-r" . reftex-reference)
+              ("C-M-i" . complete-symbol)))
 
 (use-package reftex
   :after tex
