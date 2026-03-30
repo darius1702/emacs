@@ -354,6 +354,8 @@ Change default UI settings
   :config
   (fringe-mode '(nil . 0)) ; 8px right, 0px left
   (global-visual-wrap-prefix-mode 1)
+  :hook
+  ((prog-mode text-mode) . visual-line-mode)
   :custom
   (confirm-kill-emacs 'yes-or-no-p) ; ask before exiting
   (use-short-answers t)
@@ -377,7 +379,7 @@ Change default UI settings
   (show-paren-delay 0.1)
   (show-paren-when-point-inside-paren t)
   (show-paren-when-point-in-periphery t)
-  (show-paren-context-when-offscreen  'overlay)
+  (show-paren-context-when-offscreen  t)
   (show-paren-not-in-comments-or-strings 'on-mismatch)
   :config
   (show-paren-mode 1))
@@ -563,6 +565,25 @@ Inspired by doom-modeline
                 mode-line-end-spaces))
 #+end_src
 
+*** Code folding
+Hideshow can fold based on indentation now
+
+#+begin_src emacs-lisp
+(use-package hideshow
+  :hook
+  (prog-mode . hs-minor-mode)
+  :custom
+  (hs-indentation-respect-end-block nil)
+  (hs-display-lines-hidden t)
+  (hs-show-indicators t)
+  (hs-indicator-type 'margin)
+  :config
+  (hs-indentation-mode 1)
+  :bind
+  (:map hs-minor-mode-map
+        ("C-z" . hs-toggle-hiding)))
+#+end_src
+
 ** Editing and formatting
 Changes to default editing behavior
 
@@ -570,9 +591,7 @@ Changes to default editing behavior
 Settings that don't fit the other categories
 
 #+begin_src emacs-lisp
-(dolist (mode '(prog-mode-hook
-                text-mode-hook))
-  (add-hook mode #'visual-line-mode))
+(electric-pair-mode 1)
 
 ;; save system clipboard to kill ring before overwriting it
 (setopt save-interprogram-paste-before-kill t)
@@ -639,25 +658,6 @@ All kinds of whitespace, auto-pairs, editorconfig, narrowing, ...
 ;; narrowing
 (put 'narrow-to-region 'disabled nil)
 (setopt narrow-to-defun-include-comments t)
-#+end_src
-
-*** Code folding
-Hideshow can fold based on indentation now
-
-#+begin_src emacs-lisp
-(use-package hideshow
-  :hook
-  (prog-mode . hs-minor-mode)
-  :custom
-  (hs-indentation-respect-end-block nil)
-  (hs-display-lines-hidden t)
-  (hs-show-indicators t)
-  (hs-indicator-type 'margin)
-  :config
-  (hs-indentation-mode 1)
-  :bind
-  (:map hs-minor-mode-map
-        ("C-z" . hs-toggle-hiding)))
 #+end_src
 
 ** Buffers
