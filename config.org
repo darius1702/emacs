@@ -1487,6 +1487,7 @@ Images, bridge nicknames, ...
   (erc-update-modules))
 
 (use-package erc-bridge-nicks
+  :disabled t ; I get a Symbol’s value as variable is void: bridge-nicks                          ;
   :ensure t
   :after erc
   :vc (:url "https://git.sr.ht/~technomancy/erc-bridge-nicks" :rev :newest)
@@ -1586,7 +1587,7 @@ A variant of catppuccin built on top of the new modus themes 5.0.0
      (fg-heading-2 mauve)
      (fg-heading-3 maroon)
      (fg-heading-4 blue))))
-(modus-themes-load-theme 'catppuccin-mocha)
+;; (modus-themes-load-theme 'catppuccin-mocha)
 #+end_src
 
 **** Standard Themes
@@ -1604,6 +1605,7 @@ Standard themes
   (standard-dark-tinted-palette-overrides
    '((comment fg-dim)
      (fringe unspecified))))
+(modus-themes-select 'standard-light)
 #+end_src
 
 *** Marginalia
