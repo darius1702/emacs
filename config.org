@@ -201,7 +201,7 @@ The ~table~ thing makes completing-read keep the original order of the list pass
          (selection (completing-read "Jump: " table nil t)))
     (find-file selection)))
 
-(keymap-global-set "M-g z" #'darius/zoxide-find-file)
+(keymap-set goto-map "z" #'darius/zoxide-find-file)
 #+end_src
 
 **** Maybe wrap with char
@@ -826,11 +826,11 @@ Remember recently visited files
   (recentf-auto-cleanup 'never)
   (recentf-max-menu-items 0)
   (recentf-max-saved-items 100)
-  :bind
-  ("M-g r" . recentf-open)
-  ("M-g R" . recentf-open-files)
+  :bind (:map goto-map
+              ("r" . recentf-open)
+              ("R" . recentf-open-files))
   :config
-  (recentf-mode))
+  (recentf-mode 1))
 #+end_src
 
 *** Bookmarks
@@ -841,7 +841,8 @@ Bookmarks are saved in the ~bookmarks.eld~ file
   :custom
   (bookmark-fringe-mark nil)
   (bookmark-save-flag 1)
-  :bind ("M-g b" . bookmark-jump))
+  :bind (:map goto-map
+              ("b" . bookmark-jump)))
 #+end_src
 
 *** Grep
@@ -856,7 +857,8 @@ Grep
   :custom
   (grep-use-headings t)
   :bind
-  ("M-s f" . grep-find)
+  (:map search-map
+        ("f" . grep-find))
   (:map grep-mode-map
         ("F" . next-error-follow-minor-mode)))
 #+end_src
@@ -1297,6 +1299,7 @@ Grep in pdfs
 #+begin_src emacs-lisp
 (use-package pdfgrep
   :ensure t
+  :after dired
   :custom
   (pdfgrep-options " -H -R -n ")
   (pdfgrep-ignore-case t)
