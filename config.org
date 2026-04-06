@@ -2123,33 +2123,6 @@ Set up vertico and orderless
   (completion-styles '(orderless basic)))
 #+end_src
 
-** COMMENT Slop
-At this point, why not.
-
-#+begin_src emacs-lisp
-(use-package copilot
-  :defer t
-  :vc (:url "https://github.com/copilot-emacs/copilot.el"
-            :rev :newest
-            :branch "main")
-  :custom
-  ;; don't autosuggest
-  (copilot-disable-predicates '(always))
-  :bind
-  ("C-M-<return>" . copilot-complete)
-  (:map copilot-completion-map
-        ("C-c C-i C-i" . copilot-accept-completion)
-        ("C-c C-i C-l" . copilot-accept-completion-by-line)
-        ("C-c C-i C-w" . copilot-accept-completion-by-word)
-        ("C-c C-i C-n" . copilot-next-completion)
-        ("C-c C-i C-p" . copilot-previous-completion)
-        ("C-c C-i C-o" . copilot-panel-complete)))
-
-(use-package copilot-chat
-  :defer t
-  :ensure t)
-#+end_src
-
 ** Vulpea
 Notes database
 
