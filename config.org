@@ -5,23 +5,46 @@
 
 * Build flags
 Nativecomp, pgtk, ...
-Some build options taken from [[https://github.com/D4lj337/Emacs-performance][here]].
+Some build options taken from [[https://github.com/D4lj337/Emacs-performance][here]] and [[https://www.jamescherti.com/compiling-emacs/][here]].
+This is 103% cope but I can't be bothered to benchmark.
 
 #+begin_src sh
-./configure --with-native-compilation=aot --with-pgtk --with-imagemagick \
-            --without-x --without-ns --without-gsettings --without-compress-install \
-            --disable-gc-mark-trace --enable-link-time-optimization \
-            'CFLAGS=-Ofast -march=native -fno-finite-math-only -pipe -fgraphite-identity -floop-nest-optimize -fdevirtualize-at-ltrans -fipa-pta -fno-semantic-interposition'
+./configure --with-native-compilation=aot --with-pgtk --without-x --without-ns \
+  --without-compress-install --disable-gc-mark-trace --enable-link-time-optimization \
+  --with-toolkit-scroll-bars --with-cairo --without-xft --with-harfbuzz --without-libotf \
+  --with-gnutls --without-xdbe --without-xim --without-gpm --with-gsettings \
+  --with-modules --with-threads --with-libgmp --with-xml2 --with-tree-sitter --with-zlib \
+  --without-included-regex --with-file-notification=inotify --without-gconf --with-imagemagick 'CFLAGS=-O2 -march=native -fno-omit-frame-pointer -fno-finite-math-only -pipe -fgraphite-identity -floop-nest-optimize -fdevirtualize-at-ltrans -fipa-pta -fno-semantic-interposition -flto=auto' 'LDFLAGS=-Wl,-O2 -Wl,-z,now -Wl,-z,relro -Wl,--sort-common -Wl,--as-needed -Wl,-z,pack-relative-relocs -flto=auto'
 #+end_src
 
-
 * Early init
-** No startup message spam
-The docs say you can ~(setq inhibit-startup-echo-area-message "$username")~ but that doesn't work for me.
-Also lexical-bindings for early-init.
+** Compilation options
+Also from [[https://www.jamescherti.com/compiling-emacs/][here]].
+And set lexical-bindings for early-init.
 
 #+begin_src emacs-lisp :tangle early-init.el
 ;; -*- lexical-binding: t -*-
+(setq my-cpu-architecture "znver3")     ; remember to update this
+
+(setq native-comp-compiler-options `(
+                                     "-O2"
+                                     ,(format "-mtune=%s" my-cpu-architecture)
+                                     ,(format "-march=%s" my-cpu-architecture)
+                                     "-g0"
+                                     "-fno-omit-frame-pointer"
+                                     "-fno-finite-math-only"))
+
+(setq native-comp-driver-options '(
+                                   "-Wl,-z,pack-relative-relocs"
+                                   "-Wl,-O2"
+                                   "-Wl,--as-needed"))
+
+#+end_src
+
+** No startup message spam
+The docs say you can ~(setq inhibit-startup-echo-area-message "$username")~ but that doesn't work for me.
+
+#+begin_src emacs-lisp :tangle early-init.el
 (setq-default inhibit-message t)
 (add-hook 'window-setup-hook
           (lambda ()
@@ -84,9 +107,6 @@ I don't know why I have this in the early-init but I moved it here at some point
 (blink-cursor-mode -1)
 
 (undelete-frame-mode 1)
-
-;; window layout history, see `tab-bar-history-mode'
-;; (winner-mode 1)
 #+end_src
 
 * Builtin stuff
@@ -96,8 +116,7 @@ Lexical bindings and set+load custom file
 #+begin_src emacs-lisp
 ;; -*- lexical-binding: t -*-
 (setopt custom-file (locate-user-emacs-file "custom.el"))
-(when (file-exists-p custom-file)
-  (load custom-file))
+(load custom-file :no-error-if-file-is-missing)
 #+end_src
 
 ** Misc
@@ -112,7 +131,7 @@ Tweaks that don't fit the other categories
 
 ;; according to someone else's config this does something good
 (setopt pgtk-wait-for-event-timeout 0.001
-        read-process-output-max (* 1024 1024 4))
+        read-process-output-max (* 4 1024 1024))
 #+end_src
 
 ** Keybindings
@@ -153,6 +172,10 @@ I paid for the whole keyboard so I'm gonna use the whole keyboard
    ("C-M-S-o" window-layout-transpose)
    ("<remap> <scroll-up-command>" darius/scroll-up-command)
    ("<remap> <scroll-down-command>" darius/scroll-down-command)))
+
+(dolist (key '(("pp" "π")
+               ("pP" "Π")))
+  (define-key iso-transl-ctl-x-8-map (car key) (cadr key)))
 #+end_src
 
 *** Mouse and Trackpad
@@ -165,7 +188,9 @@ Also I keep accidentally triggering pinch-to-zoom and ctrl+mousewheel on my lapt
   (mouse-shift-adjust-mode 1) ; extend region with shift+drag
   (mapc #'keymap-global-unset
         '("C-<wheel-up>"
+          "C-M-<wheel-up>"
           "C-<wheel-down>"
+          "C-M-<wheel-down>"
           "C-M-<mouse-4>"
           "C-M-<mouse-5>"
           "<pinch>"))
@@ -181,10 +206,10 @@ Also I keep accidentally triggering pinch-to-zoom and ctrl+mousewheel on my lapt
   ("<drag-mouse-3>" . mouse-set-region))
 #+end_src
 
-*** Custom functions
+** Custom functions
 Define some utility functions and bind them to keys.
 
-**** Open file from zoxide database
+*** Open file from zoxide database
 Querying the zoxide database for all entries returns them in a sorted order, so we can just pass it to completing read.
 The ~table~ thing makes completing-read keep the original order of the list passed to it
 
@@ -204,7 +229,7 @@ The ~table~ thing makes completing-read keep the original order of the list pass
 (keymap-set goto-map "z" #'darius/zoxide-find-file)
 #+end_src
 
-**** Maybe wrap with char
+*** Maybe wrap with char
 Wrap the active region with a character, like ~'('~ in ~electric-pair-mode~.
 Adding chars to ~insert-pair-alist~ makes ~delete-pair~ work with them.
 Don't add them to ~electric-pair-pairs~ because I want to insert them only when the region is active.
@@ -246,7 +271,7 @@ and add it to `insert-pair-alist'"
               (darius/maybe-wrap-setup-keys markdown-mode-map "*_"))))
 #+end_src
 
-**** Swap semicolon and dash
+*** Swap semicolon and dash
 In lisp-based modes and the minibuffer, I type ~-~ a lot more than ~;~.
 Most use-cases for semincolons are covered by ~comment-line~ and ~comment-dwim~
 
@@ -271,13 +296,13 @@ Most use-cases for semincolons are covered by ~comment-line~ and ~comment-dwim~
   (add-hook mode #'darius/dash-semicolon-minor-mode))
 #+end_src
 
-**** Switch buffer or delete window
-Use ~C-;~ to bring up a buffer prompt or delete the current window with prefix argument.
+*** Switch buffer or delete window
+Use ~C-;~ to bring up a buffer prompt or delete the other windows with prefix argument.
 With two prefixes call ~winner-undo~
 
 #+begin_src emacs-lisp
 (defun darius/switch-buffer-or-delete-other-windows (arg)
-  "Call `switch-to-buffer' or `delete-other-window'/`tab-bar-history-back' if called with one/two C-u presses"
+  "Call `switch-to-buffer' or `delete-other-windows'/`tab-bar-history-back' if called with one/two C-u presses"
   (interactive "P")
   (cond
    ((null arg)
@@ -292,7 +317,7 @@ With two prefixes call ~winner-undo~
 (keymap-global-set "C-;" #'darius/switch-buffer-or-delete-other-windows)
 #+end_src
 
-**** Move lines up/down
+*** Move lines up/down
 Shift lines up and down, yoinked from [[https://emacsredux.com/blog/2013/04/02/move-current-line-up-or-down/][here]].
 
 #+begin_src emacs-lisp
@@ -314,8 +339,9 @@ Shift lines up and down, yoinked from [[https://emacsredux.com/blog/2013/04/02/m
    ("C-S-n" darius/move-line-down)))
 #+end_src
 
-**** Delete surrounding pair
+*** COMMENT Delete surrounding pair
 From [[https://emacsredux.com/blog/2026/03/14/removing-paired-delimiters-in-emacs/][Emacs Redux]]
+Disabled because [[*Surround][Surround]] is cooler.
 
 #+begin_src emacs-lisp
 (defun darius/delete-surrounding-pair (char)
@@ -346,6 +372,17 @@ Works by searching backward for the opener and forward for the closer."
 (keymap-global-set "C-c D" #'darius/delete-surrounding-pair)
 #+end_src
 
+*** Spawn terminal
+Spawn a terminal (foot) in the current directory
+
+#+begin_src emacs-lisp
+(defun darius/spawn-terminal ()
+  "Launch foot if it is installed"
+  (interactive)
+  (if-let* ((term-path (executable-find "foot")))
+      (call-process term-path nil 0 nil "-D" (expand-file-name default-directory))))
+#+end_src
+
 ** User interface
 Change default UI settings
 
@@ -353,7 +390,7 @@ Change default UI settings
 (use-package emacs
   :config
   (fringe-mode '(nil . 0)) ; 8px right, 0px left
-  (global-visual-wrap-prefix-mode 1)
+  (global-visual-wrap-prefix-mode -1)  ; this makes org headings look weird
   :hook
   ((prog-mode text-mode) . visual-line-mode)
   :custom
@@ -362,8 +399,11 @@ Change default UI settings
   (use-dialog-box nil)
 
   (frame-title-format '("%b"))      ; current buffer name
-  (window-resize-pixelwise t)
   (frame-resize-pixelwise t)
+  (window-resize-pixelwise t)
+  (window-combination-resize t)
+
+  (uniquify-buffer-name-style 'forward)
 
   (scroll-preserve-screen-position 'always)
   (scroll-conservatively 101)
@@ -372,7 +412,13 @@ Change default UI settings
 
   (text-scale-mode-step 1.05)       ; zoom text in smaller increments
   (highlight-nonselected-windows t) ; always show region
-  (display-fill-column-indicator-warning t))
+  (display-fill-column-indicator-warning t)
+  (redisplay-skip-fontification-on-input t)
+
+  ;; probably not going to use right-to-left text anytime soon
+  (bidi-display-reordering 'left-to-right)
+  (bidi-paragraph-direction 'left-to-right)
+  (bidi-inhibit-bpa t))
 
 (use-package paren
   :custom
@@ -472,7 +518,7 @@ This is very neat.
   :custom
   (appt-display-diary nil)
   (appt-audible nil)
-  (appt-display-interval 5)
+  (appt-display-interval 10)
   (appt-message-warning-time 10))
 #+end_src
 
@@ -574,7 +620,7 @@ Hideshow can fold based on indentation now
   (prog-mode . hs-minor-mode)
   :custom
   (hs-indentation-respect-end-block nil)
-  (hs-display-lines-hidden t)
+  (hs-display-lines-hidden nil) ; TODO set to t when it works with themes
   (hs-show-indicators t)
   (hs-indicator-type 'margin)
   :config
@@ -675,6 +721,7 @@ Searching within a buffer
   :custom
   (isearch-wrap-pause 'no-ding)
   (isearch-lazy-count t)
+  (isearch-repeat-on-direction-change t)
   (lazy-count-prefix-format "(%s/%s) ")
   (search-whitespace-regexp ".*?")
   (lazy-highlight-initial-delay 0))
@@ -789,17 +836,18 @@ File browsing on crack
   :bind
   ("<mouse-8>" . dired-jump) ; back button
   (:map dired-mode-map
-        ("+" . darius/dired-create-directory)
+        ("+" . darius/dired-create)
         ("<mouse-2>" . dired-mouse-find-file)
         ("j" . find-file)
         ("SPC" . dired-jump)
         ("b" . dired-jump))
   :config
-  (defun darius/dired-create-directory ()
-    "Wrapper around `dired-create-directory' with no minibuffer completion."
-    (interactive)
-    (let ((dir (read-from-minibuffer "Make directory: ")))
-      (dired-create-directory dir)))
+  (defun darius/dired-create (arg)
+    "Wrapper around `dired-create-directory' with no minibuffer completion. Create empty file when called with prefix arg"
+    (interactive "P")
+    (if arg
+        (dired-create-empty-file (read-string "Create file: "))
+      (dired-create-directory (read-string "Make directory: "))))
   ;; Make `dired-do-shell-command' suggest better defaults for some filetypes
   (add-to-list 'dired-guess-shell-alist-user '("\\.pdf\\'" "zathura"))
   (add-to-list 'dired-guess-shell-alist-user '("\\.mp4\\'" "mpv"))
@@ -896,7 +944,7 @@ Changes to terminal-like things
 
 (use-package compile
   :custom
-  (compilation-max-output-line-length 800)
+  (compilation-max-output-line-length nil)
   (compilation-scroll-output t)
   (compile-command "")
   :hook
@@ -979,6 +1027,7 @@ Arch linux provides ~/usr/share/dict/words~ in the ~extra/words~ package.
 (use-package flymake
   :custom
   (flymake-wrap-around nil)
+  (flymake-show-diagnostics-at-end-of-line t)
   :bind
   ("M-n" . flymake-goto-next-error)
   ("M-p" . flymake-goto-prev-error))
@@ -1330,7 +1379,8 @@ Still not 100% sure I get what it does
   :bind ("C-." . embark-act))
 
 (use-package embark-consult
-  :ensure t)
+  :ensure t
+  :after (embark consult))
 #+end_src
 
 *** TMR
@@ -1387,6 +1437,15 @@ Expand the region
     ("M-J" . expreg-contract))
 #+end_src
 
+*** Surround
+Surround text and operate on surrounding pairs
+
+#+begin_src emacs-lisp
+(use-package surround
+  :ensure t
+  :bind-keymap ("M-'" . surround-keymap))
+#+end_src
+
 *** EAT
 Emulate a terminal
 
@@ -1399,7 +1458,7 @@ Emulate a terminal
   (add-to-list 'display-buffer-alist
                '("\\(?:\\*-eat\\*\\|.*eat.*\\)"
                  (display-buffer-reuse-mode-window)))
-  (defun darius/spawn-terminal-here (arg)
+  (defun darius/spawn-eat-or-terminal-here (arg)
     "Open an *eat* buffer in the current project if called without prefix.
 If called with one C-u open a regular *eat* in the other window.
 If called with two C-u's, spawn a terminal window (foot) in the current directory."
@@ -1410,12 +1469,11 @@ If called with two C-u's, spawn a terminal window (foot) in the current director
      ((equal arg '(4))
       (eat-other-window))
      ((equal arg '(16))
-      (if-let* ((foot-path (executable-find "foot")))
-          (call-process foot-path nil 0 nil "-D" (expand-file-name default-directory))))
+      (darius/spawn-terminal))
      (t ; fallback
       (eat-other-window))))
   :bind
-  ("M-g t" . darius/spawn-terminal-here)
+  ("M-g t" . darius/spawn-eat-or-terminal-here)
   (:map eat-semi-char-mode-map
         ("M-o" . other-window)))
 #+end_src
@@ -1478,28 +1536,6 @@ Where am I
   :hook (prog-mode . breadcrumb-local-mode))
 #+end_src
 
-*** ERC enhancements
-Images, bridge nicknames, ...
-
-#+begin_src emacs-lisp
-(use-package erc-image
-  :ensure t
-  :after erc
-  :config
-  (add-to-list 'erc-modules 'image)
-  (erc-update-modules))
-
-(use-package erc-bridge-nicks
-  :disabled t ; I get a Symbol’s value as variable is void: bridge-nicks                          ;
-  :ensure t
-  :after erc
-  :vc (:url "https://git.sr.ht/~technomancy/erc-bridge-nicks" :rev :newest)
-  :config
-  (add-to-list 'erc-bridge-nicks-alist '("#cyberspace" "discord"))
-  (add-to-list 'erc-modules 'bridge-nicks)
-  (erc-update-modules))
-#+end_src
-
 ** Eye candy
 21st century emacs
 
@@ -1545,6 +1581,10 @@ These are built-in!
      (bg-prose-code bg-dim)
      (bg-region bg-blue-subtle)))
 
+  (modus-vivendi-palette-overrides
+   '((bg-line-number-inactive unspecified)
+     (bg-line-number-active unspecified)))
+
   (modus-operandi-tinted-palette-overrides
    '((bg-mode-line-active bg-blue-subtle)
      (bg-prose-code bg-dim)
@@ -1560,37 +1600,12 @@ These are built-in!
   ("<f12>" . modus-themes-select))
 #+end_src
 
-**** Modus Catppuccin
-A variant of catppuccin built on top of the new modus themes 5.0.0
+**** Ef themes
+More colors
 
 #+begin_src emacs-lisp
-(use-package modus-catppuccin
-  :ensure t
-  :vc (:url "https://gitlab.com/magus/modus-catppuccin.git" :rev :newest)
-  :custom
-  (catppuccin-mocha-palette-overrides
-   '((base  "#1c1c1e")
-     (mantle "#161618")
-     (crust "#070709")
-     (surface0 "#282830")
-     (surface1 "#383840")
-     (surface2 "#525254")
-
-     (bg-mode-line-active       surface0)
-     (border-mode-line-active   surface1)
-     (bg-mode-line-inactive     base)
-     (border-mode-line-inactive surface0)
-
-     (string flamingo)
-     (fringe unspecified)
-     (fg-paren-match red)
-     (bg-prose-code bg-dim)
-     (bg-line-number-active base)
-     (bg-line-number-inactive base)
-     (fg-heading-2 mauve)
-     (fg-heading-3 maroon)
-     (fg-heading-4 blue))))
-;; (modus-themes-load-theme 'catppuccin-mocha)
+(use-package ef-themes
+  :ensure t)
 #+end_src
 
 **** Standard Themes
@@ -1620,7 +1635,7 @@ Usful info in the minibuffer
   :init (marginalia-mode))
 #+end_src
 
-*** Colorful-mode
+*** COMMENT Colorful-mode
 Colorize strings like #a7c080.
 Making the frame background transparent via ~alpha-background~ makes the colors a little transparent as well sadly
 
@@ -1712,6 +1727,10 @@ Font presets
       :fixed-pitch-weight nil ; falls back to :default-weight
       :bold-weight semibold
       :italic-family nil)
+     (iosevka
+      :inherit regular
+      :default-family "Iosevka Nerd Font Mono"
+      :fixed-pitch-family "Iosevka Nerd Font Mono")
      (adwaita
       :inherit regular
       :default-family "AdwaitaMono Nerd Font Mono"
@@ -1771,6 +1790,7 @@ Some nice additional completing-read stuff
 #+begin_src emacs-lisp
 (use-package consult
   :ensure t
+  :demand t
   :custom
   (xref-show-definitions-function #'consult-xref)
   (xref-show-xrefs-function #'consult-xref)
@@ -2040,6 +2060,7 @@ Completion
 #+begin_src emacs-lisp
 (use-package corfu
   :ensure t
+  :demand t
   :after consult
   :custom
   (corfu-auto-delay 0.1)
@@ -2121,6 +2142,28 @@ Set up vertico and orderless
   :ensure t
   :custom
   (completion-styles '(orderless basic)))
+#+end_src
+
+** ERC enhancements
+Images, bridge nicknames, ...
+
+#+begin_src emacs-lisp
+(use-package erc-image
+  :ensure t
+  :after erc
+  :config
+  (add-to-list 'erc-modules 'image)
+  (erc-update-modules))
+
+(use-package erc-bridge-nicks
+  :disabled t ; I get a Symbol’s value as variable is void: bridge-nicks                          ;
+  :ensure t
+  :after erc
+  :vc (:url "https://git.sr.ht/~technomancy/erc-bridge-nicks" :rev :newest)
+  :config
+  (add-to-list 'erc-bridge-nicks-alist '("#cyberspace" "discord"))
+  (add-to-list 'erc-modules 'bridge-nicks)
+  (erc-update-modules))
 #+end_src
 
 ** Vulpea
@@ -2241,16 +2284,6 @@ Language server stuff
                     "--completion-style=detailed"
                     "--pch-storage=memory")))
   :hook (LaTeX-mode . eglot-ensure))
-#+end_src
-
-** Hyprlang
-Hyprland ecosystem config language.
-Get the [[https://github.com/tree-sitter-grammars/tree-sitter-hyprlang][language grammar here]]
-
-#+begin_src emacs-lisp
-(use-package hyprlang-ts-mode
-  :ensure t
-  :custom (hyprlang-ts-mode-indent-offset 4))
 #+end_src
 
 ** C and C++
@@ -2624,4 +2657,11 @@ Edit csv files
 (use-package csv-mode
   :ensure t
   :hook (csv-mode . csv-align-mode))
+#+end_src
+
+** XML
+
+#+begin_src emacs-lisp
+(use-package xml
+  :mode ("\\.\\launch\\'" . xml-mode)) ; ros launch files
 #+end_src

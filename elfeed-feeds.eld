@@ -26,6 +26,7 @@
  ("https://xenodium.com/feed" emacs)
  ("https://olddeuteronomy.github.io/index.xml" emacs)
  ("https://irreal.org/blog/?feed=rss2" emacs)
+ ("https://karthinks.com/index.xml" emacs)
 
  ("http://blog.sigfpe.com/feeds/posts/default" math)
  ("blog.evanchen.cc/feed" math)
