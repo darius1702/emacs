@@ -45,15 +45,6 @@ And set lexical-bindings for early-init.
 The docs say you can ~(setq inhibit-startup-echo-area-message "$username")~ but that doesn't work for me.
 
 #+begin_src emacs-lisp :tangle early-init.el
-(setq-default inhibit-message t)
-(add-hook 'window-setup-hook
-          (lambda ()
-            (setq-default inhibit-message nil)
-            ;; The echo area is too small and will resize the first time a message is displayed
-            ;; when messages are inhibited during startup.
-            ;; I find that kind of annoying, so just message "" here so it resizes immediately.
-            (message "")))
-
 (setopt inhibit-startup-message t
         initial-scratch-message nil
         server-client-instructions nil)
@@ -391,6 +382,7 @@ Change default UI settings
   :config
   (fringe-mode '(nil . 0)) ; 8px right, 0px left
   (global-visual-wrap-prefix-mode -1)  ; this makes org headings look weird
+  (prettify-special-glyphs-mode 1)
   :hook
   ((prog-mode text-mode) . visual-line-mode)
   :custom
@@ -849,6 +841,7 @@ File browsing on crack
         (dired-create-empty-file (read-string "Create file: "))
       (dired-create-directory (read-string "Make directory: "))))
   ;; Make `dired-do-shell-command' suggest better defaults for some filetypes
+  (add-to-list 'dired-guess-shell-alist-user '("\\.zip\\'" "7z x"))
   (add-to-list 'dired-guess-shell-alist-user '("\\.pdf\\'" "zathura"))
   (add-to-list 'dired-guess-shell-alist-user '("\\.mp4\\'" "mpv"))
   (add-to-list 'dired-guess-shell-alist-user '("\\.\\(vcd\\|fst\\)\\'" "surfer")))
@@ -2017,15 +2010,14 @@ RSS feeds
   (elfeed-enclosure-default-dir user-emacs-directory)
   (elfeed-db-directory (locate-user-emacs-file "elfeed/"))
   :config
-  (setq-default elfeed-search-filter "@6-months-ago")
+  (setq-default elfeed-search-filter "@6-months")
   (defconst darius/elfeed-feeds-file (locate-user-emacs-file "elfeed-feeds.eld"))
   (defun darius/reload-elfeed-feeds ()
     (interactive)
-    (when-let* ((file darius/elfeed-feeds-file)
-                ((file-exists-p file)))
+    (when (file-exists-p darius/elfeed-feeds-file)
       (setopt elfeed-feeds
               (with-temp-buffer
-                (insert-file-contents file)
+                (insert-file-contents darius/elfeed-feeds-file)
                 (read (current-buffer))))))
   ;; mark new entries older than two weeks as read automatically
   (add-hook 'elfeed-new-entry-hook

@@ -4,7 +4,7 @@
  "https://protesilaos.com/master.xml"
  "https://jakob.space/feed.xml"
  "https://taylor.town/feed.xml"
- "https://flak.tedunangst.com/rss"
+ ;; "https://flak.tedunangst.com/rss"
  "https://jvns.ca/atom.xml"
  "https://www.ralfj.de/blog/feed.xml"
  "https://www.boristhebrave.com/feed/"
@@ -15,7 +15,7 @@
  "https://thephd.dev/feed.xml"
  "https://kibty.town/blog.rss"
  "https://blog.ganets.ky/feed"
- "https://cadence.moe/blog/atom.xml?limit=30"
+ "https://cadence.moe/blog/rss.xml?limit=30"
  "https://devblogs.microsoft.com/oldnewthing/feed/"
  "https://nibblestew.blogspot.com/feeds/posts/default"
  "https://herbsutter.com/feed"
@@ -29,7 +29,7 @@
  ("https://karthinks.com/index.xml" emacs)
 
  ("http://blog.sigfpe.com/feeds/posts/default" math)
- ("blog.evanchen.cc/feed" math)
+ ("blog.evanchen.cc/feeds/all.atom.xml" math)
  ("https://golem.ph.utexas.edu/category/atom10.xml" math)
 
  ("https://bernsteinbear.com/feed.xml" compiler)
@@ -42,6 +42,7 @@
  ("https://blog.poisson.chat/rss.xml" fp)
  ("https://chrispenner.ca/atom.xml" fp)
  ("https://okmij.org/ftp/rss.xml" fp)
+ ("https://free.cofree.io/atom.xml" fp)
  ("https://quuxplusone.github.io/blog/feed" cpp)
 
  ("https://www.todepond.com/feed/index.xml" cg)
