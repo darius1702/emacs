@@ -656,6 +656,7 @@ Text editing keybinds and related settings
    ("M-c" capitalize-dwim)
    ;; `zap-to-char' by default
    ("M-z" zap-up-to-char)
+   ("M-Z" zap-to-char)
    ;; join line with line above
    ("C-c j" join-line)
    ;; delete parens or quotes
@@ -713,7 +714,6 @@ Searching within a buffer
   :custom
   (isearch-wrap-pause 'no-ding)
   (isearch-lazy-count t)
-  (isearch-repeat-on-direction-change t)
   (lazy-count-prefix-format "(%s/%s) ")
   (search-whitespace-regexp ".*?")
   (lazy-highlight-initial-delay 0))
