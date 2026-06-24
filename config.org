@@ -642,6 +642,10 @@ Settings that don't fit the other categories
 (use-package dabbrev
   :custom
   (dabbrev-case-replace nil))
+
+;; make files with a shebang executable on save
+(add-hook 'after-save-hook
+          #'executable-make-buffer-file-executable-if-script-p)
 #+end_src
 
 *** Keybindings
@@ -986,7 +990,9 @@ Help popups, linting, documentation, ...
 (use-package eldoc
   :custom
   (eldoc-idle-delay 0.1)
-  (eldoc-echo-area-use-multiline-p nil))
+  (eldoc-help-at-pt t)
+  (eldoc-echo-area-use-multiline-p nil)
+  (eldoc-echo-area-prefer-doc-buffer t))
 
 ;; show help for key bindings
 (use-package which-key
@@ -1216,7 +1222,7 @@ IRC in emacs, see also [[*ERC enhancements][ERC enhancements]]
   (erc-fill-function 'erc-fill-static)
   ;; (erc-fill-wrap-merge-indicator '(?> . erc-fill-wrap-merge-indicator-face))
   (erc-fill-static-center 20)
-  ;; (erc-scrolltobottom-all t)
+  (erc-scrolltobottom-all t)
   :config
   (add-to-list 'erc-modules 'nicks)
   (add-to-list 'erc-modules 'notifications)
@@ -2224,6 +2230,7 @@ Language server stuff
 (use-package eglot
   :custom
   ;; (eglot-ignored-server-capabilities '(:documentHighlightProvider))
+  (eglot-documentation-renderer 'markdown-ts-view-mode)
   (eglot-autoshutdown t)
   (eglot-extend-to-xref t)
   (eglot-events-buffer-config '(:size 0 :format short))
@@ -2476,6 +2483,9 @@ Syntax highlighting and other stuff for markdown documents.
 GFM mode seems to work better than markdown-ts-mode for me.
 
 #+begin_src emacs-lisp
+(use-package markdown-ts-mode
+  :ensure nil)
+
 (use-package markdown-mode
   :ensure t
   :custom (markdown-fontify-code-blocks-natively t)
