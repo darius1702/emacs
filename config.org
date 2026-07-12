@@ -70,18 +70,14 @@ I copied this from somewhere on the internet.
 ;; (setopt gc-cons-threshold (eval-when-compile (* 5 1024 1024 1024)))
 ;; (run-with-idle-timer 2 t (lambda () (garbage-collect)))
 
-;; Set garbage collector (from doom emacs)
-;; About 0.02 faster
 (setopt gc-cons-threshold (* 1024 1024 128)  ;; 128mb
-      gc-cons-percentage 1.0) ;; Disable the dynamic percentage trigger to ensure GC frequency is fixed.
+        gc-cons-percentage 1.0) ;; Disable the dynamic percentage trigger to ensure GC frequency is fixed.
 
-;; Runtime performance
 ;; Dial the GC threshold back down so that garbage collection happens more frequently but in less time.
 ;; Make gc pauses faster by decreasing the threshold.
-;; About 0.02 faster
 (add-hook 'emacs-startup-hook (lambda ()
                                 (setopt gc-cons-threshold (* 1024 1024 2) ;; 2mb
-                                      gc-cons-percentage 0.2)))
+                                        gc-cons-percentage 0.2)))
 #+end_src
 
 ** Default clutter
@@ -134,7 +130,7 @@ I paid for the whole keyboard so I'm gonna use the whole keyboard
                    "C-z"     ; suspend emacs (other binding)
                    "C-x m"   ; compose mail
                    "C-h g")) ; gnu website
-  (unbind-key bad-key))
+  (unbind-key bad-key global-map))
 
 (defun darius/scroll-down-command (arg)
   "Scroll window down by half, or ARG if present"
@@ -159,9 +155,10 @@ I paid for the whole keyboard so I'm gonna use the whole keyboard
  ([remap scroll-up-command] . darius/scroll-up-command)
  ([remap scroll-down-command] . darius/scroll-down-command))
 
-(dolist (key '(("pp" "π")
-               ("pP" "Π")))
-  (define-key iso-transl-ctl-x-8-map (car key) (cadr key)))
+;; C-x 8
+(bind-keys :map iso-transl-ctl-x-8-map
+           ("pp" . "π")
+           ("pP" . "Π"))
 #+end_src
 
 *** Mouse and Trackpad
@@ -179,7 +176,7 @@ Also I keep accidentally triggering pinch-to-zoom and ctrl+mousewheel on my lapt
                      "C-M-<mouse-4>"
                      "C-M-<mouse-5>"
                      "<pinch>"))
-    (unbind-key bad-key))
+    (unbind-key bad-key global-map))
   (defun darius/copy-with-arg (arg)
     "Insert text from the primary clipboard only with prefix argument"
     (interactive "P")
@@ -567,11 +564,11 @@ Inspired by doom-modeline
 (defvar-local darius/mode-line-project-name
   '(:eval
     (when (and (project-current)
-             (not (equal (buffer-name) (project-name (project-current)))))
-        (let ((project-str (format "%s/" (project-name (project-current)))))
-          (if (mode-line-window-selected-p)
-              (propertize project-str 'face 'darius/mode-line-text)
-            project-str)))))
+               (not (equal (buffer-name) (project-name (project-current)))))
+      (let ((project-str (format "%s/" (project-name (project-current)))))
+        (if (mode-line-window-selected-p)
+            (propertize project-str 'face 'darius/mode-line-text)
+          project-str)))))
 
 (dolist (var '(darius/mode-line-buffer-name ; unused
                darius/mode-line-project-name))
@@ -1429,9 +1426,9 @@ Expand the region
 
 (use-package expreg
   :ensure t
-    :bind
-    ("M-j" . expreg-expand)
-    ("M-J" . expreg-contract))
+  :bind
+  ("M-j" . expreg-expand)
+  ("M-J" . expreg-contract))
 #+end_src
 
 *** Surround
@@ -1630,20 +1627,6 @@ Usful info in the minibuffer
 (use-package marginalia
   :ensure t
   :init (marginalia-mode))
-#+end_src
-
-*** COMMENT Colorful-mode
-Colorize strings like #a7c080.
-Making the frame background transparent via ~alpha-background~ makes the colors a little transparent as well sadly
-
-#+begin_src emacs-lisp
-(use-package colorful-mode
-  :ensure t
-  :custom (css-fontify-colors nil)
-  :config
-  (global-colorful-mode)
-  ; colors have a box around them by default which looks weird
-  (set-face-attribute 'colorful-base nil :box nil))
 #+end_src
 
 *** hl-todo
@@ -2385,12 +2368,12 @@ why
 This assumes metals is installed in ~./local/bin/metals-emacs~.
 
 #+begin_src emacs-lisp
-  (use-package scala-mode
-    :ensure t
-    :interpreter "scala"
-    :bind (:map scala-mode-map
-                ("C-c c" . scala-compile)
-                ("C-c r" . scala-compile)))
+(use-package scala-mode
+  :ensure t
+  :interpreter "scala"
+  :bind (:map scala-mode-map
+              ("C-c c" . scala-compile)
+              ("C-c r" . scala-compile)))
 
 (use-package scala-ts-mode
   :ensure t)
