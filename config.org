@@ -129,12 +129,12 @@ Tweaks that don't fit the other categories
 I paid for the whole keyboard so I'm gonna use the whole keyboard
 
 #+begin_src emacs-lisp
-(mapc #'keymap-global-unset
-      '("C-x C-c" ; quit emacs
-        "C-x C-z" ; suspend emacs
-        "C-z"     ; suspend emacs (other binding)
-        "C-x m"   ; compose mail
-        "C-h g")) ; gnu website
+(dolist (bad-key '("C-x C-c" ; quit emacs
+                   "C-x C-z" ; suspend emacs
+                   "C-z"     ; suspend emacs (other binding)
+                   "C-x m"   ; compose mail
+                   "C-h g")) ; gnu website
+  (unbind-key bad-key))
 
 (defun darius/scroll-down-command (arg)
   "Scroll window down by half, or ARG if present"
@@ -152,17 +152,12 @@ I paid for the whole keyboard so I'm gonna use the whole keyboard
                   (/ (window-body-height) 2))))
     (scroll-up-command amount)))
 
-(defun darius/set-global-keys (binds)
-  "Wrapper around `keymap-global-set' that takes multiple bindings"
-  (dolist (b binds)
-    (keymap-global-set (car b) (cadr b))))
-
-(darius/set-global-keys
- '(("M-o" other-window)
-   ("M-O" other-window-backward)
-   ("C-M-S-o" window-layout-transpose)
-   ("<remap> <scroll-up-command>" darius/scroll-up-command)
-   ("<remap> <scroll-down-command>" darius/scroll-down-command)))
+(bind-keys
+ ("M-o" . other-window)
+ ("M-O" . other-window-backward)
+ ("C-M-S-o" . window-layout-transpose)
+ ([remap scroll-up-command] . darius/scroll-up-command)
+ ([remap scroll-down-command] . darius/scroll-down-command))
 
 (dolist (key '(("pp" "π")
                ("pP" "Π")))
@@ -177,14 +172,14 @@ Also I keep accidentally triggering pinch-to-zoom and ctrl+mousewheel on my lapt
 (use-package mouse
   :config
   (mouse-shift-adjust-mode 1) ; extend region with shift+drag
-  (mapc #'keymap-global-unset
-        '("C-<wheel-up>"
-          "C-M-<wheel-up>"
-          "C-<wheel-down>"
-          "C-M-<wheel-down>"
-          "C-M-<mouse-4>"
-          "C-M-<mouse-5>"
-          "<pinch>"))
+  (dolist (bad-key '("C-<wheel-up>"
+                     "C-M-<wheel-up>"
+                     "C-<wheel-down>"
+                     "C-M-<wheel-down>"
+                     "C-M-<mouse-4>"
+                     "C-M-<mouse-5>"
+                     "<pinch>"))
+    (unbind-key bad-key))
   (defun darius/copy-with-arg (arg)
     "Insert text from the primary clipboard only with prefix argument"
     (interactive "P")
@@ -217,7 +212,8 @@ The ~table~ thing makes completing-read keep the original order of the list pass
          (selection (completing-read "Jump: " table nil t)))
     (find-file selection)))
 
-(keymap-set goto-map "z" #'darius/zoxide-find-file)
+(bind-keys :map goto-map
+           ("z" . #'darius/zoxide-find-file))
 #+end_src
 
 *** Maybe wrap with char
@@ -305,7 +301,7 @@ With two prefixes call ~winner-undo~
    (t ; fallback
     (call-interactively #'switch-to-buffer))))
 
-(keymap-global-set "C-;" #'darius/switch-buffer-or-delete-other-windows)
+(bind-key "C-;" #'darius/switch-buffer-or-delete-other-windows)
 #+end_src
 
 *** Move lines up/down
@@ -325,9 +321,9 @@ Shift lines up and down, yoinked from [[https://emacsredux.com/blog/2013/04/02/m
   (forward-line -1)
   (indent-according-to-mode))
 
-(darius/set-global-keys
- '(("C-S-p" darius/move-line-up)
-   ("C-S-n" darius/move-line-down)))
+(bind-keys
+ ("C-S-p" . darius/move-line-up)
+ ("C-S-n" . darius/move-line-down))
 #+end_src
 
 *** COMMENT Delete surrounding pair
@@ -360,7 +356,7 @@ Works by searching backward for the opener and forward for the closer."
             (when (search-forward (char-to-string closer) nil t)
               (delete-char -1))))))))
 
-(keymap-global-set "C-c D" #'darius/delete-surrounding-pair)
+(bind-key "C-c D" #'darius/delete-surrounding-pair)
 #+end_src
 
 *** Spawn terminal
@@ -653,23 +649,24 @@ Settings that don't fit the other categories
 Text editing keybinds and related settings
 
 #+begin_src emacs-lisp
-(darius/set-global-keys
- '(;; Act on region if active, otherwise on line/word
-   ("M-D" duplicate-dwim)
-   ("M-u" upcase-dwim)
-   ("M-l" downcase-dwim)
-   ("M-c" capitalize-dwim)
-   ;; `zap-to-char' by default
-   ("M-z" zap-up-to-char)
-   ("M-Z" zap-to-char)
-   ;; join line with line above
-   ("C-c j" join-line)
-   ;; delete parens or quotes
-   ("C-c d" delete-pair)
-   ("C-c a" align-regexp)))
+(bind-keys
+ ;; Act on region if active, otherwise on line/word
+ ("M-D" . duplicate-dwim)
+ ("M-u" . upcase-dwim)
+ ("M-l" . downcase-dwim)
+ ("M-c" . capitalize-dwim)
+ ;; `zap-to-char' by default
+ ("M-z" . zap-up-to-char)
+ ("M-Z" . zap-to-char)
+ ;; join line with line above
+ ("C-c j" . join-line)
+ ;; delete parens or quotes
+ ("C-c d" . delete-pair)
+ ("C-c a" . align-regexp))
 
-;; continue comment on new line
-(keymap-set prog-mode-map "M-RET" #'comment-indent-new-line)
+(bind-keys :map prog-mode-map
+           ;; continue comment on new line
+           ("M-RET" . comment-indent-new-line))
 
 (setopt delete-pair-push-mark t
         delete-pair-blink-delay 0.3)
@@ -1798,7 +1795,8 @@ Some nice additional completing-read stuff
     (let* ((consult-fd-args (append consult-fd-args '(" --hidden --no-ignore"))))
       (call-interactively 'consult-fd)))
   (with-eval-after-load 'em-prompt
-    (keymap-set eshell-prompt-mode-map "M-r" #'consult-history))
+    (bind-keys :map eshell-prompt-mode-map
+               ("M-r" . consult-history)))
   :bind
   (("C-S-Y"     . consult-yank-from-kill-ring)
    :map search-map
@@ -2226,37 +2224,37 @@ Language server stuff
   (eglot-events-buffer-config '(:size 0 :format short))
   (jsonrpc-event-hook nil)
   :config
-  (defvar-keymap darius/eglot-code-actions-map
-    :doc "Bindings for eglot code actions"
-    "a" #'eglot-code-actions
-    "e" #'eglot-code-action-extract
-    "i" #'eglot-code-action-inline
-    "o" #'eglot-code-action-organize-imports
-    "q" #'eglot-code-action-quickfix
-    "r" #'eglot-code-action-rewrite)
-
-  (defvar-keymap darius/eglot-find-map
-    :doc "Bindings to find definition/declaration/type/... via eglot"
-    "d" #'eglot-find-declaration
-    "i" #'eglot-find-implementation
-    "t" #'eglot-find-typeDefinition)
-
-  (defvar-keymap darius/eglot-show-map
-    :doc "Bindings to show call/type hierarchy via eglot"
-    "c" #'eglot-show-call-hierarchy
-    "t" #'eglot-show-type-hierarchy)
-
-  (defvar-keymap darius/eglot-map
-    :doc "Keymap for eglot commands"
-    "TAB" #'eglot-format
-    "i"   #'eglot-inlay-hints-mode
-    "l"   #'eglot-list-connections
-    "r"   #'eglot-rename
-    "a"   (cons "actions" darius/eglot-code-actions-map)
-    "f"   (cons "find"    darius/eglot-find-map)
-    "s"   (cons "show"    darius/eglot-show-map))
-
-  (keymap-set eglot-mode-map "C-c e" darius/eglot-map)
+  (bind-keys :map eglot-mode-map
+             :prefix "C-c e"
+             :prefix-docstring "Keymap for eglot commands"
+             :prefix-map darius/eglot-map
+             ("TAB" . eglot-format)
+             ("i"   . eglot-inlay-hints-mode)
+             ("l"   . eglot-list-connections)
+             ("r"   . eglot-rename))
+  (bind-keys :map darius/eglot-map
+             :prefix "a"
+             :prefix-docstring "Bindings for eglot code actions"
+             :prefix-map darius/eglot-code-actions-map
+             ("a" . eglot-code-actions)
+             ("e" . eglot-code-action-extract)
+             ("i" . eglot-code-action-inline)
+             ("o" . eglot-code-action-organize-imports)
+             ("q" . eglot-code-action-quickfix)
+             ("r" . eglot-code-action-rewrite))
+  (bind-keys :map darius/eglot-map
+             :prefix "f"
+             :prefix-docstring "Bindings to find definition/declaration/type/... via eglot"
+             :prefix-map darius/eglot-find-map
+             ("d" . eglot-find-declaration)
+             ("i" . eglot-find-implementation)
+             ("t" . eglot-find-typeDefinition))
+  (bind-keys :map darius/eglot-map
+             :prefix "s"
+             :prefix-docstring "Bindings to show call/type hierarchy via eglot"
+             :prefix-map darius/eglot-show-map
+             ("c" . eglot-show-call-hierarchy)
+             ("t" . eglot-show-type-hierarchy))
 
   (fset #'jsonrpc--log-event #'ignore)
   (add-to-list 'eglot-server-programs
