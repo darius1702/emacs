@@ -390,6 +390,8 @@ Change default UI settings
   (window-combination-resize t)
 
   (uniquify-buffer-name-style 'forward)
+  (uniquify-strip-common-suffix t)
+  (uniquify-after-kill-buffer-flag t)
 
   (scroll-preserve-screen-position 'always)
   (scroll-conservatively 101)
@@ -602,8 +604,8 @@ Hideshow can fold based on indentation now
 
 #+begin_src emacs-lisp
 (use-package hideshow
-  :hook
-  (prog-mode . hs-minor-mode)
+  ;; :hook
+  ;; (prog-mode . hs-minor-mode)
   :custom
   (hs-indentation-respect-end-block nil)
   (hs-display-lines-hidden t)
@@ -649,9 +651,9 @@ Text editing keybinds and related settings
 (bind-keys
  ;; Act on region if active, otherwise on line/word
  ("M-D" . duplicate-dwim)
- ("M-u" . upcase-dwim)
- ("M-l" . downcase-dwim)
- ("M-c" . capitalize-dwim)
+ ([remap upcase-word] . upcase-dwim)
+ ([remap downcase-word] . downcase-dwim)
+ ([remap capitalize-word] . capitalize-dwim)
  ;; `zap-to-char' by default
  ("M-z" . zap-up-to-char)
  ("M-Z" . zap-to-char)
@@ -862,6 +864,7 @@ Remember recently visited files
 
 #+begin_src emacs-lisp
 (use-package recentf
+  :demand t
   :custom
   (recentf-auto-cleanup 'never)
   (recentf-max-menu-items 0)
@@ -987,11 +990,16 @@ Help popups, linting, documentation, ...
   (eldoc-idle-delay 0.1)
   (eldoc-help-at-pt t)
   (eldoc-echo-area-use-multiline-p nil)
-  (eldoc-echo-area-prefer-doc-buffer t))
+  (eldoc-echo-area-prefer-doc-buffer t)
+  (eldoc-documentation-strategy 'eldoc-documentation-compose))
 
 ;; show help for key bindings
 (use-package which-key
-  :custom (which-key-lighter "")
+  :custom
+  (which-key-lighter "")
+  (which-key-separator " ")
+  (which-key-idle-delay 1.0)
+  (which-key-idle-secondary-delay 0.25)
   :config (which-key-mode))
 
 ;; display the current function/heading/... in the modeline
@@ -1221,7 +1229,7 @@ IRC in emacs, see also [[*ERC enhancements][ERC enhancements]]
   :config
   (add-to-list 'erc-modules 'nicks)
   (add-to-list 'erc-modules 'notifications)
-  ;; (add-to-list 'erc-modules 'scrolltobottom)
+  (add-to-list 'erc-modules 'scrolltobottom)
   (erc-update-modules))
 #+end_src
 
@@ -1307,24 +1315,6 @@ Easily place multiple cursors for edits
   ("C-<" . mc/mark-previous-like-this-word)
   ("C-M-<" . mc/skip-to-previous-like-this)
   ("C-c C-<" . mc/mark-all-like-this))
-#+end_src
-
-*** TLDR pages
-Read tldr pages in emacs
-
-#+begin_src emacs-lisp
-(use-package tldr
-  :ensure t
-  :bind ("C-c m t" . tldr))
-#+end_src
-
-*** Devdocs
-Read ~devdocs.io~ inside emacs
-
-#+begin_src emacs-lisp
-(use-package devdocs
-  :ensure t
-  :bind ("C-c m c" . devdocs-lookup))
 #+end_src
 
 *** Nov mode
@@ -1530,6 +1520,26 @@ Where am I
   :hook (prog-mode . breadcrumb-local-mode))
 #+end_src
 
+** Documentation
+More help
+*** TLDR pages
+Read tldr pages in emacs
+
+#+begin_src emacs-lisp
+(use-package tldr
+  :ensure t
+  :bind ("C-c m t" . tldr))
+#+end_src
+
+*** Devdocs
+Read ~devdocs.io~ inside emacs
+
+#+begin_src emacs-lisp
+(use-package devdocs
+  :ensure t
+  :bind ("C-c m c" . devdocs-lookup))
+#+end_src
+
 ** Eye candy
 21st century emacs
 
@@ -1619,6 +1629,15 @@ Standard themes
      (fringe unspecified))))
 (modus-themes-select 'standard-light)
 #+end_src
+
+**** Modus Alabaster
+Pretty
+
+#+begin_src emacs-lisp
+(use-package modus-alabaster
+  :vc (:url "https://github.com/dpassen/modus-alabaster" :rev :newest))
+#+end_src
+
 
 *** Marginalia
 Usful info in the minibuffer
@@ -2227,7 +2246,7 @@ Language server stuff
              ("r" . eglot-code-action-rewrite))
   (bind-keys :map darius/eglot-map
              :prefix "f"
-             :prefix-docstring "Bindings to find definition/declaration/type/... via eglot"
+             :prefix-docstring "Bindings to find declaration/type/... via eglot"
              :prefix-map darius/eglot-find-map
              ("d" . eglot-find-declaration)
              ("i" . eglot-find-implementation)
@@ -2238,11 +2257,7 @@ Language server stuff
              :prefix-map darius/eglot-show-map
              ("c" . eglot-show-call-hierarchy)
              ("t" . eglot-show-type-hierarchy))
-
   (fset #'jsonrpc--log-event #'ignore)
-  (add-to-list 'eglot-server-programs
-               `((scala-mode scala-ts-mode)
-                 . ,(alist-get 'scala-mode eglot-server-programs)))
   (add-to-list 'eglot-server-programs
                '((c-mode c++-mode c-ts-mode c++-ts-mode)
                  . ("clangd"
@@ -2371,6 +2386,11 @@ This assumes metals is installed in ~./local/bin/metals-emacs~.
 (use-package scala-mode
   :ensure t
   :interpreter "scala"
+  :config
+  (with-eval-after-load 'eglot
+    (add-to-list 'eglot-server-programs
+                 `((scala-mode scala-ts-mode)
+                   . ,(alist-get 'scala-mode eglot-server-programs))))
   :bind (:map scala-mode-map
               ("C-c c" . scala-compile)
               ("C-c r" . scala-compile)))
