@@ -27,6 +27,7 @@
  ("https://olddeuteronomy.github.io/index.xml" emacs)
  ("https://irreal.org/blog/?feed=rss2" emacs)
  ("https://karthinks.com/index.xml" emacs)
+ ("https://emacsredux.com/atom.xml" emacs)
 
  ("http://blog.sigfpe.com/feeds/posts/default" math)
  ("blog.evanchen.cc/feeds/all.atom.xml" math)

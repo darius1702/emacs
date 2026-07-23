@@ -289,13 +289,11 @@ With two prefixes call ~winner-undo~
   "Call `switch-to-buffer' or `delete-other-windows'/`tab-bar-history-back' if called with one/two C-u presses"
   (interactive "P")
   (cond
-   ((null arg)
-    (call-interactively #'switch-to-buffer))
    ((equal arg '(4))
     (delete-other-windows))
    ((equal arg '(16))
     (tab-bar-history-back))
-   (t ; fallback
+   (t ; otherwise
     (call-interactively #'switch-to-buffer))))
 
 (bind-key "C-;" #'darius/switch-buffer-or-delete-other-windows)
@@ -354,6 +352,25 @@ Works by searching backward for the opener and forward for the closer."
               (delete-char -1))))))))
 
 (bind-key "C-c D" #'darius/delete-surrounding-pair)
+#+end_src
+
+*** Run command in other window
+Run a command in another window:
+- try to reuse an existing window with the same buffer
+- otherwise pop up a new one if the frame is large enough
+- otherwise reuse some other window
+- but never in the current window
+
+#+begin_src emacs-lisp
+(defun darius/open-in-other-window (command &optional property)
+  "Run COMMAND in a another window, dedicated if PROPERTY is :dedicated"
+  (let ((display-buffer-overriding-action
+         `((display-buffer-reuse-window
+            display-buffer-pop-up-window
+            display-buffer-use-some-window)
+           (inhibit-same-window . t)
+           ,@(when (eq property :dedicated) '((dedicated . t))))))
+    (call-interactively command)))
 #+end_src
 
 *** Spawn terminal
@@ -1430,38 +1447,6 @@ Surround text and operate on surrounding pairs
   :bind-keymap ("M-'" . surround-keymap))
 #+end_src
 
-*** EAT
-Emulate a terminal
-
-#+begin_src emacs-lisp
-(use-package eat
-  :ensure t
-  :custom
-  (eat-kill-buffer-on-exit t)
-  :config
-  (add-to-list 'display-buffer-alist
-               '("\\(?:\\*-eat\\*\\|.*eat.*\\)"
-                 (display-buffer-reuse-mode-window)))
-  (defun darius/spawn-eat-or-terminal-here (arg)
-    "Open an *eat* buffer in the current project if called without prefix.
-If called with one C-u open a regular *eat* in the other window.
-If called with two C-u's, spawn a terminal window (foot) in the current directory."
-    (interactive "P")
-    (cond
-     ((null arg)
-      (eat-project-other-window))
-     ((equal arg '(4))
-      (eat-other-window))
-     ((equal arg '(16))
-      (darius/spawn-terminal))
-     (t ; fallback
-      (eat-other-window))))
-  :bind
-  ("M-g t" . darius/spawn-eat-or-terminal-here)
-  (:map eat-semi-char-mode-map
-        ("M-o" . other-window)))
-#+end_src
-
 *** Dumb Jump
 Jump to definition.
 
@@ -1678,6 +1663,9 @@ Eldoc in a popup frame
 #+begin_src emacs-lisp
 (use-package eldoc-box
   :ensure t
+  :custom
+  (eldoc-box-clear-with-C-g t)
+  (eldoc-box-lighter nil)
   ;; override `view-hello-file'
   :bind ("C-h h" . #'eldoc-box-help-at-point))
 #+end_src
@@ -1998,6 +1986,28 @@ Installing this fails because of a package called ~buttercup~ not being present?
         ("C-c o d y" . org-download-yank)))
 #+end_src
 
+*** org-block-wrap
+Make the background of org blocks wrap properly
+
+#+begin_src emacs-lisp
+(use-package org-block-wrap
+  :vc (:url "https://gitlab.com/vegasharmon/org-block-wrap" :rev :newest)
+  :hook (org-mode . org-block-wrap-mode))
+#+end_src
+
+** Neotree
+File tree
+
+#+begin_src emacs-lisp
+(use-package neotree
+  :custom
+  (neo-theme (if (display-graphic-p) 'nerd-icons 'ascii))
+  :bind
+  (:map search-map
+        ("s" . neotree)
+        ("S" . neotree-find)))
+#+end_src
+
 ** Elfeed
 RSS feeds
 
@@ -2130,6 +2140,45 @@ Set up vertico and orderless
   :ensure t
   :custom
   (completion-styles '(orderless basic)))
+#+end_src
+
+** Ghostel
+Works better than EAT for me
+
+#+begin_src emacs-lisp
+(use-package ghostel
+  :ensure t
+  :after consult
+  :bind (
+         :map goto-map
+         ("t" . darius/spawn-ghostel-or-terminal-here)
+         :map ghostel-semi-char-mode-map
+         ("M-o" . other-window)
+         :map project-prefix-map
+         ("t" . darius/ghostel-project-other-window))
+  :config
+  (add-to-list 'project-switch-commands '(ghostel-project "Terminal" "t") t)
+  (defun darius/ghostel-project-other-window ()
+    (interactive)
+    (darius/open-in-other-window #'ghostel-project :dedicated))
+  (defun darius/spawn-ghostel-or-terminal-here (arg)
+    "Open a *ghostel* buffer if called without prefix.
+If called with prefix arg, spawn a terminal window in the current directory."
+    (interactive "P")
+    (cond
+     ((equal arg '(4))
+      (darius/spawn-terminal))
+     (t ; otherwise
+      (darius/open-in-other-window #'ghostel :dedicated)))))
+
+(use-package ghostel-eshell
+  :hook (eshell-load . ghostel-eshell-visual-command-mode))
+
+(use-package ghostel-compile
+  :hook (after-init . ghostel-compile-global-mode))
+
+(use-package ghostel-comint
+  :hook (after-init . ghostel-comint-global-mode))
 #+end_src
 
 ** ERC enhancements
