@@ -39,6 +39,10 @@ And set lexical-bindings for early-init.
                                    "-Wl,-O2"
                                    "-Wl,--as-needed"))
 
+
+(setopt native-comp-async-report-warnings-errors nil)
+(setopt native-comp-async-query-on-exit t)
+(setopt load-prefer-newer t)
 #+end_src
 
 ** No startup message spam
@@ -85,8 +89,6 @@ Adjust some default settings,
 I don't know why I have this in the early-init but I moved it here at some point.
 
 #+begin_src emacs-lisp :tangle early-init.el
-(setopt native-comp-async-report-warnings-errors nil)
-
 (tool-bar-mode -1)
 (menu-bar-mode -1)
 (scroll-bar-mode -1)
@@ -103,7 +105,7 @@ Lexical bindings and set+load custom file
 #+begin_src emacs-lisp
 ;; -*- lexical-binding: t -*-
 (setopt custom-file (locate-user-emacs-file "custom.el"))
-(load custom-file :no-error-if-file-is-missing)
+(load custom-file :noerror)
 #+end_src
 
 ** Misc
@@ -1053,6 +1055,7 @@ Arch linux provides ~/usr/share/dict/words~ in the ~extra/words~ package.
 
 (use-package ispell
   :custom
+  (text-mode-ispell-word-completion nil)
   (ispell-dictionary "en_US")
   (ispell-program-name "hunspell")
   (spell-alternate-dictionary "/usr/share/dict/words"))
@@ -1493,7 +1496,15 @@ Make client frame font size consistent across multiple monitors with different r
   :after fontaine
   :init (textsize-mode)
   :custom (textsize-default-points 14)
-  :bind ("<f11>" . textsize-fix-frame))
+  :config
+  (bind-keys ; global map
+   :prefix "<f11>"
+   :prefix-docstring "Textsize actions map"
+   :prefix-map darius/textsize-mode-map
+   ("<f11>" . textsize-fix-frame)
+   ("r" . textsize-reset)
+   ("i" . textsize-increment)
+   ("d" . textsize-decrement)))
 #+end_src
 
 *** Breadcrumb
@@ -2000,6 +2011,7 @@ File tree
 
 #+begin_src emacs-lisp
 (use-package neotree
+  :ensure t
   :custom
   (neo-theme (if (display-graphic-p) 'nerd-icons 'ascii))
   :bind
@@ -2070,9 +2082,9 @@ Completion
   (corfu-separator ?\s)
   (corfu-preview-current 'insert)
   (corfu-on-exact-match nil)
-  (corfu-popupinfo-mode 1)
   (corfu-popupinfo-delay '(nil . 0.0))
   (global-corfu-minibuffers t)
+  (corfu-echo-delay 0)
   :config
   (defun corfu-move-to-minibuffer ()
     (interactive)
@@ -2089,8 +2101,13 @@ Completion
         ([remap move-end-of-line] . nil)
         ([remap next-line] . nil)
         ([remap previous-line] . nil)
+        ("M-i" . 'corfu-complete) ; same as TAB
         ("M-m" . 'corfu-move-to-minibuffer))
-  :init (global-corfu-mode))
+  :init
+  (global-corfu-mode)
+  (corfu-popupinfo-mode)
+  (corfu-echo-mode)
+  (corfu-history-mode))
 #+end_src
 
 *** Corfu nerd icons
@@ -2149,13 +2166,6 @@ Works better than EAT for me
 (use-package ghostel
   :ensure t
   :after consult
-  :bind (
-         :map goto-map
-         ("t" . darius/spawn-ghostel-or-terminal-here)
-         :map ghostel-semi-char-mode-map
-         ("M-o" . other-window)
-         :map project-prefix-map
-         ("t" . darius/ghostel-project-other-window))
   :config
   (add-to-list 'project-switch-commands '(ghostel-project "Terminal" "t") t)
   (defun darius/ghostel-project-other-window ()
@@ -2169,7 +2179,18 @@ If called with prefix arg, spawn a terminal window in the current directory."
      ((equal arg '(4))
       (darius/spawn-terminal))
      (t ; otherwise
-      (darius/open-in-other-window #'ghostel :dedicated)))))
+      (darius/open-in-other-window #'ghostel :dedicated))))
+  (defun darius/hide-nbsp ()
+    "Hide the underline for non-breaking-spaces in the current buffer, this makes the output of for example `tree` look better"
+    (setq-local nobreak-char-display nil))
+  :bind (
+         :map goto-map
+         ("t" . darius/spawn-ghostel-or-terminal-here)
+         :map project-prefix-map
+         ("t" . darius/ghostel-project-other-window)
+         :map ghostel-semi-char-mode-map
+         ("M-o" . other-window))
+  :hook (ghostel-mode . darius/hide-nbsp))
 
 (use-package ghostel-eshell
   :hook (eshell-load . ghostel-eshell-visual-command-mode))
