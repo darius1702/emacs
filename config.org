@@ -116,7 +116,9 @@ Tweaks that don't fit the other categories
 (setopt view-read-only t
         view-inhibit-help-message t)
 
-(setopt vc-follow-symlinks t)
+;; version control
+(setopt vc-handled-backends '(Git)
+        vc-follow-symlinks t)
 
 ;; according to someone else's config this does something good
 (setopt pgtk-wait-for-event-timeout 0.001
@@ -401,6 +403,7 @@ Change default UI settings
   (confirm-kill-emacs 'yes-or-no-p) ; ask before exiting
   (use-short-answers t)
   (use-dialog-box nil)
+  (custom-unlispify-tag-names nil)
 
   (frame-title-format '("%b"))      ; current buffer name
   (frame-resize-pixelwise t)
@@ -426,7 +429,12 @@ Change default UI settings
   (bidi-display-reordering 'left-to-right)
   (bidi-paragraph-direction 'left-to-right)
   (bidi-inhibit-bpa t))
+#+end_src
 
+*** Highlight matching parens
+With context offscreen in the echo area
+
+#+begin_src emacs-lisp
 (use-package paren
   :custom
   (show-paren-delay 0.1)
@@ -436,28 +444,24 @@ Change default UI settings
   (show-paren-not-in-comments-or-strings 'on-mismatch)
   :config
   (show-paren-mode 1))
+#+end_src
 
-;; (relative) line numbers
+*** Display line numbers
+Relative line numbers in programming language modes
+
+#+begin_src emacs-lisp
 (use-package display-line-numbers
   :hook prog-mode
   :custom
   (display-line-numbers-type 'relative)
   (display-line-numbers-width 3)
   (display-line-numbers-grow-only t))
+#+end_src
 
-(use-package time
-  :config
-  (display-time-mode 1)
-  :custom
-  (display-time-24hr-format t)
-  (display-time-default-load-average nil))
+*** Whitespace
+Display whitespace in buffer
 
-(use-package battery
-  :config
-  (display-battery-mode 1)
-  :custom
-  (battery-mode-line-format " %b%p%% "))
-
+#+begin_src emacs-lisp
 (use-package whitespace
   :custom
   (whitespace-line-column nil) ; use `fill-column'
@@ -466,67 +470,23 @@ Change default UI settings
                            tab-mark space-mark empty)))
 #+end_src
 
-*** Tab bar
-Tab bar with time and battery status
+*** Code folding
+Hideshow can fold based on indentation now
 
 #+begin_src emacs-lisp
-(use-package tab-bar
-  :init
-  (tab-bar-mode 1)
+(use-package hideshow
+  ;; :hook
+  ;; (prog-mode . hs-minor-mode)
   :custom
-  (tab-bar-show 1) ; only show tab bar when more than 1 tab
-  (tab-bar-close-button-show nil)
-  (tab-bar-new-button-show nil)
-  (tab-bar-auto-width-max '((150) 15))
-  (tab-bar-format '(tab-bar-format-history
-                    tab-bar-format-tabs tab-bar-separator
-                    tab-bar-format-add-tab
-                    tab-bar-format-align-right
-                    tab-bar-format-global))
+  (hs-indentation-respect-end-block nil)
+  (hs-display-lines-hidden t)
+  (hs-show-indicators t)
+  (hs-indicator-type 'margin)
   :config
-  (tab-bar-history-mode t)
+  (hs-indentation-mode 1)
   :bind
-  (:map tab-bar-history-mode-map
-        ("C-c <left>" . tab-bar-history-back)
-        ("C-c <right>" . tab-bar-history-forward)))
-#+end_src
-
-*** Calendar and Diary
-This is very neat.
-
-#+begin_src emacs-lisp
-(use-package calendar
-  :bind
-  ("<f10>" . calendar)
-  :config
-  (add-hook
-   'diary-mode-hook
-   (lambda ()
-     (font-lock-add-keywords nil
-                             '(("#.*" . font-lock-comment-face)))))
-  :custom
-  (diary-file "~/Notes/diary")
-  (diary-comment-start "#")
-  (calendar-date-style 'european)
-  (calendar-week-start-day 1)
-  (calendar-mark-diary-entries-flag t))
-
-(use-package appt
-  :config
-  (appt-activate 1)
-  (require 'notifications)
-  (defun darius/send-appt-notification (min-until new-time appt-msg)
-    (notifications-notify
-     :title "Upcoming Appointment"
-     :body (format "In %s min: %s" min-until appt-msg)
-     :urgency 'critical
-     :timeout 0))
-  (setq appt-disp-window-function #'darius/send-appt-notification)
-  :custom
-  (appt-display-diary nil)
-  (appt-audible nil)
-  (appt-display-interval 10)
-  (appt-message-warning-time 10))
+  (:map hs-minor-mode-map
+        ("C-z" . hs-toggle-hiding)))
 #+end_src
 
 *** Mode line
@@ -618,105 +578,106 @@ Inspired by doom-modeline
                 mode-line-end-spaces))
 #+end_src
 
-*** Code folding
-Hideshow can fold based on indentation now
+*** Tab bar
+Tab bar with time and battery status
 
 #+begin_src emacs-lisp
-(use-package hideshow
-  ;; :hook
-  ;; (prog-mode . hs-minor-mode)
+(use-package tab-bar
+  :init
+  (tab-bar-mode 1)
   :custom
-  (hs-indentation-respect-end-block nil)
-  (hs-display-lines-hidden t)
-  (hs-show-indicators t)
-  (hs-indicator-type 'margin)
+  (tab-bar-show 1) ; only show tab bar when more than 1 tab
+  (tab-bar-close-button-show nil)
+  (tab-bar-new-button-show nil)
+  (tab-bar-auto-width-max '((150) 15))
+  (tab-bar-format '(tab-bar-format-history
+                    tab-bar-format-tabs tab-bar-separator
+                    tab-bar-format-add-tab
+                    tab-bar-format-align-right
+                    tab-bar-format-global))
   :config
-  (hs-indentation-mode 1)
+  (tab-bar-history-mode t)
   :bind
-  (:map hs-minor-mode-map
-        ("C-z" . hs-toggle-hiding)))
+  (:map tab-bar-history-mode-map
+        ("C-c <left>" . tab-bar-history-back)
+        ("C-c <right>" . tab-bar-history-forward)))
+#+end_src
+
+*** Time and Battery
+24h time
+
+#+begin_src emacs-lisp
+(use-package time
+  :config
+  (display-time-mode 1)
+  :custom
+  (display-time-24hr-format t)
+  (display-time-default-load-average nil))
+
+(use-package battery
+  :config
+  (display-battery-mode 1)
+  :custom
+  (battery-mode-line-format " %b%p%% "))
 #+end_src
 
 ** Editing and formatting
 Changes to default editing behavior
 
-*** Misc
-Settings that don't fit the other categories
-
 #+begin_src emacs-lisp
-(electric-pair-mode 1)
+(use-package emacs
+  :custom
+  (delete-pair-push-mark t)
+  (delete-pair-blink-delay 0.2)
 
-;; save system clipboard to kill ring before overwriting it
-(setopt save-interprogram-paste-before-kill t)
+  (save-interprogram-paste-before-kill t)
+  (mouse-yank-at-point t)
 
-(setopt mouse-yank-at-point t)
+  (tab-always-indent t)
 
-(setopt sentence-end-double-space nil
-        sentence-end "[.\",;!?*:'] ")
+  (sentence-end-double-space nil)
+  (sentence-end "[.\",;!?*:'] ")
+  (indent-tabs-mode nil)
+  (tab-width 4)
+  (require-final-newline t)
+
+  ;; make `kill-region' kill last word if no region
+  (kill-region-dwim 'emacs-word)
+  (backward-delete-char-untabify-method nil)
+
+  (comment-style 'multi-line)
+  (narrow-to-defun-include-comments t)
+
+  :config
+  (electric-pair-mode 1)
+  (editorconfig-mode 1)
+  (put 'narrow-to-region 'disabled nil)
+
+  ;; there's `delete-trailing-whitespace-mode' but that's only buffer-local
+  (add-to-list 'write-file-functions #'delete-trailing-whitespace)
+
+  :hook
+  ;; make files with a shebang executable on save
+  (after-save . executable-make-buffer-file-executable-if-script-p)
+
+  :bind (;; Act on region if active, otherwise on line/word
+         ("M-D" . duplicate-dwim)
+         ([remap upcase-word] . upcase-dwim)
+         ([remap downcase-word] . downcase-dwim)
+         ([remap capitalize-word] . capitalize-dwim)
+         ;; `zap-to-char' by default
+         ("M-z" . zap-up-to-char)
+         ("M-Z" . zap-to-char)
+         ("C-c j" . join-line)
+         ("C-c d" . delete-pair)
+         ("C-c a" . align-regexp)
+         :map prog-mode-map
+         ;; continue comment on new line
+         ("M-RET" . comment-indent-new-line)))
 
 (use-package dabbrev
   :custom
   (dabbrev-case-replace nil))
-
-;; make files with a shebang executable on save
-(add-hook 'after-save-hook
-          #'executable-make-buffer-file-executable-if-script-p)
-#+end_src
-
-*** Keybindings
-Text editing keybinds and related settings
-
-#+begin_src emacs-lisp
-(bind-keys
- ;; Act on region if active, otherwise on line/word
- ("M-D" . duplicate-dwim)
- ([remap upcase-word] . upcase-dwim)
- ([remap downcase-word] . downcase-dwim)
- ([remap capitalize-word] . capitalize-dwim)
- ;; `zap-to-char' by default
- ("M-z" . zap-up-to-char)
- ("M-Z" . zap-to-char)
- ;; join line with line above
- ("C-c j" . join-line)
- ;; delete parens or quotes
- ("C-c d" . delete-pair)
- ("C-c a" . align-regexp))
-
-(bind-keys :map prog-mode-map
-           ;; continue comment on new line
-           ("M-RET" . comment-indent-new-line))
-
-(setopt delete-pair-push-mark t
-        delete-pair-blink-delay 0.3)
-
-;; delete active region when typing
-;; (delete-selection-mode)
-
-;; make C-w delete a word backwards when no region is active
-(setopt kill-region-dwim 'emacs-word)
-#+end_src
-
-*** Indentation, formatting
-All kinds of whitespace, auto-pairs, editorconfig, narrowing, ...
-
-#+begin_src emacs-lisp
-;; do not complete on TAB, only indent
-(setopt tab-always-indent t)
-
-(setq-default indent-tabs-mode nil
-              tab-width 4)
-
-;; there's `delete-trailing-whitespace-mode' but that's only buffer-local
-(add-to-list 'write-file-functions #'delete-trailing-whitespace)
-
-(setopt require-final-newline t)
-
-;; read .editorconfig if present
-(editorconfig-mode 1)
-
-;; narrowing
-(put 'narrow-to-region 'disabled nil)
-(setopt narrow-to-defun-include-comments t)
 #+end_src
 
 ** Buffers
@@ -762,7 +723,8 @@ The *vc-status* format below depends on [[*Ibuffer-vc][Ibuffer-vc]].
 (use-package ibuffer
   :bind
   (("C-x C-b" . ibuffer)
-   (:map ibuffer-mode-map ("M-o" . other-window)))
+   :map ibuffer-mode-map
+   ("M-o" . other-window))
   :hook
   (ibuffer-mode . (lambda ()
                     (ibuffer-switch-to-saved-filter-groups "default")
@@ -845,14 +807,13 @@ File browsing on crack
   (dired-hide-details-hide-symlink-targets nil)
   (dired-create-destination-dirs 'ask)
   :hook (dired-mode . dired-hide-details-mode)
-  :bind
-  ("<mouse-8>" . dired-jump) ; back button
-  (:map dired-mode-map
-        ("+" . darius/dired-create)
-        ("<mouse-2>" . dired-mouse-find-file)
-        ("j" . find-file)
-        ("SPC" . dired-up-directory)
-        ("b" . dired-up-directory))
+  :bind (("<mouse-8>" . dired-jump) ; back button
+         :map dired-mode-map
+         ("+" . darius/dired-create)
+         ("<mouse-2>" . dired-mouse-find-file)
+         ("j" . find-file)
+         ("SPC" . dired-up-directory)
+         ("b" . dired-up-directory))
   :config
   (defun darius/dired-create (arg)
     "Wrapper around `dired-create-directory' with no minibuffer completion. Create empty file when called with prefix arg"
@@ -878,16 +839,17 @@ Keep track of projects and run actions on them
   (add-to-list 'project-switch-commands '(project-dired "Dired")))
 #+end_src
 
-*** Recent files
+*** Recentf
 Remember recently visited files
 
 #+begin_src emacs-lisp
 (use-package recentf
   :demand t
   :custom
-  (recentf-auto-cleanup 'never)
   (recentf-max-menu-items 0)
   (recentf-max-saved-items 100)
+  (recentf-keep nil)
+  (recentf-auto-cleanup 'never)
   :bind (:map goto-map
               ("r" . recentf-open)
               ("R" . recentf-open-files))
@@ -918,11 +880,24 @@ Grep
    '("rg --no-heading --with-filename '' --glob='' " . 34))
   :custom
   (grep-use-headings t)
-  :bind
-  (:map search-map
-        ("f" . grep-find))
-  (:map grep-mode-map
-        ("F" . next-error-follow-minor-mode)))
+  :bind (
+         :map search-map
+         ("f" . grep-find)
+         :map grep-mode-map
+         ("F" . next-error-follow-minor-mode)))
+#+end_src
+
+*** Ediff
+Diff files
+
+#+begin_src emacs-lisp
+(use-package ediff
+  :custom
+  (ediff-keep-variants nil)
+  (ediff-make-buffers-readonly-at-startup t)
+  (ediff-show-clashes-only t)
+  (ediff-split-window-function #'split-window-horizontally)
+  (ediff-window-setup-function #'ediff-setup-windows-plain))
 #+end_src
 
 ** Minibuffer things
@@ -984,26 +959,26 @@ Help popups, linting, documentation, ...
         echo-keystrokes 0.01
         echo-keystrokes-help nil)
 
-;; make apropos search more extensively
+;; make `apropos' search more extensively
 (setopt apropos-do-all t)
 
 ;; show character name in C-x =
 (setopt what-cursor-show-names t)
+#+end_src
 
-;; make mouse side buttons go back and forth in help and info buffers
-(use-package help-mode
-  :bind
-  (:map help-mode-map
-        ("<mouse-8>" . help-go-back)
-        ("<mouse-9>" . help-go-forward)))
+*** Dictionary
+Install and enable the ~dictd~ service and download a dictionary like ~gcide~ or ~freedict~.
 
-;; install and enable the dictd service
-;; and download a dictionary like gcide or freedict.
+#+begin_src emacs-lisp
 (use-package dictionary
   :custom (dictionary-server "localhost")
   :bind ("C-c m d" . dictionary-search))
+#+end_src
 
-;; help in the echo area
+*** Eldoc
+Help in the echo area
+
+#+begin_src emacs-lisp
 (use-package eldoc
   :custom
   (eldoc-idle-delay 0.1)
@@ -1011,25 +986,37 @@ Help popups, linting, documentation, ...
   (eldoc-echo-area-use-multiline-p nil)
   (eldoc-echo-area-prefer-doc-buffer t)
   (eldoc-documentation-strategy 'eldoc-documentation-compose))
+#+end_src
 
-;; show help for key bindings
+*** Which-key
+Show help for key bindings
+
+#+begin_src emacs-lisp
 (use-package which-key
   :custom
   (which-key-lighter "")
   (which-key-separator " ")
+  (which-key-prefix-prefix ">")
   (which-key-idle-delay 1.0)
   (which-key-idle-secondary-delay 0.25)
-  :config (which-key-mode))
+  :config (which-key-mode 1))
+#+end_src
 
-;; display the current function/heading/... in the modeline
+*** Which-function
+Display the current function/heading/... in the modeline
+#+begin_src emacs-lisp
 (use-package which-func
   :custom
   (which-func-update-delay 0.1)
   :config
   ;; setting this with :custom doesn't work for some reason?
   (setopt which-func-unknown ":3"))
+#+end_src
 
-;; jumping to definition etc.
+*** Xref
+Jumping to definition etc.
+
+#+begin_src emacs-lisp
 (use-package xref
   :custom
   ;; disabled in favor of `consult-xref'
@@ -1041,8 +1028,8 @@ Help popups, linting, documentation, ...
   (prog-mode . xref-mouse-mode))
 #+end_src
 
-*** Linting and Spell Check
-Arch linux provides ~/usr/share/dict/words~ in the ~extra/words~ package.
+*** Flymake
+Inline errors/warnigns
 
 #+begin_src emacs-lisp
 (use-package flymake
@@ -1052,7 +1039,13 @@ Arch linux provides ~/usr/share/dict/words~ in the ~extra/words~ package.
   :bind
   ("M-n" . flymake-goto-next-error)
   ("M-p" . flymake-goto-prev-error))
+#+end_src
 
+*** Ispell
+Use huspell for spell checking.
+Arch linux provides ~/usr/share/dict/words~ in the ~extra/words~ package.
+
+#+begin_src emacs-lisp
 (use-package ispell
   :custom
   (text-mode-ispell-word-completion nil)
@@ -1061,8 +1054,8 @@ Arch linux provides ~/usr/share/dict/words~ in the ~extra/words~ package.
   (spell-alternate-dictionary "/usr/share/dict/words"))
 #+end_src
 
-*** Manuals
-Manpages and info pages
+*** Manpages
+thrifty
 
 #+begin_src emacs-lisp
 (use-package man
@@ -1074,35 +1067,66 @@ Manpages and info pages
   (setenv "MANROFFOPT" "-c") ; otherwise formatting is messed up
   (set-face-attribute 'Man-overstrike nil :inherit 'font-lock-keyword-face :bold t)
   (set-face-attribute 'Man-underline nil :inherit 'font-lock-string-face :underline t))
+#+end_src
 
+*** Info
+Browse info
+
+#+begin_src emacs-lisp
 (use-package info
   :custom
   (Info-fontify-visited-nodes nil)
   :bind
-  (:map Info-mode-map
+  (:map Info-mode-map ; side buttons for back and forth
         ("<mouse-8>" . Info-history-back)
         ("<mouse-9>" . Info-history-forward)))
 #+end_src
 
-*** Web browsing
+*** Help-mode
+Help!
+
+#+begin_src emacs-lisp
+(use-package help-mode
+  :custom
+  (help-window-select nil)
+  (help-window-keep-selected t)
+  :bind
+  (:map help-mode-map ; side buttons for back and forth
+        ("<mouse-8>" . help-go-back)
+        ("<mouse-9>" . help-go-forward)))
+#+end_src
+
+** Web browsing
 HTML rendering and URL browsing.
 
 #+begin_src emacs-lisp
-;; render html using variable pitch fonts
-(setopt shr-use-fonts t)
-
-(use-package eww
-  :custom
-  (eww-search-prefix "https://lite.duckduckgo.com/lite/?q=")
-  :bind
-  ("C-c m e" . eww))
+(setopt shr-use-fonts t
+        shr-max-image-proportion 0.6
+        shr-cookie-policy nil)
 
 (use-package browse-url
   :custom
   (browse-url-generic-program "xdg-open")
   (browse-url-browser-function #'eww-browse-url)
   (browse-url-secondary-browser-function #'browse-url-xdg-open))
+#+end_src
 
+**** Eww
+The Emacs Web Wowser
+
+#+begin_src emacs-lisp
+(use-package eww
+  :custom
+  (eww-search-prefix "https://lite.duckduckgo.com/lite/?q=")
+  (eww-history-limit 150)
+  :bind
+  ("C-c m e" . eww))
+#+end_src
+
+**** Webjump
+Website query shortcuts
+
+#+begin_src emacs-lisp
 (use-package webjump
   :bind ("C-c m w" . webjump)
   :custom
@@ -1151,26 +1175,14 @@ Process management
                '(custom user pid tree pcpu rss (args comm))))
 #+end_src
 
-** Ediff
-Diff files
-
-#+begin_src emacs-lisp
-(use-package ediff
-  :custom
-  (ediff-keep-variants nil)
-  (ediff-make-buffers-readonly-at-startup t)
-  (ediff-show-clashes-only t)
-  (ediff-split-window-function #'split-window-horizontally)
-  (ediff-window-setup-function #'ediff-setup-windows-plain))
-#+end_src
-
-** Remote editing
+** TRAMP
 Remote editing with TRAMP
 
 #+begin_src emacs-lisp
-(setopt remote-file-name-inhibit-locks t
-        tramp-use-scp-direct-remote-copying t
-        remote-file-name-inhibit-auto-save-visited t)
+(setopt tramp-use-scp-direct-remote-copying t
+        remote-file-name-inhibit-locks t
+        remote-file-name-inhibit-auto-save-visited t
+        remote-file-name-inhibit-auto-save t)
 #+end_src
 
 ** Terminal Tweaks
@@ -1213,6 +1225,44 @@ alias lla ls -lhA
 alias l ls
 
 alias gs magit-status
+#+end_src
+
+** Calendar and Diary
+This is very neat.
+
+#+begin_src emacs-lisp
+(use-package calendar
+  :bind
+  ("<f10>" . calendar)
+  :config
+  (add-hook
+   'diary-mode-hook
+   (lambda ()
+     (font-lock-add-keywords nil
+                             '(("#.*" . font-lock-comment-face)))))
+  :custom
+  (diary-file "~/Notes/diary")
+  (diary-comment-start "#")
+  (calendar-date-style 'european)
+  (calendar-week-start-day 1)
+  (calendar-mark-diary-entries-flag t))
+
+(use-package appt
+  :config
+  (appt-activate 1)
+  (require 'notifications)
+  (defun darius/send-appt-notification (min-until new-time appt-msg)
+    (notifications-notify
+     :title "Upcoming Appointment"
+     :body (format "In %s min: %s" min-until appt-msg)
+     :urgency 'critical
+     :timeout 0))
+  (setq appt-disp-window-function #'darius/send-appt-notification)
+  :custom
+  (appt-display-diary nil)
+  (appt-audible nil)
+  (appt-display-interval 10)
+  (appt-message-warning-time 10))
 #+end_src
 
 ** Auto-saves and backups
@@ -1507,6 +1557,16 @@ Make client frame font size consistent across multiple monitors with different r
    ("d" . textsize-decrement)))
 #+end_src
 
+*** Orderless
+Orderless completion style
+
+#+begin_src emacs-lisp
+(use-package orderless
+  :ensure t
+  :custom
+  (completion-styles '(orderless basic)))
+#+end_src
+
 *** Breadcrumb
 Where am I
 
@@ -1634,7 +1694,6 @@ Pretty
   :vc (:url "https://github.com/dpassen/modus-alabaster" :rev :newest))
 #+end_src
 
-
 *** Marginalia
 Usful info in the minibuffer
 
@@ -1760,18 +1819,23 @@ Very nice git interface
 #+end_src
 
 *** Diff-hl
-Show uncommitted changes in the fringe
+Show uncommitted changes in the fringe.
+See ~diff-hl-mode-map~
 
 #+begin_src emacs-lisp
 (use-package diff-hl
   :ensure t
+  :custom
+  (diff-hl-update-async t)
+  (diff-hl-draw-borders nil)
+  (diff-hl-dired-extra-indicators nil)
+  (diff-hl-disable-on-remote t)
   :hook
-  (magit-post-refresh . diff-hl-magit-post-refresh)
   (prog-mode . diff-hl-mode)
-  :bind
-  ("C-c v n" . diff-hl-next-hunk)
-  ("C-c v p" . diff-hl-previous-hunk)
-  ("C-c v s" . diff-hl-show-hunk))
+  (dired-mode . diff-hl-dired-mode))
+  :config
+  (with-eval-after-load 'magit
+    (add-hook 'magit-post-refresh-hook #'diff-hl-magit-post-refresh))
 #+end_src
 
 ** Consult
@@ -1820,7 +1884,8 @@ Some nice additional completing-read stuff
    ("k"     . consult-global-mark)
    ("i"     . consult-imenu)
    ("I"     . consult-imenu-multi)
-   :map minibuffer-local-map ("M-r" . consult-history)))
+   :map minibuffer-local-map
+   ("M-r" . consult-history)))
 #+end_src
 
 ** PDF Tools
@@ -1837,8 +1902,8 @@ Some improvements over DocView
   (pdf-view-use-scaling t)
   (pdf-view-resize-factor 1.1)
   (pdf-roll-margin-color (face-background 'default))
+  (pdf-view-display-size 'fit-page)
   :config
-  (setq-default pdf-view-display-size 'fit-page)
   (add-to-list 'revert-without-query ".pdf")
   ;; this allows for example the synctex integration from pdf-tools to reuse a buffer
   (add-to-list 'display-buffer-alist
@@ -1871,6 +1936,8 @@ Some improvements over DocView
 Settings for org-mode and related packages
 
 *** org-mode
+Org mode
+
 #+begin_src emacs-lisp
 (use-package org
   :ensure t
@@ -1896,10 +1963,13 @@ Settings for org-mode and related packages
   (org-agenda-span 'week)
   (org-agenda-files '("~/Notes"))
   (org-agenda-include-diary t)
+  (org-agenda-confirm-kill t)
+  (org-agenda-time-leading-zero t)
   (org-todo-keywords '((sequence "TODO(t)" "IN-PROGRESS(p)" "WAITING(w)" "HOLD(h)" "|" "DONE(d)")))
   (org-use-fast-todo-selection 'expert)
   (org-return-follows-link t)
   (org-deadline-warning-days 3)
+  (org-read-date-prefer-future 'time)
   (org-imenu-depth 7)
   (org-pretty-entities t)
   (org-highlight-latex-and-related '(latex))
@@ -1907,9 +1977,12 @@ Settings for org-mode and related packages
   (org-hide-emphasis-markers t)    ; org-appear my beloved (see below)
   (org-M-RET-may-split-line '((default . nil)))
   (org-bookmark-names-plist nil) ; stop org-capture from creating bookmarks
-  (org-src-window-setup 'plain)
-  (org-src-preserve-indentation nil)
+  (org-enforce-todo-dependencies t)
+  (org-enforce-todo-checkbox-dependencies t)
+  (org-src-window-setup 'current-window)
+  (org-src-preserve-indentation t)
   (org-edit-src-content-indentation 0)
+  (org-edit-src-persistent-message nil)
   (org-babel-load-languages '((emacs-lisp . t)
                               (python . t)
                               (haskell . t)))
@@ -1920,14 +1993,14 @@ Settings for org-mode and related packages
   ;; remove some decoration from links
   (set-face-attribute 'org-cite-key nil :underline nil)
   (set-face-attribute 'org-cite nil :underline nil :inherit 'shadow)
-  :bind
-  ("C-c o a" . org-agenda)
-  ("C-c o A" . consult-org-agenda)
-  ("C-c o t" . orgtbl-mode)
-  ("C-c o c" . org-capture)
-  (:map org-mode-map
-        ("C-c o s" . org-store-link)
-        ("C-c o h" . consult-org-heading)))
+  :bind (
+         ("C-c o a" . org-agenda)
+         ("C-c o A" . consult-org-agenda)
+         ("C-c o t" . orgtbl-mode)
+         ("C-c o c" . org-capture)
+         :map org-mode-map
+         ("C-c o s" . org-store-link)
+         ("C-c o h" . consult-org-heading)))
 
 (defun darius/org-agenda-fullscreen ()
   "Open the org agenda and make it the only window in this frame.
@@ -2029,8 +2102,8 @@ RSS feeds
   :custom
   (elfeed-enclosure-default-dir user-emacs-directory)
   (elfeed-db-directory (locate-user-emacs-file "elfeed/"))
+  (elfeed-search-filter "@6-months")
   :config
-  (setq-default elfeed-search-filter "@6-months")
   (defconst darius/elfeed-feeds-file (locate-user-emacs-file "elfeed-feeds.eld"))
   (defun darius/reload-elfeed-feeds ()
     (interactive)
@@ -2134,8 +2207,8 @@ Makes corfu also complete filenames and consider dabbrev
   (add-hook 'completion-at-point-functions #'cape-elisp-block))
 #+end_src
 
-** Minibuffer completion
-Set up vertico and orderless
+** Vertico
+Minibuffer completion UI
 
 #+begin_src emacs-lisp
 (use-package vertico
@@ -2152,20 +2225,14 @@ Set up vertico and orderless
   :bind (:map vertico-map
               ("M-DEL" . vertico-directory-delete-word))
   :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
-
-(use-package orderless
-  :ensure t
-  :custom
-  (completion-styles '(orderless basic)))
 #+end_src
 
 ** Ghostel
-Works better than EAT for me
+Terminal emulator
 
 #+begin_src emacs-lisp
 (use-package ghostel
   :ensure t
-  :after consult
   :config
   (add-to-list 'project-switch-commands '(ghostel-project "Terminal" "t") t)
   (defun darius/ghostel-project-other-window ()
@@ -2183,22 +2250,25 @@ If called with prefix arg, spawn a terminal window in the current directory."
   (defun darius/hide-nbsp ()
     "Hide the underline for non-breaking-spaces in the current buffer, this makes the output of for example `tree` look better"
     (setq-local nobreak-char-display nil))
+  :hook (ghostel-mode . darius/hide-nbsp)
   :bind (
          :map goto-map
          ("t" . darius/spawn-ghostel-or-terminal-here)
          :map project-prefix-map
          ("t" . darius/ghostel-project-other-window)
          :map ghostel-semi-char-mode-map
-         ("M-o" . other-window))
-  :hook (ghostel-mode . darius/hide-nbsp))
+         ("M-o" . other-window)))
 
 (use-package ghostel-eshell
+  :after ghostel
   :hook (eshell-load . ghostel-eshell-visual-command-mode))
 
 (use-package ghostel-compile
+  :after ghostel
   :hook (after-init . ghostel-compile-global-mode))
 
 (use-package ghostel-comint
+  :after ghostel
   :hook (after-init . ghostel-comint-global-mode))
 #+end_src
 
@@ -2269,6 +2339,41 @@ Notes database
   ("C-c n j" . vulpea-journal))
 #+end_src
 
+** Citar
+Work with citations
+
+#+begin_src emacs-lisp
+(use-package citar
+  :ensure t
+  :config
+  (defun darius/open-in-zotero (citekey)
+    "Open a reference item in Zotero."
+    (interactive (list (citar-select-ref)))
+    (citar-open-entry-in-zotero citekey))
+  :custom
+  (citar-file-open-functions '(("html" . citar-file-open-external) ("pdf" . citar-file-open-external) (t . find-file)))
+  (org-cite-insert-processor 'citar)
+  (org-cite-follow-processor 'citar)
+  (org-cite-activate-processor 'citar)
+  (citar-bibliography "~/Documents/library.bib")
+  :hook
+  (LaTeX-mode . citar-capf-setup)
+  (org-mode . citar-capf-setup)
+  :bind
+  ("C-c z" . 'citar-insert-citation)
+  (:map org-mode-map :package org ("C-c b" . #'org-cite-insert)))
+
+(use-package citar-embark
+  :ensure t
+  :after citar embark
+  :custom (citar-at-point-function #'embark-act)
+  :config
+  (add-to-list 'mode-line-collapse-minor-modes 'citar-embark-mode)
+  (citar-embark-mode)
+  (define-key citar-embark-map (kbd "z") #'citar-open-entry-in-zotero)
+  (define-key citar-citation-map (kbd "z") #'citar-open-entry-in-zotero))
+#+end_src
+
 * Languages
 Programming language specific stuff
 
@@ -2296,6 +2401,26 @@ Language server stuff
   (eglot-events-buffer-config '(:size 0 :format short))
   (jsonrpc-event-hook nil)
   :config
+  (darius/setup-eglot-keys) ; see below
+  (fset #'jsonrpc--log-event #'ignore)
+  (add-to-list 'eglot-server-programs
+               '((c-mode c++-mode c-ts-mode c++-ts-mode)
+                 . ("clangd"
+                    "-j=16"
+                    "--log=error"
+                    "--malloc-trim"
+                    "--background-index"
+                    "--clang-tidy"
+                    "--completion-style=detailed"
+                    "--pch-storage=memory")))
+  :hook (LaTeX-mode . eglot-ensure))
+#+end_src
+
+*** Keymap setup
+Gets its own section because it's so long
+
+#+begin_src emacs-lisp
+(defun darius/setup-eglot-keys ()
   (bind-keys :map eglot-mode-map
              :prefix "C-c e"
              :prefix-docstring "Keymap for eglot commands"
@@ -2326,19 +2451,7 @@ Language server stuff
              :prefix-docstring "Bindings to show call/type hierarchy via eglot"
              :prefix-map darius/eglot-show-map
              ("c" . eglot-show-call-hierarchy)
-             ("t" . eglot-show-type-hierarchy))
-  (fset #'jsonrpc--log-event #'ignore)
-  (add-to-list 'eglot-server-programs
-               '((c-mode c++-mode c-ts-mode c++-ts-mode)
-                 . ("clangd"
-                    "-j=16"
-                    "--log=error"
-                    "--malloc-trim"
-                    "--background-index"
-                    "--clang-tidy"
-                    "--completion-style=detailed"
-                    "--pch-storage=memory")))
-  :hook (LaTeX-mode . eglot-ensure))
+             ("t" . eglot-show-type-hierarchy)))
 #+end_src
 
 ** C and C++
@@ -2577,7 +2690,7 @@ Shaders
   :mode "\\.nix\\'")
 #+end_src
 
-** LaTeX and Citar
+** LaTeX
 Work with citations, also requires auctex.
 ~citar-open-entry-in-zotero~ relies on the BetterBibTex plugin for Zotero
 
@@ -2604,7 +2717,12 @@ Work with citations, also requires auctex.
   :bind (:map LaTeX-mode-map
               ("C-c C-r" . reftex-reference)
               ("C-M-i" . complete-symbol)))
+#+end_src
 
+*** Reftex
+References in documents
+
+#+begin_src emacs-lisp
 (use-package reftex
   :after tex
   :custom
@@ -2613,37 +2731,10 @@ Work with citations, also requires auctex.
   :config
   (add-to-list 'reftex-ref-style-default-list "Cleveref")
   (add-to-list 'reftex-ref-style-default-list "Hyperref"))
+#+end_src
 
-(use-package citar
-  :ensure t
-  :config
-  (defun darius/open-in-zotero (citekey)
-    "Open a reference item in Zotero."
-    (interactive (list (citar-select-ref)))
-    (citar-open-entry-in-zotero citekey))
-  :custom
-  (citar-file-open-functions '(("html" . citar-file-open-external) ("pdf" . citar-file-open-external) (t . find-file)))
-  (org-cite-insert-processor 'citar)
-  (org-cite-follow-processor 'citar)
-  (org-cite-activate-processor 'citar)
-  (citar-bibliography "~/Documents/library.bib")
-  :hook
-  (LaTeX-mode . citar-capf-setup)
-  (org-mode . citar-capf-setup)
-  :bind
-  ("C-c z" . 'citar-insert-citation)
-  (:map org-mode-map :package org ("C-c b" . #'org-cite-insert)))
-
-(use-package citar-embark
-  :ensure t
-  :after citar embark
-  :custom (citar-at-point-function #'embark-act)
-  :config
-  (add-to-list 'mode-line-collapse-minor-modes 'citar-embark-mode)
-  (citar-embark-mode)
-  (define-key citar-embark-map (kbd "z") #'citar-open-entry-in-zotero)
-  (define-key citar-citation-map (kbd "z") #'citar-open-entry-in-zotero))
-
+*** Cdlatex
+#+begin_src emacs-lisp
 (use-package cdlatex
   :ensure t
   :custom (cdlatex-takeover-parenthesis nil)
