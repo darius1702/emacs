@@ -407,7 +407,7 @@ Change default UI settings
 
   (frame-title-format '("%b"))      ; current buffer name
   (frame-resize-pixelwise t)
-  (frame-inhibit-implied-resize t)
+  (frame-inhibit-implied-resize 'force)
   (window-resize-pixelwise t)
   (window-combination-resize t)
 
@@ -1036,6 +1036,8 @@ Inline errors/warnigns
   :custom
   (flymake-wrap-around nil)
   (flymake-show-diagnostics-at-end-of-line t)
+  (flymake-mode-line-lighter nil)
+  (flymake-indicator-type 'margins)
   :bind
   ("M-n" . flymake-goto-next-error)
   ("M-p" . flymake-goto-prev-error))
@@ -1830,10 +1832,16 @@ See ~diff-hl-mode-map~
   (diff-hl-draw-borders nil)
   (diff-hl-dired-extra-indicators nil)
   (diff-hl-disable-on-remote t)
+  (diff-hl-margin-symbols-alist '((insert . " ")
+                                  (delete . " ")
+                                  (change . " ")
+                                  (unknown . "?")
+                                  (ignored . "i")))
   :hook
   (prog-mode . diff-hl-mode)
   (dired-mode . diff-hl-dired-mode))
   :config
+  (diff-hl-margin-mode 1)
   (with-eval-after-load 'magit
     (add-hook 'magit-post-refresh-hook #'diff-hl-magit-post-refresh))
 #+end_src
@@ -2395,6 +2403,7 @@ Language server stuff
 (use-package eglot
   :custom
   ;; (eglot-ignored-server-capabilities '(:documentHighlightProvider))
+  (eglot-menu-string "λ")
   (eglot-documentation-renderer 'markdown-ts-view-mode)
   (eglot-autoshutdown t)
   (eglot-extend-to-xref t)
