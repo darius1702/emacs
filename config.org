@@ -214,7 +214,7 @@ The ~table~ thing makes completing-read keep the original order of the list pass
     (find-file selection)))
 
 (bind-keys :map goto-map
-           ("z" . #'darius/zoxide-find-file))
+           ("z" . darius/zoxide-find-file))
 #+end_src
 
 *** Maybe wrap with char
@@ -399,6 +399,9 @@ Change default UI settings
   (prettify-special-glyphs-mode 1)
   :hook
   ((prog-mode text-mode) . visual-line-mode)
+  :bind
+  ("C-c h l" . hl-line-mode)
+  ("C-c h n" . display-line-numbers-mode)
   :custom
   (confirm-kill-emacs 'yes-or-no-p) ; ask before exiting
   (use-short-answers t)
@@ -463,6 +466,7 @@ Display whitespace in buffer
 
 #+begin_src emacs-lisp
 (use-package whitespace
+  :bind ("C-c h w" . whitespace-mode)
   :custom
   (whitespace-line-column nil) ; use `fill-column'
   (whitespace-style '(face trailing tabs indentatinon
@@ -1453,7 +1457,7 @@ Set timers
                                   tmr-acknowledge-minibuffer))
   :bind
   ("C-c t t" . tmr)
-  ("C-c t l" . tmr-list-timers)
+  ("C-c t l" . tmr-tabulated-view)
   :config
   (tmr-mode-line-mode 1))
 #+end_src
@@ -1534,8 +1538,8 @@ Substitute things in buffer or defun.
   (substitute-ignore-narrowing nil)
   :config
   (add-hook 'substitute-post-replace-functions #'substitute-report-operation)
-  ;; if I do this in a :bind it doesn't load properly for some reason
-  (define-key global-map (kbd "C-c s") #'substitute-prefix-map))
+  :bind-keymap
+  ("C-c s" . substitute-prefix-map))
 #+end_src
 
 *** Textsize
@@ -1550,10 +1554,10 @@ Make client frame font size consistent across multiple monitors with different r
   :custom (textsize-default-points 14)
   :config
   (bind-keys ; global map
-   :prefix "<f11>"
+   :prefix "C-c h f"
    :prefix-docstring "Textsize actions map"
    :prefix-map darius/textsize-mode-map
-   ("<f11>" . textsize-fix-frame)
+   ("f" . textsize-fix-frame)
    ("r" . textsize-reset)
    ("i" . textsize-increment)
    ("d" . textsize-decrement)))
@@ -1575,6 +1579,7 @@ Where am I
 #+begin_src emacs-lisp
 (use-package breadcrumb
   :ensure t
+  :bind ("C-c h b" . breadcrumb-mode)
   :hook (prog-mode . breadcrumb-local-mode))
 #+end_src
 
@@ -1739,7 +1744,7 @@ Eldoc in a popup frame
   (eldoc-box-clear-with-C-g t)
   (eldoc-box-lighter nil)
   ;; override `view-hello-file'
-  :bind ("C-h h" . #'eldoc-box-help-at-point))
+  :bind ("C-h h" . eldoc-box-help-at-point))
 #+end_src
 
 *** Shr tag pre highlight
@@ -1837,13 +1842,15 @@ See ~diff-hl-mode-map~
                                   (change . " ")
                                   (unknown . "?")
                                   (ignored . "i")))
+  :bind
+  ("C-c h d" . diff-hl-mode)
   :hook
   (prog-mode . diff-hl-mode)
-  (dired-mode . diff-hl-dired-mode))
+  (dired-mode . diff-hl-dired-mode)
   :config
   (diff-hl-margin-mode 1)
   (with-eval-after-load 'magit
-    (add-hook 'magit-post-refresh-hook #'diff-hl-magit-post-refresh))
+    (add-hook 'magit-post-refresh-hook #'diff-hl-magit-post-refresh)))
 #+end_src
 
 ** Consult
@@ -1856,6 +1863,7 @@ Some nice additional completing-read stuff
   :custom
   (xref-show-definitions-function #'consult-xref)
   (xref-show-xrefs-function #'consult-xref)
+  (consult-preview-key "C-o")
   :config
   (defun darius/consult-ripgrep-hidden ()
     "Call rg with additional --hidden flag"
@@ -2369,7 +2377,7 @@ Work with citations
   (org-mode . citar-capf-setup)
   :bind
   ("C-c z" . 'citar-insert-citation)
-  (:map org-mode-map :package org ("C-c b" . #'org-cite-insert)))
+  (:map org-mode-map :package org ("C-c b" . org-cite-insert)))
 
 (use-package citar-embark
   :ensure t
@@ -2378,8 +2386,8 @@ Work with citations
   :config
   (add-to-list 'mode-line-collapse-minor-modes 'citar-embark-mode)
   (citar-embark-mode)
-  (define-key citar-embark-map (kbd "z") #'citar-open-entry-in-zotero)
-  (define-key citar-citation-map (kbd "z") #'citar-open-entry-in-zotero))
+  (bind-key "z" #'citar-open-entry-in-zotero 'citar-embark-map)
+  (bind-key "z" #'citar-open-entry-in-zotero 'citar-citation-map))
 #+end_src
 
 * Languages
