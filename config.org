@@ -45,29 +45,10 @@ And set lexical-bindings for early-init.
 (setopt load-prefer-newer t)
 #+end_src
 
-** No startup message spam
-The docs say you can ~(setq inhibit-startup-echo-area-message "$username")~ but that doesn't work for me.
-
-#+begin_src emacs-lisp :tangle early-init.el
-(setopt inhibit-startup-message t
-        initial-scratch-message nil
-        server-client-instructions nil)
-#+end_src
-
-** Faster startup
+** Faster startup and garbage collection
 This makes emacs start a little faster, or maybe I am just imagining things.
-
-#+begin_src emacs-lisp :tangle early-init.el
-(defvar darius/file-name-handler-alist file-name-handler-alist)
-(setopt file-name-handler-alist nil)
-
-(add-hook 'emacs-startup-hook
-          (lambda ()
-            (setopt file-name-handler-alist darius/file-name-handler-alist)))
-#+end_src
-
-** Garbage collection
 I copied this from somewhere on the internet.
+
 
 #+begin_src emacs-lisp :tangle early-init.el
 ;; old solution, but keeping it around just in case
@@ -82,6 +63,13 @@ I copied this from somewhere on the internet.
 (add-hook 'emacs-startup-hook (lambda ()
                                 (setopt gc-cons-threshold (* 1024 1024 2) ;; 2mb
                                         gc-cons-percentage 0.2)))
+
+(defvar darius/file-name-handler-alist file-name-handler-alist)
+(setopt file-name-handler-alist nil)
+
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (setopt file-name-handler-alist darius/file-name-handler-alist)))
 #+end_src
 
 ** Default clutter
@@ -89,6 +77,10 @@ Adjust some default settings,
 I don't know why I have this in the early-init but I moved it here at some point.
 
 #+begin_src emacs-lisp :tangle early-init.el
+(setopt inhibit-startup-message t
+        initial-scratch-message nil
+        server-client-instructions nil)
+
 (tool-bar-mode -1)
 (menu-bar-mode -1)
 (scroll-bar-mode -1)
@@ -112,9 +104,8 @@ Lexical bindings and set+load custom file
 Tweaks that don't fit the other categories
 
 #+begin_src emacs-lisp
-;; make read-only buffers use `view-mode'
-(setopt view-read-only t
-        view-inhibit-help-message t)
+;; ask before applying ill-typed `setopt-local'
+(setopt setopt-local-type-mismatch t)
 
 ;; version control
 (setopt vc-handled-backends '(Git)
@@ -394,8 +385,8 @@ Change default UI settings
 #+begin_src emacs-lisp
 (use-package emacs
   :config
-  (fringe-mode '(nil . 0)) ; 8px right, 0px left
-  (global-visual-wrap-prefix-mode -1)  ; this makes org headings look weird
+  (fringe-mode '(nil . 0))            ; 8px right, 0px left
+  (global-visual-wrap-prefix-mode -1) ; this makes org headings look weird
   (prettify-special-glyphs-mode 1)
   :hook
   ((prog-mode text-mode) . visual-line-mode)
@@ -403,12 +394,12 @@ Change default UI settings
   ("C-c h l" . hl-line-mode)
   ("C-c h n" . display-line-numbers-mode)
   :custom
-  (confirm-kill-emacs 'yes-or-no-p) ; ask before exiting
+  (confirm-kill-emacs 'yes-or-no-p)   ; ask before exiting
   (use-short-answers t)
   (use-dialog-box nil)
   (custom-unlispify-tag-names nil)
 
-  (frame-title-format '("%b"))      ; current buffer name
+  (frame-title-format '("%b"))        ; current buffer name
   (frame-resize-pixelwise t)
   (frame-inhibit-implied-resize 'force)
   (window-resize-pixelwise t)
@@ -420,11 +411,14 @@ Change default UI settings
 
   (scroll-preserve-screen-position 'always)
   (scroll-conservatively 101)
-  (scroll-margin 0)                 ; because of ultra-scroll
+  (scroll-margin 0)                   ; because of ultra-scroll
   (next-screen-context-lines 10)
 
-  (text-scale-mode-step 1.05)       ; zoom text in smaller increments
-  (highlight-nonselected-windows t) ; always show region
+  (view-read-only t)                  ; make read-only buffers use `view-mode'
+  (view-inhibit-help-message t)
+
+  (text-scale-mode-step 1.05)         ; zoom text in smaller increments
+  (highlight-nonselected-windows t)   ; always show region
   (display-fill-column-indicator-warning t)
   (redisplay-skip-fontification-on-input t)
 
@@ -1272,7 +1266,7 @@ This is very neat.
 #+end_src
 
 ** Auto-saves and backups
-Disble all annoying auto-generated files and make ~custom-set-variables~ go to their own file.
+Make backup files and autosaves go in ~./emacs.d/tmp~
 Also disable auto-save messages
 
 #+begin_src emacs-lisp
@@ -1281,7 +1275,8 @@ Also disable auto-save messages
         auto-save-file-name-transforms `((".*" ,(locate-user-emacs-file "tmp/auto-saves/") t))
         auto-save-no-message t
         backup-directory-alist `(("." . ,(locate-user-emacs-file "tmp/backups/")))
-        backup-by-copying t)
+        backup-by-copying t
+        vc-make-backup-files t) ; also backup files checked into vc
 
 ;; Enable when lockfiles become annoying
 ;; (setopt create-lockfiles nil)
@@ -1579,7 +1574,7 @@ Where am I
 #+begin_src emacs-lisp
 (use-package breadcrumb
   :ensure t
-  :bind ("C-c h b" . breadcrumb-mode)
+  :bind ("C-c h b" . breadcrumb-local-mode)
   :hook (prog-mode . breadcrumb-local-mode))
 #+end_src
 
@@ -1793,7 +1788,7 @@ Font presets
       :italic-family nil)))
   :config
   (fontaine-mode 1)
-  (defvar darius/fontaine-loaded nil)
+  (defvar darius/fontaine-loaded nil "Have we loaded fontaine yet?")
   (defun darius/load-fontaine ()
     (when (display-graphic-p)
       (fontaine-set-preset (or (fontaine-restore-latest-preset) 'regular))))
@@ -2675,18 +2670,20 @@ Support for virtual environments
 #+end_src
 
 ** Markdown
-Syntax highlighting and other stuff for markdown documents.
-GFM mode seems to work better than markdown-ts-mode for me.
+~gfm-mode~ still looks a little bit better than builtin ~markdown-ts-mode~ imo.
 
 #+begin_src emacs-lisp
 (use-package markdown-ts-mode
-  :ensure nil)
+  :custom
+  (markdown-ts-hide-markup t)
+  (markdown-ts-image-max-width 500) ; in pixels
+  (markdown-ts-in-table-mode-lighter "[t]")
+  (markdown-ts-code-block-in-context-mode-lighter "[c]"))
 
 (use-package markdown-mode
   :ensure t
   :custom (markdown-fontify-code-blocks-natively t)
   :mode
-  ("README\\.md\\'" . gfm-mode)
   ("\\.md\\'" . gfm-mode))
 #+end_src
 
