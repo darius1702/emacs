@@ -113,6 +113,7 @@ Tweaks that don't fit the other categories
 
 ;; according to someone else's config this does something good
 (setopt pgtk-wait-for-event-timeout 0.001
+        pgtk-use-im-context-on-new-connection nil ; C-S-u hangs for some reason
         read-process-output-max (* 4 1024 1024))
 #+end_src
 
@@ -379,6 +380,48 @@ Spawn a terminal (foot) in the current directory
       (call-process term-path nil 0 nil "-D" (expand-file-name default-directory))))
 #+end_src
 
+*** Modus themes to foot palette
+Dump current modus themes terminal color definitions to a foot compatible ~conf~
+
+#+begin_src emacs-lisp
+(require 'cl-lib)
+
+(defun darius/modus-to-foot-palette ()
+  "Export the current modus-based theme to a foot color palette.
+Defaults to [colors-dark] for now"
+  (insert (format "# -*- mode: conf -*-\n# Theme: %s\n\n[colors-dark]\n" (modus-themes-get-current-theme)))
+
+  (modus-themes-with-colors
+    ;; remove # at start of the color
+    (cl-flet ((strip (c) (substring c 1)))
+
+      (insert
+       (format "foreground=%s\n" (strip fg-main))
+       (format "background=%s\n\n" (strip bg-main))
+       (format "cursor=%s %s\n\n" (strip bg-alt) (strip fg-main))
+       (format "selection-foreground=%s\n" (strip fg-main))
+       (format "selection-background=%s\n\n" (strip bg-region))
+       (format "urls=%s\n\n" (strip cyan)))
+
+      (dolist (color `(("regular0" . ,fg-term-black)
+                       ("regular1" . ,fg-term-red)
+                       ("regular2" . ,fg-term-green)
+                       ("regular3" . ,fg-term-yellow)
+                       ("regular4" . ,fg-term-blue)
+                       ("regular5" . ,fg-term-magenta)
+                       ("regular6" . ,fg-term-cyan)
+                       ("regular7" . ,fg-term-white)
+                       ("bright0" . ,fg-term-black-bright)
+                       ("bright1" . ,fg-term-red-bright)
+                       ("bright2" . ,fg-term-green-bright)
+                       ("bright3" . ,fg-term-yellow-bright)
+                       ("bright4" . ,fg-term-blue-bright)
+                       ("bright5" . ,fg-term-magenta-bright)
+                       ("bright6" . ,fg-term-cyan-bright)
+                       ("bright7" . ,fg-term-white-bright)))
+        (insert (format "%s=%s\n" (car color) (strip (cdr color))))))))
+#+end_src
+
 ** User interface
 Change default UI settings
 
@@ -632,6 +675,8 @@ Changes to default editing behavior
   (mouse-yank-at-point t)
 
   (tab-always-indent t)
+
+  (default-input-method 'TeX)
 
   (sentence-end-double-space nil)
   (sentence-end "[.\",;!?*:'] ")
