@@ -92,12 +92,15 @@ I don't know why I have this in the early-init but I moved it here at some point
 
 * Builtin stuff
 ** Setup
-Lexical bindings and set+load custom file
+Lexical bindings and set+load custom file and ~./external~.
+
 
 #+begin_src emacs-lisp
 ;; -*- lexical-binding: t -*-
 (setopt custom-file (locate-user-emacs-file "custom.el"))
 (load custom-file :noerror)
+
+(add-to-list 'load-path (locate-user-emacs-file "external/"))
 #+end_src
 
 ** Misc
@@ -456,6 +459,7 @@ Change default UI settings
   (scroll-conservatively 101)
   (scroll-margin 0)                   ; because of ultra-scroll
   (next-screen-context-lines 10)
+  (next-error-recenter '(4))
 
   (view-read-only t)                  ; make read-only buffers use `view-mode'
   (view-inhibit-help-message t)
@@ -843,7 +847,7 @@ File browsing on crack
   :custom
   (dired-recursive-deletes 'top) ; this is the default but I'm paranoid
   ;; (dired-dwim-target t) ; press M-n to select other dired window as target
-  (dired-listing-switches "-alh")
+  (dired-listing-switches "-lah")
   (dired-kill-when-opening-new-dired-buffer nil)
   (dired-auto-revert-buffer t)
   (dired-do-revert-buffer t)
@@ -941,6 +945,26 @@ Diff files
   (ediff-show-clashes-only t)
   (ediff-split-window-function #'split-window-horizontally)
   (ediff-window-setup-function #'ediff-setup-windows-plain))
+#+end_src
+
+*** COMMENT Speedbar
+Side window file browser and more
+Disabled because the UX is still trash
+
+#+begin_src emacs-lisp
+(use-package speedbar
+  :custom
+  (speedbar-prefer-window t)
+  (speedbar-use-images nil)
+  (speedbar-track-mouse-flag t)
+  (speedbar-hide-button-brackets-flag t)
+  :bind (
+         :map search-map
+         ("s" . speedbar-get-focus)
+         :map speedbar-mode-map
+         ("<TAB>" . speedbar-toggle-line-expansion)
+         ("q" . kill-buffer-and-window)
+         ("Q" . nil)))
 #+end_src
 
 ** Minibuffer things
@@ -1351,14 +1375,12 @@ IRC in emacs, see also [[*ERC enhancements][ERC enhancements]]
 
 * External packages
 ** Setup
-Load lisp files from ~[user-emacs-directory]/external~.
 Configure ~package.el~ and ~use-package~
 
 #+begin_src emacs-lisp
-(add-to-list 'load-path (locate-user-emacs-file "external/"))
-
 (use-package package
   :custom
+  (package-install-upgrade-built-in t)
   (package-review-diff-command '("git" "diff" "--no-index" "--color=never" "--diff-filter=d"))
   (package-native-compile t) ; this will just be ignored if native-comp isn't available
   (package-archives
@@ -2135,20 +2157,6 @@ Make the background of org blocks wrap properly
   :hook (org-mode . org-block-wrap-mode))
 #+end_src
 
-** Neotree
-File tree
-
-#+begin_src emacs-lisp
-(use-package neotree
-  :ensure t
-  :custom
-  (neo-theme (if (display-graphic-p) 'nerd-icons 'ascii))
-  :bind
-  (:map search-map
-        ("s" . neotree)
-        ("S" . neotree-find)))
-#+end_src
-
 ** Elfeed
 RSS feeds
 
@@ -2452,6 +2460,8 @@ Language server stuff
   :custom
   ;; (eglot-ignored-server-capabilities '(:documentHighlightProvider))
   (eglot-menu-string "λ")
+  (eglot-code-action-indicator "!")
+  (eglot-code-action-indications '(mode-line eldoc-hint left-fringe))
   (eglot-documentation-renderer 'markdown-ts-view-mode)
   (eglot-autoshutdown t)
   (eglot-extend-to-xref t)
