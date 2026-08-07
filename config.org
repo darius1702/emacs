@@ -64,12 +64,12 @@ I copied this from somewhere on the internet.
                                 (setopt gc-cons-threshold (* 1024 1024 2) ;; 2mb
                                         gc-cons-percentage 0.2)))
 
-(defvar darius/file-name-handler-alist file-name-handler-alist)
+(defvar my/file-name-handler-alist file-name-handler-alist)
 (setopt file-name-handler-alist nil)
 
 (add-hook 'emacs-startup-hook
           (lambda ()
-            (setopt file-name-handler-alist darius/file-name-handler-alist)))
+            (setopt file-name-handler-alist my/file-name-handler-alist)))
 #+end_src
 
 ** Default clutter
@@ -118,49 +118,17 @@ Tweaks that don't fit the other categories
 (setopt pgtk-wait-for-event-timeout 0.001
         pgtk-use-im-context-on-new-connection nil ; C-S-u hangs for some reason
         read-process-output-max (* 4 1024 1024))
-#+end_src
 
-** Keybindings
-I paid for the whole keyboard so I'm gonna use the whole keyboard
-
-#+begin_src emacs-lisp
+;; unbind some defaults
 (dolist (bad-key '("C-x C-c" ; quit emacs
                    "C-x C-z" ; suspend emacs
                    "C-z"     ; suspend emacs (other binding)
                    "C-x m"   ; compose mail
                    "C-h g")) ; gnu website
   (unbind-key bad-key global-map))
-
-(defun darius/scroll-down-command (arg)
-  "Scroll window down by half, or ARG if present"
-  (interactive "P")
-  (let ((amount (if arg
-                    (prefix-numeric-value arg)
-                  (/ (window-body-height) 2))))
-    (scroll-down-command amount)))
-
-(defun darius/scroll-up-command (arg)
-  "Scroll window up by half, or ARG if present"
-  (interactive "P")
-  (let ((amount (if arg
-                    (prefix-numeric-value arg)
-                  (/ (window-body-height) 2))))
-    (scroll-up-command amount)))
-
-(bind-keys
- ("M-o" . other-window)
- ("M-O" . other-window-backward)
- ("C-M-S-o" . window-layout-transpose)
- ([remap scroll-up-command] . darius/scroll-up-command)
- ([remap scroll-down-command] . darius/scroll-down-command))
-
-;; C-x 8
-(bind-keys :map iso-transl-ctl-x-8-map
-           ("pp" . "π")
-           ("pP" . "Π"))
 #+end_src
 
-*** Mouse and Trackpad
+** Mouse and Trackpad
 Make right click behave like left click and make the middle button only paste with a prefix.
 Also I keep accidentally triggering pinch-to-zoom and ctrl+mousewheel on my laptop
 
@@ -176,13 +144,13 @@ Also I keep accidentally triggering pinch-to-zoom and ctrl+mousewheel on my lapt
                      "C-M-<mouse-5>"
                      "<pinch>"))
     (unbind-key bad-key global-map))
-  (defun darius/copy-with-arg (arg)
+  (defun my/copy-with-arg (arg)
     "Insert text from the primary clipboard only with prefix argument"
     (interactive "P")
     (when arg
       (mouse-yank-primary)))
   :bind
-  ("<mouse-2>" . darius/copy-with-arg)
+  ("<mouse-2>" . my/copy-with-arg)
   ("<mouse-3>" . mouse-set-point)
   ("<down-mouse-3>" . mouse-drag-region)
   ("<drag-mouse-3>" . mouse-set-region))
@@ -196,7 +164,7 @@ Querying the zoxide database for all entries returns them in a sorted order, so 
 The ~table~ thing makes completing-read keep the original order of the list passed to it
 
 #+begin_src emacs-lisp
-(defun darius/zoxide-find-file ()
+(defun my/zoxide-find-file ()
   "Find a file from your zoxide database"
   (interactive)
   (let* ((db (shell-command-to-string "zoxide query -l"))
@@ -209,7 +177,7 @@ The ~table~ thing makes completing-read keep the original order of the list pass
     (find-file selection)))
 
 (bind-keys :map goto-map
-           ("z" . darius/zoxide-find-file))
+           ("z" . my/zoxide-find-file))
 #+end_src
 
 *** Maybe wrap with char
@@ -218,7 +186,7 @@ Adding chars to ~insert-pair-alist~ makes ~delete-pair~ work with them.
 Don't add them to ~electric-pair-pairs~ because I want to insert them only when the region is active.
 
 #+begin_src emacs-lisp
-(defun darius/maybe-wrap-with-char (char)
+(defun my/maybe-wrap-with-char (char)
   "If region is active, wrap it with CHAR, else insert CHAR.
 If called interactively, prompt for a character to use."
   (interactive "cChar: ")
@@ -230,7 +198,7 @@ If called interactively, prompt for a character to use."
       (goto-char beg)))
   (insert char))
 
-(defun darius/maybe-wrap-setup-keys (keymap keys)
+(defun my/maybe-wrap-setup-keys (keymap keys)
   "Bind each character in string KEYS to maybe wrap in KEYMAP
 and add it to `insert-pair-alist'"
   (dolist (key (string-to-list keys))
@@ -238,20 +206,20 @@ and add it to `insert-pair-alist'"
     (keymap-set keymap (char-to-string key)
                 (lambda ()
                   (interactive)
-                  (darius/maybe-wrap-with-char key)))))
+                  (my/maybe-wrap-with-char key)))))
 
 ;; wrap chars from `org-emphasis-alist' in org-mode, usually "*/_=+~"
 (with-eval-after-load 'org
-  (defun darius/maybe-wrap-org-setup ()
+  (defun my/maybe-wrap-org-setup ()
     (let ((keys (mapconcat #'car org-emphasis-alist)))
-      (darius/maybe-wrap-setup-keys org-mode-map keys)))
-  (add-hook 'org-mode-hook #'darius/maybe-wrap-org-setup))
+      (my/maybe-wrap-setup-keys org-mode-map keys)))
+  (add-hook 'org-mode-hook #'my/maybe-wrap-org-setup))
 
 ;; markdown
 (with-eval-after-load 'markdown-mode
   (add-hook 'markdown-mode-hook
             (lambda ()
-              (darius/maybe-wrap-setup-keys markdown-mode-map "*_"))))
+              (my/maybe-wrap-setup-keys markdown-mode-map "*_"))))
 #+end_src
 
 *** Swap semicolon and dash
@@ -259,24 +227,24 @@ In lisp-based modes and the minibuffer, I type ~-~ a lot more than ~;~.
 Most use-cases for semincolons are covered by ~comment-line~ and ~comment-dwim~
 
 #+begin_src emacs-lisp
-(defun darius/insert-dash-or-semicolon (arg)
+(defun my/insert-dash-or-semicolon (arg)
   (interactive "P")
   (if (not arg)
       (insert "-")
     (insert ";")))
 
-(define-minor-mode darius/dash-semicolon-minor-mode
+(define-minor-mode my/dash-semicolon-minor-mode
   "When pressing the ; key, insert a - unless called with a prefix argument"
   :global nil
   :initial-value nil
   :lighter " :3"
-  :keymap '((";" . darius/insert-dash-or-semicolon)))
+  :keymap '((";" . my/insert-dash-or-semicolon)))
 
 (dolist (mode '(minibuffer-setup-hook
                 emacs-lisp-mode-hook
                 ielm-mode-hook
                 org-mode-hook))
-  (add-hook mode #'darius/dash-semicolon-minor-mode))
+  (add-hook mode #'my/dash-semicolon-minor-mode))
 #+end_src
 
 *** Switch buffer or delete window
@@ -284,7 +252,7 @@ Use ~C-;~ to bring up a buffer prompt or delete the other windows with prefix ar
 With two prefixes call ~winner-undo~
 
 #+begin_src emacs-lisp
-(defun darius/switch-buffer-or-delete-other-windows (arg)
+(defun my/switch-buffer-or-delete-other-windows (arg)
   "Call `switch-to-buffer' or `delete-other-windows'/`tab-bar-history-back' if called with one/two C-u presses"
   (interactive "P")
   (cond
@@ -295,20 +263,20 @@ With two prefixes call ~winner-undo~
    (t ; otherwise
     (call-interactively #'switch-to-buffer))))
 
-(bind-key "C-;" #'darius/switch-buffer-or-delete-other-windows)
+(bind-key "C-;" #'my/switch-buffer-or-delete-other-windows)
 #+end_src
 
 *** Move lines up/down
 Shift lines up and down, yoinked from [[https://emacsredux.com/blog/2013/04/02/move-current-line-up-or-down/][here]].
 
 #+begin_src emacs-lisp
-(defun darius/move-line-up ()
+(defun my/move-line-up ()
   (interactive)
   (transpose-lines 1)
   (forward-line -2)
   (indent-according-to-mode))
 
-(defun darius/move-line-down ()
+(defun my/move-line-down ()
   (interactive)
   (forward-line 1)
   (transpose-lines 1)
@@ -316,8 +284,8 @@ Shift lines up and down, yoinked from [[https://emacsredux.com/blog/2013/04/02/m
   (indent-according-to-mode))
 
 (bind-keys
- ("C-S-p" . darius/move-line-up)
- ("C-S-n" . darius/move-line-down))
+ ("C-S-p" . my/move-line-up)
+ ("C-S-n" . my/move-line-down))
 #+end_src
 
 *** COMMENT Delete surrounding pair
@@ -325,7 +293,7 @@ From [[https://emacsredux.com/blog/2026/03/14/removing-paired-delimiters-in-emac
 Disabled because [[*Surround][Surround]] is cooler.
 
 #+begin_src emacs-lisp
-(defun darius/delete-surrounding-pair (char)
+(defun my/delete-surrounding-pair (char)
   "Delete the nearest surrounding pair of CHAR.
 CHAR should be an opening delimiter like (, [, {, or \".
 Works by searching backward for the opener and forward for the closer."
@@ -350,7 +318,7 @@ Works by searching backward for the opener and forward for the closer."
             (when (search-forward (char-to-string closer) nil t)
               (delete-char -1))))))))
 
-(bind-key "C-c D" #'darius/delete-surrounding-pair)
+(bind-key "C-c D" #'my/delete-surrounding-pair)
 #+end_src
 
 *** Run command in other window
@@ -361,7 +329,7 @@ Run a command in another window:
 - but never in the current window
 
 #+begin_src emacs-lisp
-(defun darius/open-in-other-window (command &optional property)
+(defun my/open-in-other-window (command &optional property)
   "Run COMMAND in a another window, dedicated if PROPERTY is :dedicated"
   (let ((display-buffer-overriding-action
          `((display-buffer-reuse-window
@@ -376,7 +344,7 @@ Run a command in another window:
 Spawn a terminal (foot) in the current directory
 
 #+begin_src emacs-lisp
-(defun darius/spawn-terminal ()
+(defun my/spawn-terminal ()
   "Launch foot if it is installed"
   (interactive)
   (if-let* ((term-path (executable-find "foot")))
@@ -389,7 +357,7 @@ Dump current modus themes terminal color definitions to a foot compatible ~conf~
 #+begin_src emacs-lisp
 (require 'cl-lib)
 
-(defun darius/modus-to-foot-palette ()
+(defun my/modus-to-foot-palette ()
   "Export the current modus-based theme to a foot color palette.
 Defaults to [colors-dark] for now"
   (insert (format "# -*- mode: conf -*-\n# Theme: %s\n\n[colors-dark]\n" (modus-themes-get-current-theme)))
@@ -425,6 +393,27 @@ Defaults to [colors-dark] for now"
         (insert (format "%s=%s\n" (car color) (strip (cdr color))))))))
 #+end_src
 
+*** Scrolling half a window
+Like ~C-u~ and ~C-d~ in vim but with prefix for amount instead of repeat
+
+#+begin_src emacs-lisp
+(defun my/scroll-down-command (arg)
+  "Scroll window down by half, or ARG if present"
+  (interactive "P")
+  (let ((amount (if arg
+                    (prefix-numeric-value arg)
+                  (/ (window-body-height) 2))))
+    (scroll-down-command amount)))
+
+(defun my/scroll-up-command (arg)
+  "Scroll window up by half, or ARG if present"
+  (interactive "P")
+  (let ((amount (if arg
+                    (prefix-numeric-value arg)
+                  (/ (window-body-height) 2))))
+    (scroll-up-command amount)))
+#+end_src
+
 ** User interface
 Change default UI settings
 
@@ -439,6 +428,12 @@ Change default UI settings
   :bind
   ("C-c h l" . hl-line-mode)
   ("C-c h n" . display-line-numbers-mode)
+  ("C-c h v" . variable-pitch-mode)
+  ("M-o" . other-window)
+  ("M-O" . other-window-backward)
+  ("C-M-S-o" . window-layout-transpose)
+  ([remap scroll-up-command] . my/scroll-up-command)
+  ([remap scroll-down-command] . my/scroll-down-command)
   :custom
   (confirm-kill-emacs 'yes-or-no-p)   ; ask before exiting
   (use-short-answers t)
@@ -507,12 +502,12 @@ Display whitespace in buffer
 
 #+begin_src emacs-lisp
 (use-package whitespace
-  :bind ("C-c h w" . whitespace-mode)
+  :bind ("C-c h W" . whitespace-mode)
   :custom
   (whitespace-line-column nil) ; use `fill-column'
-  (whitespace-style '(face trailing tabs indentatinon
+  (whitespace-style '(face trailing tabs indentatinon page-delimiters
                            space-before-tab space-after-tab
-                           tab-mark space-mark empty)))
+                           tab-mark space-mark empty lines-tail)))
 #+end_src
 
 *** Code folding
@@ -557,47 +552,47 @@ Inspired by doom-modeline
                 hs-minor-mode))
   (add-to-list 'mode-line-collapse-minor-modes mode))
 
-(defface darius/mode-line-highlight
+(defface my/mode-line-highlight
   '((t
      :weight semibold
      :inherit error))
   "Face for highlighted text on the mode line")
 
-(defface darius/mode-line-bold
+(defface my/mode-line-bold
   '((t
      :weight semibold
      :inherit fixed-pitch))
   "Face bold text on the mode line")
 
-(defface darius/mode-line-text
+(defface my/mode-line-text
   '((t
      :inherit fixed-pitch))
   "Face for text on the mode line")
 
-(defface darius/mode-line-shadow
+(defface my/mode-line-shadow
   '((t
      :inherit shadow))
   "Face for text on the mode line that should not stand out too much")
 
-(defvar-local darius/mode-line-buffer-name
+(defvar-local my/mode-line-buffer-name
   '(:eval
     (if (mode-line-window-selected-p)
         (if (and (buffer-modified-p) (buffer-file-name))
-            (propertize (buffer-name) 'face 'darius/mode-line-highlight)
-          (propertize (buffer-name) 'face 'darius/mode-line-bold))
+            (propertize (buffer-name) 'face 'my/mode-line-highlight)
+          (propertize (buffer-name) 'face 'my/mode-line-bold))
       (buffer-name))))
 
-(defvar-local darius/mode-line-project-name
+(defvar-local my/mode-line-project-name
   '(:eval
     (when (and (project-current)
                (not (equal (buffer-name) (project-name (project-current)))))
       (let ((project-str (format "%s/" (project-name (project-current)))))
         (if (mode-line-window-selected-p)
-            (propertize project-str 'face 'darius/mode-line-text)
+            (propertize project-str 'face 'my/mode-line-text)
           project-str)))))
 
-(dolist (var '(darius/mode-line-buffer-name ; unused
-               darius/mode-line-project-name))
+(dolist (var '(my/mode-line-buffer-name ; unused
+               my/mode-line-project-name))
   (put var 'risky-local-variable t))
 
 (setq-default mode-line-format
@@ -611,7 +606,7 @@ Inspired by doom-modeline
                   mode-line-window-dedicated)
                  display (min-width (6.0)))
                 mode-line-frame-identification
-                darius/mode-line-project-name
+                my/mode-line-project-name
                 mode-line-buffer-identification
                 "   "
                 mode-line-position
@@ -720,7 +715,11 @@ Changes to default editing behavior
          ("C-c a" . align-regexp)
          :map prog-mode-map
          ;; continue comment on new line
-         ("M-RET" . comment-indent-new-line)))
+         ("M-RET" . comment-indent-new-line)
+         ;; C-x 8
+         :map iso-transl-ctl-x-8-map
+         ("pp" . "π")
+         ("pP" . "Π")))
 
 (use-package dabbrev
   :custom
@@ -856,13 +855,13 @@ File browsing on crack
   :hook (dired-mode . dired-hide-details-mode)
   :bind (("<mouse-8>" . dired-jump) ; back button
          :map dired-mode-map
-         ("+" . darius/dired-create)
+         ("+" . my/dired-create)
          ("<mouse-2>" . dired-mouse-find-file)
          ("j" . find-file)
          ("SPC" . dired-up-directory)
          ("b" . dired-up-directory))
   :config
-  (defun darius/dired-create (arg)
+  (defun my/dired-create (arg)
     "Wrapper around `dired-create-directory' with no minibuffer completion. Create empty file when called with prefix arg"
     (interactive "P")
     (if arg
@@ -1039,7 +1038,7 @@ Install and enable the ~dictd~ service and download a dictionary like ~gcide~ or
 #+begin_src emacs-lisp
 (use-package dictionary
   :custom (dictionary-server "localhost")
-  :bind ("C-c m d" . dictionary-search))
+  :bind ("C-c h w" . dictionary-search))
 #+end_src
 
 *** Eldoc
@@ -1129,7 +1128,7 @@ thrifty
 #+begin_src emacs-lisp
 (use-package man
   :bind
-  ("C-c m m" . man)
+  ("C-c h m" . man)
   :custom
   (Man-notify-method 'thrifty) ; reuse existing manpage window if possible
   :config
@@ -1189,7 +1188,7 @@ The Emacs Web Wowser
   (eww-search-prefix "https://lite.duckduckgo.com/lite/?q=")
   (eww-history-limit 150)
   :bind
-  ("C-c m e" . eww))
+  ("C-c w e" . eww))
 #+end_src
 
 **** Webjump
@@ -1197,7 +1196,7 @@ Website query shortcuts
 
 #+begin_src emacs-lisp
 (use-package webjump
-  :bind ("C-c m w" . webjump)
+  :bind ("C-c w j" . webjump)
   :custom
   (webjump-sites '(("Wikipedia"
                     . [simple-query "https://wikipedia.org"
@@ -1263,12 +1262,12 @@ For running in ~-nw~ mode
 
 (xterm-mouse-mode 1)
 
-(defun darius/disable-terminal-background ()
+(defun my/disable-terminal-background ()
   "Removes theme background color in terminal windows"
   (unless (display-graphic-p (selected-frame))
     (set-face-attribute 'default nil :background "unspecified-bg")))
 
-;; (add-hook 'window-setup-hook 'darius/disable-terminal-background)
+;; (add-hook 'window-setup-hook #'my/disable-terminal-background)
 #+end_src
 
 ** Eshell
@@ -1320,13 +1319,13 @@ This is very neat.
   :config
   (appt-activate 1)
   (require 'notifications)
-  (defun darius/send-appt-notification (min-until new-time appt-msg)
+  (defun my/send-appt-notification (min-until new-time appt-msg)
     (notifications-notify
      :title "Upcoming Appointment"
      :body (format "In %s min: %s" min-until appt-msg)
      :urgency 'critical
      :timeout 0))
-  (setq appt-disp-window-function #'darius/send-appt-notification)
+  (setq appt-disp-window-function #'my/send-appt-notification)
   :custom
   (appt-display-diary nil)
   (appt-audible nil)
@@ -1380,7 +1379,6 @@ Configure ~package.el~ and ~use-package~
 #+begin_src emacs-lisp
 (use-package package
   :custom
-  (package-install-upgrade-built-in t)
   (package-review-diff-command '("git" "diff" "--no-index" "--color=never" "--diff-filter=d"))
   (package-native-compile t) ; this will just be ignored if native-comp isn't available
   (package-archives
@@ -1392,7 +1390,7 @@ Configure ~package.el~ and ~use-package~
    '(("elpa" . 2)
      ("elpa-devel" . 1)))
   :config
-  (defun darius/package-upgrade-all ()
+  (defun my/package-upgrade-all ()
     "Temporarily enable manual reviews. If I enable package-review-policy
   globally emacs will also ask the first time it installs a package which
   is a pain when starting the bg-daemon with a keybind."
@@ -1618,7 +1616,7 @@ Make client frame font size consistent across multiple monitors with different r
   (bind-keys ; global map
    :prefix "C-c h f"
    :prefix-docstring "Textsize actions map"
-   :prefix-map darius/textsize-mode-map
+   :prefix-map my/textsize-mode-map
    ("f" . textsize-fix-frame)
    ("r" . textsize-reset)
    ("i" . textsize-increment)
@@ -1645,6 +1643,45 @@ Where am I
   :hook (prog-mode . breadcrumb-local-mode))
 #+end_src
 
+*** Spotify
+Show now playing in the echo area
+Override a function because it hardcodes the format string
+
+#+begin_src emacs-lisp
+(use-package spotify
+  :ensure t
+  :bind
+  ("C-c m n" . spotify-next)
+  ("C-c m p" . spotify-previous)
+  ("C-c m SPC" . spotify-playpause)
+  ("C-c m c" . spotify-current)
+  :config
+  (spotify-enable-song-notifications)
+  (defcustom my/spotify-format-string "%a | %t | %A"
+    "Format for spotify echo area info:
+%a = artists
+%t = title
+%A = album
+%n = track number"
+    :type 'string)
+
+  ;; override
+  (defun spotify-humanize-metadata (metadata)
+    "Transform METADATA from spotify to a human readable version."
+    (when metadata
+      (let ((artists (mapconcat 'identity
+                                (cl-caadr (assoc "xesam:artist" metadata))
+                                ", "))
+            (track-nr (cl-caadr (assoc "xesam:trackNumber" metadata)))
+            (album (cl-caadr (assoc "xesam:album" metadata)))
+            (title (cl-caadr (assoc "xesam:title" metadata))))
+        (format-spec my/spotify-format-string
+                     `((?a . ,artists)
+                       (?A . ,album)
+                       (?t . ,title)
+                       (?n . ,(format "%s" track-nr))))))))
+#+end_src
+
 ** Documentation
 More help
 *** TLDR pages
@@ -1653,7 +1690,7 @@ Read tldr pages in emacs
 #+begin_src emacs-lisp
 (use-package tldr
   :ensure t
-  :bind ("C-c m t" . tldr))
+  :bind ("C-c h t" . tldr))
 #+end_src
 
 *** Devdocs
@@ -1662,7 +1699,7 @@ Read ~devdocs.io~ inside emacs
 #+begin_src emacs-lisp
 (use-package devdocs
   :ensure t
-  :bind ("C-c m c" . devdocs-lookup))
+  :bind ("C-c h d" . devdocs-lookup))
 #+end_src
 
 ** Eye candy
@@ -1752,7 +1789,7 @@ Standard themes
   (standard-dark-tinted-palette-overrides
    '((comment fg-dim)
      (fringe unspecified))))
-(modus-themes-select 'standard-light)
+(modus-themes-select 'standard-dark)
 #+end_src
 
 **** Modus Alabaster
@@ -1855,24 +1892,24 @@ Font presets
       :italic-family nil)))
   :config
   (fontaine-mode 1)
-  (defvar darius/fontaine-loaded nil "Have we loaded fontaine yet?")
-  (defun darius/load-fontaine ()
+  (defvar my/fontaine-loaded nil "Have we loaded fontaine yet?")
+  (defun my/load-fontaine ()
     (when (display-graphic-p)
       (fontaine-set-preset (or (fontaine-restore-latest-preset) 'regular))))
-  (defun darius/load-fontaine-once ()
+  (defun my/load-fontaine-once ()
     "Apply fontaine preset only once since fonts with daemon mode are weird."
-    (unless darius/fontaine-loaded
-      (darius/load-fontaine)
-      (setq darius/fontaine-loaded t)))
+    (unless my/fontaine-loaded
+      (my/load-fontaine)
+      (setq my/fontaine-loaded t)))
   ;; for non-daemon mode
-  (darius/load-fontaine)
+  (my/load-fontaine)
   (with-eval-after-load 'modus-themes
-    (add-hook 'modus-themes-after-load-theme-hook #'darius/load-fontaine))
+    (add-hook 'modus-themes-after-load-theme-hook #'my/load-fontaine))
   :hook
   ;; probably not the proper way to do this but otherwise
   ;; the fonts don't get set correctly for client frames
   ;; and I don't want to call set-preset for every new frame
-  (server-after-make-frame . darius/load-fontaine-once))
+  (server-after-make-frame . my/load-fontaine-once))
 #+end_src
 
 ** Git
@@ -1905,7 +1942,7 @@ See ~diff-hl-mode-map~
                                   (unknown . "?")
                                   (ignored . "i")))
   :bind
-  ("C-c h d" . diff-hl-mode)
+  ("C-c h D" . diff-hl-mode)
   :hook
   (prog-mode . diff-hl-mode)
   (dired-mode . diff-hl-dired-mode)
@@ -1927,12 +1964,12 @@ Some nice additional completing-read stuff
   (xref-show-xrefs-function #'consult-xref)
   (consult-preview-key "C-o")
   :config
-  (defun darius/consult-ripgrep-hidden ()
+  (defun my/consult-ripgrep-hidden ()
     "Call rg with additional --hidden flag"
     (interactive)
     (let* ((consult-ripgrep-args (s-concat consult-ripgrep-args " --hidden")))
       (call-interactively 'consult-ripgrep)))
-  (defun darius/consult-fd-hidden ()
+  (defun my/consult-fd-hidden ()
     "Call fd with additional --hidden and --no-ignore flags"
     (interactive)
     (let* ((consult-fd-args (append consult-fd-args '(" --hidden --no-ignore"))))
@@ -1944,11 +1981,11 @@ Some nice additional completing-read stuff
   (("C-S-Y"     . consult-yank-from-kill-ring)
    :map search-map
    ("d"     . consult-fd)
-   ("D"     . darius/consult-fd-hidden)
+   ("D"     . my/consult-fd-hidden)
    ("l"     . consult-line)
    ("L"     . consult-line-multi)
    ("r"     . consult-ripgrep)
-   ("R"     . darius/consult-ripgrep-hidden)
+   ("R"     . my/consult-ripgrep-hidden)
    ("u"     . consult-focus-lines)
    ("k"     . consult-keep-lines)
    ("M-b"   . consult-buffer)
@@ -2080,7 +2117,7 @@ Org mode
          ("C-c o s" . org-store-link)
          ("C-c o h" . consult-org-heading)))
 
-(defun darius/org-agenda-fullscreen ()
+(defun my/org-agenda-fullscreen ()
   "Open the org agenda and make it the only window in this frame.
 This requires org manually because I bind it to a key in Hyprland and this fails if
 the emacs server hasn't loaded org yet."
@@ -2129,7 +2166,6 @@ Nicer visuals
 
 *** org-download
 Paste images into emacs.
-Installing this fails because of a package called ~buttercup~ not being present?
 
 #+begin_src emacs-lisp
 (use-package org-download
@@ -2168,13 +2204,13 @@ RSS feeds
   (elfeed-db-directory (locate-user-emacs-file "elfeed/"))
   (elfeed-search-filter "@6-months")
   :config
-  (defconst darius/elfeed-feeds-file (locate-user-emacs-file "elfeed-feeds.eld"))
-  (defun darius/reload-elfeed-feeds ()
+  (defconst my/elfeed-feeds-file (locate-user-emacs-file "elfeed-feeds.eld"))
+  (defun my/reload-elfeed-feeds ()
     (interactive)
-    (when (file-exists-p darius/elfeed-feeds-file)
+    (when (file-exists-p my/elfeed-feeds-file)
       (setopt elfeed-feeds
               (with-temp-buffer
-                (insert-file-contents darius/elfeed-feeds-file)
+                (insert-file-contents my/elfeed-feeds-file)
                 (read (current-buffer))))))
   ;; mark new entries older than two weeks as read automatically
   (add-hook 'elfeed-new-entry-hook
@@ -2183,7 +2219,7 @@ RSS feeds
   ;; make news post stand out less than blogs and highlight arch linux feed
   (push '(news shadow) elfeed-search-face-alist)
   (push '(arch warning) elfeed-search-face-alist)
-  (darius/reload-elfeed-feeds)
+  (my/reload-elfeed-feeds)
   (elfeed-update)
   :bind
   ("<f9>" . elfeed))
@@ -2299,27 +2335,27 @@ Terminal emulator
   :ensure t
   :config
   (add-to-list 'project-switch-commands '(ghostel-project "Terminal" "t") t)
-  (defun darius/ghostel-project-other-window ()
+  (defun my/ghostel-project-other-window ()
     (interactive)
-    (darius/open-in-other-window #'ghostel-project :dedicated))
-  (defun darius/spawn-ghostel-or-terminal-here (arg)
+    (my/open-in-other-window #'ghostel-project :dedicated))
+  (defun my/spawn-ghostel-or-terminal-here (arg)
     "Open a *ghostel* buffer if called without prefix.
 If called with prefix arg, spawn a terminal window in the current directory."
     (interactive "P")
     (cond
      ((equal arg '(4))
-      (darius/spawn-terminal))
+      (my/spawn-terminal))
      (t ; otherwise
-      (darius/open-in-other-window #'ghostel :dedicated))))
-  (defun darius/hide-nbsp ()
+      (my/open-in-other-window #'ghostel :dedicated))))
+  (defun my/hide-nbsp ()
     "Hide the underline for non-breaking-spaces in the current buffer, this makes the output of for example `tree` look better"
     (setq-local nobreak-char-display nil))
-  :hook (ghostel-mode . darius/hide-nbsp)
+  :hook (ghostel-mode . my/hide-nbsp)
   :bind (
          :map goto-map
-         ("t" . darius/spawn-ghostel-or-terminal-here)
+         ("t" . my/spawn-ghostel-or-terminal-here)
          :map project-prefix-map
-         ("t" . darius/ghostel-project-other-window)
+         ("t" . my/ghostel-project-other-window)
          :map ghostel-semi-char-mode-map
          ("M-o" . other-window)))
 
@@ -2410,7 +2446,7 @@ Work with citations
 (use-package citar
   :ensure t
   :config
-  (defun darius/open-in-zotero (citekey)
+  (defun my/open-in-zotero (citekey)
     "Open a reference item in Zotero."
     (interactive (list (citar-select-ref)))
     (citar-open-entry-in-zotero citekey))
@@ -2468,7 +2504,7 @@ Language server stuff
   (eglot-events-buffer-config '(:size 0 :format short))
   (jsonrpc-event-hook nil)
   :config
-  (darius/setup-eglot-keys) ; see below
+  (my/setup-eglot-keys) ; see below
   (fset #'jsonrpc--log-event #'ignore)
   (add-to-list 'eglot-server-programs
                '((c-mode c++-mode c-ts-mode c++-ts-mode)
@@ -2487,36 +2523,36 @@ Language server stuff
 Gets its own section because it's so long
 
 #+begin_src emacs-lisp
-(defun darius/setup-eglot-keys ()
+(defun my/setup-eglot-keys ()
   (bind-keys :map eglot-mode-map
              :prefix "C-c e"
              :prefix-docstring "Keymap for eglot commands"
-             :prefix-map darius/eglot-map
+             :prefix-map my/eglot-map
              ("TAB" . eglot-format)
              ("i"   . eglot-inlay-hints-mode)
              ("l"   . eglot-list-connections)
              ("r"   . eglot-rename))
-  (bind-keys :map darius/eglot-map
+  (bind-keys :map my/eglot-map
              :prefix "a"
              :prefix-docstring "Bindings for eglot code actions"
-             :prefix-map darius/eglot-code-actions-map
+             :prefix-map my/eglot-code-actions-map
              ("a" . eglot-code-actions)
              ("e" . eglot-code-action-extract)
              ("i" . eglot-code-action-inline)
              ("o" . eglot-code-action-organize-imports)
              ("q" . eglot-code-action-quickfix)
              ("r" . eglot-code-action-rewrite))
-  (bind-keys :map darius/eglot-map
+  (bind-keys :map my/eglot-map
              :prefix "f"
              :prefix-docstring "Bindings to find declaration/type/... via eglot"
-             :prefix-map darius/eglot-find-map
+             :prefix-map my/eglot-find-map
              ("d" . eglot-find-declaration)
              ("i" . eglot-find-implementation)
              ("t" . eglot-find-typeDefinition))
-  (bind-keys :map darius/eglot-map
+  (bind-keys :map my/eglot-map
              :prefix "s"
              :prefix-docstring "Bindings to show call/type hierarchy via eglot"
-             :prefix-map darius/eglot-show-map
+             :prefix-map my/eglot-show-map
              ("c" . eglot-show-call-hierarchy)
              ("t" . eglot-show-type-hierarchy)))
 #+end_src
@@ -2573,7 +2609,7 @@ The original
   ;; which is required neither by haskell mode nor by haskell interaction mode
   ;; there probably is a better way to do this
   (require 'inf-haskell)
-  (defun darius/haskell-interactive-beginning-of-line ()
+  (defun my/haskell-interactive-beginning-of-line ()
     "Skip the interactive haskell prompt at the beginning of the line"
     (interactive)
     (let* ((line (thing-at-point 'line t))
@@ -2582,7 +2618,7 @@ The original
       (beginning-of-line)
       (forward-char end)))
   :bind (:map haskell-interactive-mode-map
-              ("C-a" . darius/haskell-interactive-beginning-of-line)))
+              ("C-a" . my/haskell-interactive-beginning-of-line)))
 #+end_src
 
 *** Hindent
@@ -2617,7 +2653,7 @@ Treesitter, not nearly as bloated as ~haskell-mode~ but also has less features, 
   (verilog-indent-level-declaration 2)
   (verilog-indent-level-directive 2)
   :bind
-  (:map verilog-mode-map ("C-;" . darius/switch-buffer-or-delete-other-windows)))
+  (:map verilog-mode-map ("C-;" . my/switch-buffer-or-delete-other-windows)))
 #+end_src
 
 ** TCL
