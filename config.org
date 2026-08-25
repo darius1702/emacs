@@ -846,7 +846,7 @@ File browsing on crack
   :custom
   (dired-recursive-deletes 'top) ; this is the default but I'm paranoid
   ;; (dired-dwim-target t) ; press M-n to select other dired window as target
-  (dired-listing-switches "-lah")
+  (dired-listing-switches "-lah --group-directories-first")
   (dired-kill-when-opening-new-dired-buffer nil)
   (dired-auto-revert-buffer t)
   (dired-do-revert-buffer t)
@@ -859,7 +859,8 @@ File browsing on crack
          ("<mouse-2>" . dired-mouse-find-file)
          ("j" . find-file)
          ("SPC" . dired-up-directory)
-         ("b" . dired-up-directory))
+         ("b" . dired-up-directory)
+         ("F" . find-grep))
   :config
   (defun my/dired-create (arg)
     "Wrapper around `dired-create-directory' with no minibuffer completion. Create empty file when called with prefix arg"
@@ -946,9 +947,9 @@ Diff files
   (ediff-window-setup-function #'ediff-setup-windows-plain))
 #+end_src
 
-*** COMMENT Speedbar
+*** Speedbar
 Side window file browser and more
-Disabled because the UX is still trash
+UX is still kind of trash
 
 #+begin_src emacs-lisp
 (use-package speedbar
@@ -1101,7 +1102,7 @@ Inline errors/warnigns
 (use-package flymake
   :custom
   (flymake-wrap-around nil)
-  (flymake-show-diagnostics-at-end-of-line t)
+  (flymake-inline-diagnostics 'eol)
   (flymake-mode-line-lighter nil)
   (flymake-indicator-type 'margins)
   :bind
@@ -1176,7 +1177,7 @@ HTML rendering and URL browsing.
   :custom
   (browse-url-generic-program "xdg-open")
   (browse-url-browser-function #'eww-browse-url)
-  (browse-url-secondary-browser-function #'browse-url-xdg-open))
+  (browse-url-secondary-browser-function #'browse-url-generic))
 #+end_src
 
 **** Eww
@@ -1282,8 +1283,10 @@ The emacs shell!
   (eshell-scroll-show-maximum-output nil))
 #+end_src
 
-Aliases:
-#+begin_src sh :tangle eshell/alias
+*** Aliases
+Go tho their own file ~./eshell/alias~
+
+#+begin_src sh :tangle eshell/alias :mkdirp yes
 alias ff find-file $1
 alias d dired $1
 
@@ -1792,14 +1795,6 @@ Standard themes
 (modus-themes-select 'standard-dark)
 #+end_src
 
-**** Modus Alabaster
-Pretty
-
-#+begin_src emacs-lisp
-(use-package modus-alabaster
-  :vc (:url "https://github.com/dpassen/modus-alabaster" :rev :newest))
-#+end_src
-
 *** Marginalia
 Usful info in the minibuffer
 
@@ -2115,7 +2110,9 @@ Org mode
          ("C-c o c" . org-capture)
          :map org-mode-map
          ("C-c o s" . org-store-link)
-         ("C-c o h" . consult-org-heading)))
+         ("C-c o h" . consult-org-heading)
+         :map org-src-mode-map
+         ("C-c C-c" . org-edit-src-exit)))
 
 (defun my/org-agenda-fullscreen ()
   "Open the org agenda and make it the only window in this frame.
@@ -2248,16 +2245,16 @@ Completion
   :demand t
   :after consult
   :custom
-  (corfu-auto-delay 0.1)
-  (corfu-cycle t)
   (corfu-auto t)
+  (corfu-auto-delay 0.1)
   (corfu-auto-prefix 2)
+  (corfu-echo-delay 0)
+  (corfu-cycle t)
   (corfu-separator ?\s)
   (corfu-preview-current 'insert)
   (corfu-on-exact-match nil)
   (corfu-popupinfo-delay '(nil . 0.0))
-  (global-corfu-minibuffers t)
-  (corfu-echo-delay 0)
+  (global-corfu-minibuffer t)
   :config
   (defun corfu-move-to-minibuffer ()
     (interactive)
@@ -2335,6 +2332,11 @@ Terminal emulator
   :ensure t
   :config
   (add-to-list 'project-switch-commands '(ghostel-project "Terminal" "t") t)
+  (defun my/ghostel-mode-setup ()
+    "Disable line/column numbers in the mode line and hide the underline for non-breaking-spaces in the current buffer, this makes the output of for example `tree` look better"
+    (setq-local line-number-mode nil)
+    (setq-local column-number-mode nil)
+    (setopt-local nobreak-char-display nil))
   (defun my/ghostel-project-other-window ()
     (interactive)
     (my/open-in-other-window #'ghostel-project :dedicated))
@@ -2347,10 +2349,7 @@ If called with prefix arg, spawn a terminal window in the current directory."
       (my/spawn-terminal))
      (t ; otherwise
       (my/open-in-other-window #'ghostel :dedicated))))
-  (defun my/hide-nbsp ()
-    "Hide the underline for non-breaking-spaces in the current buffer, this makes the output of for example `tree` look better"
-    (setq-local nobreak-char-display nil))
-  :hook (ghostel-mode . my/hide-nbsp)
+  :hook (ghostel-mode . my/ghostel-mode-setup)
   :bind (
          :map goto-map
          ("t" . my/spawn-ghostel-or-terminal-here)
@@ -2570,6 +2569,14 @@ C++ and C
   :vc (:url "https://github.com/rexim/simpc-mode" :rev :newest))
 #+end_src
 
+** Assembly
+Why
+
+#+begin_src emacs-lisp
+(use-package asm-mode
+  :mode ("\\.\\dump\\'" . asm-mode))
+#+end_src
+
 ** Rust
 Funny orange crab
 
@@ -2714,16 +2721,6 @@ Neocaml aims to be simpler than tuareg mode, highlighting looks better and it us
 #+begin_src emacs-lisp
 (use-package zig-mode
   :ensure t)
-#+end_src
-
-** Z3
-SMT solving aaaa
-For some reason this depends on flycheck which is very cringe
-
-#+begin_src emacs-lisp
-(add-to-list 'load-path (locate-user-emacs-file "external/z3-mode/"))
-
-(require 'z3-mode)
 #+end_src
 
 ** COMMENT Proof General
@@ -2877,7 +2874,7 @@ Requires ~sail-mode.el~ somewhere in the load-path
 
 ** Lean
 I love lean.
-The default lean4 mode depends on lsp-mode, so until they do eglot or none at all, pull in [[https://codeberg.org/mekeor/nael][this fork]].
+The default lean4 mode depends on lsp-mode, so until they do eglot or none at all, pull in [[https://codeberg.org/mekeor/nael][nael]].
 
 #+begin_src emacs-lisp
 (use-package nael
