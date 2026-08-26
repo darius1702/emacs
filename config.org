@@ -597,14 +597,11 @@ Inspired by doom-modeline
 
 (setq-default mode-line-format
               '("%e" mode-line-front-space
-                (:propertize
-                 (""
-                  mode-line-mule-info
-                  mode-line-client
-                  mode-line-modified
-                  mode-line-remote
-                  mode-line-window-dedicated)
-                 display (min-width (6.0)))
+                mode-line-mule-info
+                mode-line-client
+                mode-line-modified
+                mode-line-remote
+                mode-line-window-dedicated
                 mode-line-frame-identification
                 my/mode-line-project-name
                 mode-line-buffer-identification
@@ -723,7 +720,7 @@ Changes to default editing behavior
 
 (use-package dabbrev
   :custom
-  (dabbrev-case-replace nil))
+  (dabbrev-case-replace t))
 #+end_src
 
 ** Buffers

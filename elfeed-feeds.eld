@@ -13,7 +13,7 @@
  "https://curiouscoding.nl/index.xml"
  "https://faultlore.com/blah/rss.xml"
  "https://thephd.dev/feed.xml"
- "https://kibty.town/blog.rss"
+ "https://eva.ac/blog.rss"
  "https://blog.ganets.ky/feed"
  "https://cadence.moe/blog/rss.xml?limit=30"
  "https://devblogs.microsoft.com/oldnewthing/feed/"
