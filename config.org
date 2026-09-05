@@ -1,5 +1,4 @@
 #+TITLE: Emacs configuration
-#+AUTHOR: Darius Schefer
 #+PROPERTY: header-args:emacs-lisp :tangle init.el :mkdirp yes
 #+STARTUP: show2levels
 
@@ -667,6 +666,7 @@ Changes to default editing behavior
   (delete-pair-push-mark t)
   (delete-pair-blink-delay 0.2)
 
+  (kill-do-not-save-duplicates t)
   (save-interprogram-paste-before-kill t)
   (mouse-yank-at-point t)
 
@@ -1420,7 +1420,7 @@ Load ~.envrc~ files from ~direnv~
 #+begin_src emacs-lisp
 (use-package envrc
   :ensure t
-  :custom (envrc-none-lighter nil)
+  :custom (envrc-lighter nil)
   :hook (after-init . envrc-global-mode))
 #+end_src
 
@@ -1784,7 +1784,7 @@ Standard themes
   (standard-light-palette-overrides
    '((bg-completion bg-hl-line)))
   (standard-dark-palette-overrides
-   '((comment fg-dim)
+   '((comment yellow-cooler)
      (fringe unspecified)))
   (standard-dark-tinted-palette-overrides
    '((comment fg-dim)
@@ -2398,7 +2398,7 @@ Notes database
   :ensure t
   :demand t
   :custom
-  (vulpea-db-sync-directories '("~/Notes/fox"))
+  (vulpea-db-sync-directories '("~/Notes/"))
   (vulpea-db-index-heading-level t)
   :config
   (vulpea-db-autosync-mode 1)
@@ -2420,7 +2420,6 @@ Notes database
   :demand t
   :after vulpea
   :init
-  (setopt vulpea-directory "~/Notes/fox")
   :custom
   (vulpea-journal-ui-created-today-exclude-journal nil)
   (vulpea-journal-default-template
@@ -2433,6 +2432,14 @@ Notes database
   (vulpea-journal-setup)
   :bind
   ("C-c n j" . vulpea-journal))
+
+(use-package consult-vulpea
+  :ensure t
+  :after vulpea
+  :config
+  (consult-vulpea-mode 1)
+  :bind
+  ("C-c n g" . consult-vulpea-grep))
 #+end_src
 
 ** Citar
