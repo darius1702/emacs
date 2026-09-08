@@ -113,6 +113,9 @@ Tweaks that don't fit the other categories
 (setopt vc-handled-backends '(Git)
         vc-follow-symlinks t)
 
+;; don't ping url-looking things with ffap
+(setopt ffap-machine-p-known 'reject)
+
 ;; according to someone else's config this does something good
 (setopt pgtk-wait-for-event-timeout 0.001
         pgtk-use-im-context-on-new-connection nil ; C-S-u hangs for some reason
@@ -469,6 +472,17 @@ Change default UI settings
   (bidi-inhibit-bpa t))
 #+end_src
 
+*** Window management
+Where to put windows
+
+#+begin_src emacs-lisp
+(use-package window
+  :custom
+  (split-window-preferred-direction 'longest)
+  (switch-to-buffer-obey-display-actions nil)
+  (switch-to-buffer-in-dedicated-window 'pop))
+#+end_src
+
 *** Highlight matching parens
 With context offscreen in the echo area
 
@@ -808,17 +822,10 @@ The *vc-status* format below depends on [[*Ibuffer-vc][Ibuffer-vc]].
            (vc-status 16 16 :left)))))
 #+end_src
 
-*** Misc
-As the heading suggests
+*** Autorevert
+Automatically revert buffers when the file changes on disk
 
 #+begin_src emacs-lisp
-(use-package window
-  :custom
-  (split-window-preferred-direction 'longest)
-  (switch-to-buffer-obey-display-actions nil)
-  (switch-to-buffer-in-dedicated-window 'pop))
-
-;; automatically revert buffers that change on disk
 (use-package autorevert
   :custom
   (global-auto-revert-non-file-buffers t)
@@ -986,7 +993,8 @@ Setup minibuffer and ~completing-read~
 (setopt completion-ignore-case t
         completion-category-defaults nil
 	    completion-category-overrides '((file (styles partial-completion)))
-        completion-pcm-leading-wildcard t)
+        completion-pcm-leading-wildcard t
+        completions-group t)
 #+end_src
 
 ** Compilation and Comint and Shell
