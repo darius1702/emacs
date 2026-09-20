@@ -734,7 +734,7 @@ Changes to default editing behavior
 
 (use-package dabbrev
   :custom
-  (dabbrev-case-replace t))
+  (dabbrev-case-replace nil))
 #+end_src
 
 ** Buffers
@@ -966,9 +966,7 @@ UX is still kind of trash
          :map search-map
          ("s" . speedbar-get-focus)
          :map speedbar-mode-map
-         ("<TAB>" . speedbar-toggle-line-expansion)
-         ("q" . kill-buffer-and-window)
-         ("Q" . nil)))
+         ("<TAB>" . speedbar-toggle-line-expansion)))
 #+end_src
 
 ** Minibuffer things
@@ -2089,7 +2087,7 @@ Org mode
   (org-pretty-entities t)
   (org-highlight-latex-and-related '(latex))
   (org-use-sub-superscripts '{})
-  (org-hide-emphasis-markers t)    ; org-appear my beloved (see below)
+  (org-hide-emphasis-markers t)  ; org-appear my beloved (see below)
   (org-M-RET-may-split-line '((default . nil)))
   (org-bookmark-names-plist nil) ; stop org-capture from creating bookmarks
   (org-enforce-todo-dependencies t)
@@ -2108,6 +2106,24 @@ Org mode
   ;; remove some decoration from links
   (set-face-attribute 'org-cite-key nil :underline nil)
   (set-face-attribute 'org-cite nil :underline nil :inherit 'shadow)
+  ;; add some pretty entities and needed packages
+  (add-to-list 'org-latex-packages-alist '("" "stmaryrd" t))
+  ;; TODO turnstiles
+  (setopt org-entities-user
+          (append '(
+                    ("powerset" "\\mathcal{P}" t "&#x1D4AB;" "P" "P" "𝒫")
+                    ("mapsto" "\\mapsto" t "&#x21A6;" "|->" "|->" "↦")
+                    ("top" "\\top" t "&#x22A4;" "T" "T" "⊤")
+                    ("bot" "\\bot" t "&#x22A5;" "_|_" "_|_" "⊥")
+                    ("sqcup" "\\sqcup" t "&#x2294;" "sqcup" "sqcup" "⊔")
+                    ("sqcap" "\\sqcap" t "&#x2293;" "sqcap" "sqcap" "⊓")
+                    ("bigsqcup" "\\bigsqcup" t "&#x2A06;" "bigsqcup" "bigsqcup" "⨆")
+                    ("bigsqcap" "\\bigsqcap" t "&#x2A05;" "bigsqcap" "bigsqcap" "⨅")
+                    ("sqsubseteq" "\\sqsubseteq" t "&#x2291;" "sqsubseteq" "sqsubseteq" "⊑")
+                    ("sqsupseteq" "\\sqsupseteq" t "&#x2292;" "sqsupseteq" "sqsupseteq" "⊒")
+                    ("sqsubset" "\\sqsubset" t "&#x228F;" "sqsubset" "sqsubset" "⊏")
+                    ("sqsupset" "\\sqsupset" t "&#x2290;" "sqsupset" "sqsupset" "⊐"))
+                  org-entities-user))
   :bind (
          ("C-c o a" . org-agenda)
          ("C-c o A" . consult-org-agenda)
@@ -2361,7 +2377,10 @@ If called with prefix arg, spawn a terminal window in the current directory."
          :map project-prefix-map
          ("t" . my/ghostel-project-other-window)
          :map ghostel-semi-char-mode-map
-         ("M-o" . other-window)))
+         ("M-o" . other-window)
+         :map ghostel-mode-map
+         ("C-c C-p" . ghostel-previous-prompt)
+         ("C-c C-n" . ghostel-next-prompt)))
 
 (use-package ghostel-eshell
   :after ghostel
@@ -2526,7 +2545,8 @@ Language server stuff
                     "--background-index"
                     "--clang-tidy"
                     "--completion-style=detailed"
-                    "--pch-storage=memory")))
+                    "--pch-storage=memory"
+                    "--query-driver=**/*-g++*,**/*-gcc*")))
   :hook (LaTeX-mode . eglot-ensure))
 #+end_src
 
