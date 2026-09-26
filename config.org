@@ -414,6 +414,22 @@ Like ~C-u~ and ~C-d~ in vim but with prefix for amount instead of repeat
                     (prefix-numeric-value arg)
                   (/ (window-body-height) 2))))
     (scroll-up-command amount)))
+
+(bind-keys
+  ([remap scroll-up-command] . my/scroll-up-command)
+  ([remap scroll-down-command] . my/scroll-down-command))
+#+end_src
+
+*** Scrach buffer in home dir
+Like ~scratch-buffer~ but always in the home directory
+
+#+begin_src emacs-lisp
+(defun my/scratch-buffer ()
+  (interactive)
+  (let ((default-directory "~/"))
+    (scratch-buffer)))
+
+(bind-key "s" #'my/scratch-buffer 'goto-map)
 #+end_src
 
 ** User interface
@@ -434,8 +450,6 @@ Change default UI settings
   ("M-o" . other-window)
   ("M-O" . other-window-backward)
   ("C-M-S-o" . window-layout-transpose)
-  ([remap scroll-up-command] . my/scroll-up-command)
-  ([remap scroll-down-command] . my/scroll-down-command)
   :custom
   (confirm-kill-emacs 'yes-or-no-p)   ; ask before exiting
   (use-short-answers t)
@@ -2054,7 +2068,7 @@ Org mode
 #+begin_src emacs-lisp
 (use-package org
   :ensure t
-  :mode ("\\.org\\'" . org-mode)
+  :demand t
   :hook
   (org-mode . turn-on-org-cdlatex)
   (org-mode . org-display-inline-images)
@@ -2192,7 +2206,7 @@ Paste images into emacs.
   :custom
   (org-download-method 'directory)
   (org-download-image-dir "./org-images")
-  (org-download-screenshot-method "/home/darius/Dotfiles/scripts/screenshot %s")
+  (org-download-screenshot-method "grim -g \"$(slurp)\" %s")
   :bind
   (:map org-mode-map
         ("C-c o d c" . org-download-clipboard)
@@ -2230,6 +2244,17 @@ RSS feeds
               (with-temp-buffer
                 (insert-file-contents my/elfeed-feeds-file)
                 (read (current-buffer))))))
+  (defun my/elfeed-other-tab-or-open ()
+    "Switch to elfeed tab if present, otherwise create one"
+    (interactive)
+    ;; if tab exists switch to it
+    (if-let ((tab (tab-bar-get-buffer-tab "*elfeed-search*")))
+        (tab-bar-switch-to-tab (alist-get 'name tab))
+      ;; if not make one
+      (let ((display-buffer-overriding-action '((display-buffer-in-new-tab)))
+            (switch-to-buffer-obey-display-actions t))
+        (call-interactively #'elfeed))))
+
   ;; mark new entries older than two weeks as read automatically
   (add-hook 'elfeed-new-entry-hook
             (elfeed-make-tagger :before "2 weeks ago"
@@ -2240,7 +2265,7 @@ RSS feeds
   (my/reload-elfeed-feeds)
   (elfeed-update)
   :bind
-  ("<f9>" . elfeed))
+  ("<f9>" . my/elfeed-other-tab-or-open))
 #+end_src
 
 ** Spell checking
