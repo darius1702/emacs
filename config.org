@@ -576,7 +576,8 @@ Inspired by doom-modeline
                 buffer-face-mode
                 orgtbl-mode
                 eldoc-mode
-                hs-minor-mode))
+                hs-minor-mode
+                abbrev-mode))
   (add-to-list 'mode-line-collapse-minor-modes mode))
 
 (defface my/mode-line-highlight
@@ -878,8 +879,14 @@ File browsing on crack
          ("j" . find-file)
          ("SPC" . dired-up-directory)
          ("b" . dired-up-directory)
-         ("F" . find-grep))
+         ("F" . find-grep)
+         ("V" . my/dired-view-other-window))
   :config
+  (defun my/dired-view-other-window ()
+    (interactive)
+    (progn
+      (other-window-prefix)
+      (call-interactively #'dired-view-file)))
   (defun my/dired-create (arg)
     "Wrapper around `dired-create-directory' with no minibuffer completion. Create empty file when called with prefix arg"
     (interactive "P")
@@ -1812,6 +1819,15 @@ Standard themes
 (modus-themes-select 'standard-dark)
 #+end_src
 
+**** Modus Vague
+Another cool modus themes theme
+
+#+begin_src emacs-lisp
+(use-package modus-vague
+  :vc (:url https://github.com/paniash/modus-vague :rev :newest))
+#+end_src
+
+
 *** Marginalia
 Usful info in the minibuffer
 
@@ -2433,7 +2449,6 @@ Images, bridge nicknames, ...
 
 (use-package erc-bridge-nicks
   :disabled t ; I get a Symbol’s value as variable is void: bridge-nicks                          ;
-  :ensure t
   :after erc
   :vc (:url "https://git.sr.ht/~technomancy/erc-bridge-nicks" :rev :newest)
   :config
@@ -2622,7 +2637,6 @@ C++ and C
 
 ;; just in case
 (use-package simpc-mode
-  :ensure t
   :vc (:url "https://github.com/rexim/simpc-mode" :rev :newest))
 #+end_src
 
