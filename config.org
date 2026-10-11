@@ -93,7 +93,6 @@ I don't know why I have this in the early-init but I moved it here at some point
 ** Setup
 Lexical bindings and set+load custom file and ~./external~.
 
-
 #+begin_src emacs-lisp
 ;; -*- lexical-binding: t -*-
 (setopt custom-file (locate-user-emacs-file "custom.el"))
@@ -441,14 +440,17 @@ Change default UI settings
   (fringe-mode '(nil . 0))            ; 8px right, 0px left
   (global-visual-wrap-prefix-mode -1) ; this makes org headings look weird
   (prettify-special-glyphs-mode 1)
+  ;; the ~bind-keys*~ makes these binds override more specific binds,
+  ;; e.g. `diff-mode' binds M-o to `diff-goto-source'
+  (bind-keys*
+   ("M-o" . other-window)
+   ("M-O" . other-window-backward))
   :hook
   ((prog-mode text-mode) . visual-line-mode)
   :bind
   ("C-c h l" . hl-line-mode)
   ("C-c h n" . display-line-numbers-mode)
   ("C-c h v" . variable-pitch-mode)
-  ("M-o" . other-window)
-  ("M-O" . other-window-backward)
   ("C-M-S-o" . window-layout-transpose)
   :custom
   (confirm-kill-emacs 'yes-or-no-p)   ; ask before exiting
@@ -793,10 +795,7 @@ The *vc-status* format below depends on [[*Ibuffer-vc][Ibuffer-vc]].
 
 #+begin_src emacs-lisp
 (use-package ibuffer
-  :bind
-  (("C-x C-b" . ibuffer)
-   :map ibuffer-mode-map
-   ("M-o" . other-window))
+  :bind ("C-x C-b" . ibuffer)
   :hook
   (ibuffer-mode . (lambda ()
                     (ibuffer-switch-to-saved-filter-groups "default")
@@ -820,7 +819,7 @@ The *vc-status* format below depends on [[*Ibuffer-vc][Ibuffer-vc]].
                (mode . term-mode)
                (mode . eshell-mode)
                (mode . compilation-mode)
-               (mode . eat-mode)))
+               (mode . ghostel-mode)))
       ("Help" (or (mode . help-mode) (mode . Man-mode) (mode . Info-mode)))
       ("Eww" (name . "^\\*eww"))
       ("Git" (name . "^magit"))
@@ -1265,7 +1264,8 @@ Process management
   (proced-format 'custom)
   :config
   (add-to-list 'proced-format-alist
-               '(custom user pid tree pcpu rss (args comm))))
+               '(custom user pid tree pcpu rss (args comm)))
+  :bind ("C-c h p" . proced))
 #+end_src
 
 ** TRAMP
@@ -1816,7 +1816,7 @@ Standard themes
   (standard-dark-tinted-palette-overrides
    '((comment fg-dim)
      (fringe unspecified))))
-(modus-themes-select 'standard-dark)
+(modus-themes-load-theme 'standard-light)
 #+end_src
 
 **** Modus Vague
@@ -1826,7 +1826,6 @@ Another cool modus themes theme
 (use-package modus-vague
   :vc (:url https://github.com/paniash/modus-vague :rev :newest))
 #+end_src
-
 
 *** Marginalia
 Usful info in the minibuffer
@@ -2417,8 +2416,6 @@ If called with prefix arg, spawn a terminal window in the current directory."
          ("t" . my/spawn-ghostel-or-terminal-here)
          :map project-prefix-map
          ("t" . my/ghostel-project-other-window)
-         :map ghostel-semi-char-mode-map
-         ("M-o" . other-window)
          :map ghostel-mode-map
          ("C-c C-p" . ghostel-previous-prompt)
          ("C-c C-n" . ghostel-next-prompt)))
@@ -2907,6 +2904,8 @@ References in documents
 #+end_src
 
 *** Cdlatex
+Cdeez
+
 #+begin_src emacs-lisp
 (use-package cdlatex
   :ensure t
@@ -2949,7 +2948,8 @@ The default lean4 mode depends on lsp-mode, so until they do eglot or none at al
 
 #+begin_src emacs-lisp
 (use-package nael
-  :ensure t)
+  :ensure t
+  :hook (nael-mode . abbrev-mode))
 #+end_src
 
 ** Web stuff
