@@ -262,7 +262,7 @@ With two prefixes call ~winner-undo~
    ((equal arg '(16))
     (tab-bar-history-back))
    (t ; otherwise
-    (call-interactively #'switch-to-buffer))))
+    (call-interactively #'consult-buffer))))
 
 (bind-key "C-;" #'my/switch-buffer-or-delete-other-windows)
 #+end_src
@@ -440,8 +440,8 @@ Change default UI settings
   (fringe-mode '(nil . 0))            ; 8px right, 0px left
   (global-visual-wrap-prefix-mode -1) ; this makes org headings look weird
   (prettify-special-glyphs-mode 1)
-  ;; the ~bind-keys*~ makes these binds override more specific binds,
-  ;; e.g. `diff-mode' binds M-o to `diff-goto-source'
+  ;; the ~bind-keys*~ makes these binds override mode specific binds,
+  ;; e.g. `diff-mode' would bind M-o to `diff-goto-source' otherwise
   (bind-keys*
    ("M-o" . other-window)
    ("M-O" . other-window-backward))
@@ -470,7 +470,7 @@ Change default UI settings
 
   (scroll-preserve-screen-position 'always)
   (scroll-conservatively 101)
-  (scroll-margin 0)                   ; because of ultra-scroll
+  (scroll-margin 0)
   (next-screen-context-lines 10)
   (next-error-recenter '(4))
 
@@ -495,8 +495,7 @@ Where to put windows
 (use-package window
   :custom
   (split-window-preferred-direction 'longest)
-  (switch-to-buffer-obey-display-actions nil)
-  (switch-to-buffer-in-dedicated-window 'pop))
+  (switch-to-buffer-obey-display-actions nil))
 #+end_src
 
 *** Highlight matching parens
@@ -2181,7 +2180,7 @@ the emacs server hasn't loaded org yet."
 #+end_src
 
 *** org-appear
-Show emphasis markers like ** and some other things when point is inside them
+Show emphasis markers like *bold* and some other things when point is inside them
 
 #+begin_src emacs-lisp
 (use-package org-appear
@@ -2598,18 +2597,19 @@ Gets its own section because it's so long
              :prefix-map my/eglot-map
              ("TAB" . eglot-format)
              ("i"   . eglot-inlay-hints-mode)
-             ("l"   . eglot-list-connections)
-             ("r"   . eglot-rename))
+             ("l"   . eglot-list-connections))
+  ;; TODO move this out to its own keymap since refactor is its own thing now?
   (bind-keys :map my/eglot-map
-             :prefix "a"
-             :prefix-docstring "Bindings for eglot code actions"
-             :prefix-map my/eglot-code-actions-map
-             ("a" . eglot-code-actions)
-             ("e" . eglot-code-action-extract)
-             ("i" . eglot-code-action-inline)
-             ("o" . eglot-code-action-organize-imports)
-             ("q" . eglot-code-action-quickfix)
-             ("r" . eglot-code-action-rewrite))
+             :prefix "r"
+             :prefix-docstring "Bindings for refactoring"
+             :prefix-map my/refactor-map
+             ("a" . refactor)
+             ("e" . refactor-extract)
+             ("f" . refactor-fix-all)
+             ("i" . refactor-inline)
+             ("o" . refactor-organize-imports)
+             ("q" . refactor-quickfix)
+             ("r" . refactor-rewrite))
   (bind-keys :map my/eglot-map
              :prefix "f"
              :prefix-docstring "Bindings to find declaration/type/... via eglot"
