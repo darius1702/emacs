@@ -431,6 +431,21 @@ Like ~scratch-buffer~ but always in the home directory
 (bind-key "s" #'my/scratch-buffer 'goto-map)
 #+end_src
 
+*** Owo
+Emacs checks on you if you idle
+
+#+begin_src emacs-lisp
+(defcustom my/owo-faces '((default . "owo")
+                          (modified . "OwO"))
+  "faces for the echo area")
+
+(run-with-idle-timer 10 t (lambda ()
+                            (let ((face (if (buffer-modified-p)
+                                            'modified
+                                          'default)))
+                              (message (alist-get face my/owo-faces)))))
+#+end_src
+
 ** User interface
 Change default UI settings
 
